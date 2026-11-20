@@ -416,8 +416,12 @@ supported void elements `area`, `base`, `basefont`, `bgsound`, `embed`,
 foster-parented in-body path; this does not add resource loading. Other
 table tokens requiring foster parenting remain unsupported. Template starts
 and matching ends in table, table-body and row modes use in-head/template
-processing and restore the table insertion mode on close; table/select
-insertion modes within template content remain unsupported.
+processing and restore the table insertion mode on close. Template content uses
+the bounded table algorithms for supported `table`, caption/column/section,
+row and cell starts through the `in template` insertion-mode rules; EOF in
+these modes closes open templates with diagnostics. Select
+modes, other unsupported table algorithms and broader template behavior remain
+unsupported.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and
 restore cell insertion mode when closed. In-table form starts follow the
@@ -438,9 +442,11 @@ parser work includes:
   surrounding head/body mode, fragment nodes count toward the parser node limit,
   and template-content scripts do not invoke the parser completion callback.
   Template starts and matching ends in table, table-body and row modes use
-  in-head/template processing and restore the table insertion mode. Table/select
-  insertion modes within template content, SVG/MathML, script-facing template
-  bindings and `innerHTML` remain unsupported. General forms (only the
+  in-head/template processing and restore the table insertion mode. Template
+  contents use the bounded table algorithms for supported table,
+  caption/column/section, row and cell starts. Select modes, other unsupported
+  table algorithms, SVG/MathML, script-facing template bindings and `innerHTML`
+  remain unsupported. General forms (only the
   simple form-pointer subset exists), select handling requiring tree-building
   algorithms outside the currently supported in-body subset, and other
   specialized parsing algorithms also remain incomplete.
@@ -500,9 +506,9 @@ the three previously documented baseline findings.
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
-Parser template construction remains a narrow static subset: table/select
-insertion modes within template content, foreign content, script bindings and
-`innerHTML` are deferred.
+Parser template construction remains a narrow static subset: unsupported table
+and select algorithms within template content, foreign content, script bindings
+and `innerHTML` are deferred.
 The bounded static fragment API does not change the overall HTML/DOM support
 assessment or rough percentages.
 

@@ -50,10 +50,13 @@ Document templates in head/body use the bounded template insertion-mode stack:
 ordinary supported in-body content and nested templates build under each
 `DomTemplateElement.Content` fragment, then insertion-mode reset resumes the
 surrounding head/body mode. Template content is inert; its scripts do not invoke
-the parser completion callback. Table/select insertion modes within template
-content, foreign content and broader template algorithms remain unsupported.
-Template starts and matching ends in table, table-body and row modes use
-in-head/template processing and restore the table insertion mode.
+the parser completion callback. Template starts and matching ends in table,
+table-body and row modes use in-head/template processing and restore the table
+insertion mode. Within template content, supported table starts select the
+bounded in-table, in-column-group, in-table-body and in-row algorithms, and
+nested tables use the existing table subset. EOF in these modes closes open
+templates with diagnostics. Select modes, foreign content and
+other unsupported template algorithms remain explicit failures.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,

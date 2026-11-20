@@ -251,11 +251,6 @@ public static class HtmlParser
                 {
                     if (open.Any(element => element.LocalName == "template"))
                     {
-                        if (TableTags.Contains(contextTag.Name))
-                        {
-                            throw Unsupported("Table insertion modes inside template content are not implemented.");
-                        }
-
                         if (contextTag.Name == "select")
                         {
                             throw Unsupported("Select insertion modes inside template content are not implemented.");
@@ -269,11 +264,19 @@ public static class HtmlParser
                 }
 
                 if (token is HtmlTag tableTag && TableTags.Contains(tableTag.Name)
-                    && !IsTableMode(mode)
+                    && !IsTableMode(mode) && mode != Mode.InTemplate
                     && !(tableTag.Name == "table"
                         && mode is Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.AfterHead or Mode.InBody))
                 {
                     throw Unsupported($"Table tag <{tableTag.Name}> is outside the supported table tree-building subset.");
+                }
+
+                if (token is HtmlEndOfFile
+                    && mode is Mode.InBody or Mode.InTable or Mode.InCaption or Mode.InColumnGroup
+                        or Mode.InTableBody or Mode.InRow or Mode.InCell
+                    && open.Any(element => element.LocalName == "template"))
+                {
+                    mode = Mode.InTemplate;
                 }
 
                 switch (mode)
@@ -487,12 +490,6 @@ public static class HtmlParser
                         mode = Mode.InBody;
                         continue;
                     case Mode.InBody:
-                        if (token is HtmlEndOfFile && open.Any(element => element.LocalName == "template"))
-                        {
-                            mode = Mode.InTemplate;
-                            continue;
-                        }
-
                         BodyToken(token);
                         return;
                     case Mode.InTemplate:
@@ -1326,6 +1323,14 @@ public static class HtmlParser
 
         private void ColumnGroupToken(HtmlToken token)
         {
+            if (token is HtmlTag { Name: "template" } templateTag)
+            {
+                if (templateTag.IsEndTag) { CloseTemplate(); }
+                else { StartTemplate(templateTag); }
+
+                return;
+            }
+
             if (token is HtmlCharacters characters)
             {
                 if (characters.Data.All(HtmlTokenizer.Whitespace))
@@ -1628,15 +1633,26 @@ public static class HtmlParser
                 case "template":
                     StartTemplate(tag);
                     return false;
-                case "caption" or "col" or "colgroup" or "tbody" or "tfoot" or "thead" or "tr" or "td" or "th":
-                    throw Unsupported("Table insertion modes inside template content are not implemented.");
+                case "caption" or "colgroup" or "tbody" or "tfoot" or "thead":
+                    return ReprocessTemplateTokenIn(Mode.InTable);
+                case "col":
+                    return ReprocessTemplateTokenIn(Mode.InColumnGroup);
+                case "tr":
+                    return ReprocessTemplateTokenIn(Mode.InTableBody);
+                case "td" or "th":
+                    return ReprocessTemplateTokenIn(Mode.InRow);
                 case "select":
                     throw Unsupported("Select insertion modes inside template content are not implemented.");
                 default:
-                    templateModes[^1] = Mode.InBody;
-                    mode = Mode.InBody;
-                    return true;
+                    return ReprocessTemplateTokenIn(Mode.InBody);
             }
+        }
+
+        private bool ReprocessTemplateTokenIn(Mode insertionMode)
+        {
+            templateModes[^1] = insertionMode;
+            mode = insertionMode;
+            return true;
         }
 
         private void StartTemplate(HtmlTag tag)

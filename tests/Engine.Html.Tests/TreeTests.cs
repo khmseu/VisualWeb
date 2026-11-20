@@ -228,11 +228,72 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<template><table><tr><td>x</td></tr></table></template>")]
     [InlineData("<template><select><option>x</option></select></template>")]
     [InlineData("<template><svg><path></path></svg></template>")]
     public void UnsupportedTemplateInsertionContextsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Theory]
+    [InlineData("<template><table><tbody><tr><td>cell</td></tr></tbody></table></template>", "table", "cell")]
+    [InlineData("<template><caption>caption</caption></template>", "caption", "caption")]
+    [InlineData("<template><colgroup><col></colgroup></template>", "colgroup", "")]
+    [InlineData("<template><tbody><tr><td>section</td></tr></tbody></template>", "tbody", "section")]
+    [InlineData("<template><thead><tr><th>head</th></tr></thead></template>", "thead", "head")]
+    [InlineData("<template><tfoot><tr><td>foot</td></tr></tfoot></template>", "tfoot", "foot")]
+    [InlineData("<template><tr><td>row</td></tr></template>", "tr", "row")]
+    [InlineData("<template><td>cell</td></template>", "td", "cell")]
+    [InlineData("<template><col></template>", "col", "")]
+    public void TemplateContentUsesBoundedTableInsertionModes(
+        string input,
+        string expectedChild,
+        string expectedText)
+    {
+        var result = Parse(input);
+        var template = Assert.IsType<DomTemplateElement>(
+            Assert.Single(Descendants(result.Document), element => element.LocalName == "template"));
+        var content = Assert.IsType<DomElement>(Assert.Single(template.Content.ChildNodes));
+
+        Assert.Equal(expectedChild, content.LocalName);
+        Assert.Equal(expectedText, content.TextContent);
+        Assert.DoesNotContain(result.Errors, error => error.Code == "eof-in-template");
+    }
+
+    [Theory]
+    [InlineData("<template><table>")]
+    [InlineData("<template><table>  ")]
+    [InlineData("<template><caption>")]
+    [InlineData("<template><colgroup>")]
+    [InlineData("<template><tbody>")]
+    [InlineData("<template><tr>")]
+    [InlineData("<template><td>")]
+    public void EofInTemplateTableModesClosesTemplateAndReportsError(string input)
+    {
+        var result = Parse(input);
+
+        Assert.Contains(result.Errors, error => error.Code == "eof-in-template");
+    }
+
+    [Fact]
+    public void EofInNestedTemplateTableModesClosesEachTemplate()
+    {
+        var result = Parse("<template><table><template><colgroup>");
+
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "eof-in-template"));
+    }
+
+    [Fact]
+    public void TemplateInColumnGroupRestoresColumnGroupMode()
+    {
+        var result = Parse("<template><colgroup><template><p>hidden</p></template><col></colgroup></template>");
+        var outer = Assert.IsType<DomTemplateElement>(
+            Assert.Single(Descendants(result.Document), element => element.LocalName == "template"));
+        var group = Assert.IsType<DomElement>(Assert.Single(outer.Content.ChildNodes));
+        var nested = Assert.IsType<DomTemplateElement>(group.FirstChild);
+
+        Assert.Equal("hidden", nested.Content.TextContent);
+        Assert.Equal("col", Assert.IsType<DomElement>(nested.NextSibling).LocalName);
+        Assert.DoesNotContain(result.Errors, error => error.Code == "unexpected-template-end-tag");
+    }
 
     [Fact]
     public void TemplateStartAndEndInTableModesUseTemplateContentAndRestoreTableMode()
@@ -276,6 +337,23 @@ public sealed class TreeTests
         Assert.Equal("hidden", template.Content.TextContent);
         Assert.Equal("tbody", body.LocalName);
         Assert.Equal("cell", body.TextContent);
+    }
+
+    [Fact]
+    public void TemplateTableModesWorkInTemplateFragmentContext()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment(
+            "<tbody><tr><td>cell</td></tr></tbody>",
+            document.CreateElement("template"),
+            cancellationToken: TestContext.Current.CancellationToken);
+        var section = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        var row = Assert.IsType<DomElement>(Assert.Single(section.ChildNodes));
+        var cell = Assert.IsType<DomElement>(Assert.Single(row.ChildNodes));
+
+        Assert.Equal("tbody", section.LocalName);
+        Assert.Equal("tr", row.LocalName);
+        Assert.Equal("cell", cell.TextContent);
     }
 
     [Theory]
