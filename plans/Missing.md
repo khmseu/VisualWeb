@@ -511,9 +511,9 @@ the three previously documented baseline findings.
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
-Parser template construction remains a narrow static subset: unsupported table
-and select algorithms within template content, foreign content, script bindings
-and `innerHTML` are deferred.
+Parser template construction remains a narrow static subset: table and select
+algorithms outside the bounded template-content subsets, foreign content, script
+bindings and `innerHTML` are deferred.
 The bounded static fragment API does not change the overall HTML/DOM support
 assessment or rough percentages.
 

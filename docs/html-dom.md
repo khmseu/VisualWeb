@@ -223,7 +223,8 @@ nearest ancestor `form`.
 
 Other tokens that require table foster parenting throw explicitly, as do
 unsupported table tags outside the contexts covered above. Template content
-using table or select insertion modes is also explicitly unsupported. The
+supports the bounded table and in-body/select paths described above; additional
+table/select algorithms remain explicitly unsupported. The
 following additionally throw explicitly: SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
@@ -289,10 +290,10 @@ Child and attribute collections have read-only public views; node/data/attribute
 mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
 Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs,
-most special element behavior and full script bindings are deferred. Table/select
-template insertion modes, script-facing template bindings and `innerHTML` remain
-unsupported. The static fragment parser is not exposed as a script-facing
-`innerHTML` API.
+most special element behavior and full script bindings are deferred. Additional
+table/select template algorithms, script-facing template bindings and
+`innerHTML` remain unsupported. The static fragment parser is not exposed as a
+script-facing `innerHTML` API.
 The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup
