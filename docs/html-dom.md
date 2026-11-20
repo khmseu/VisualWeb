@@ -84,7 +84,14 @@ after-after-body modes. Supported behavior includes:
   `MaxNodes`; the outer loop is capped at eight iterations and the inner-loop
   removal rule applies after its third iteration. Cancellation checks and the
   existing open-stack `MaxDepth` limit remain in force. Adjusted insertion
-  parents route through template contents and fragment roots.
+  parents route through template contents and fragment roots. Nested `a`
+  starts report a parse error, run adoption and remove the original anchor
+  from the active-formatting list and open stack if still present before
+  reconstruction. Nested `nobr` starts reconstruct before the scope check,
+  report a parse error and run adoption if in scope, then reconstruct again.
+  Scope checks include the `caption` boundary; this parser currently reaches
+  captions only through table insertion, where table scope and the caption
+  formatting marker constrain outer formatting entries.
 - Bounded document `<template>` construction in head and body. Template
   contents use the native `Content` fragment and inert template-contents owner
   document; nested templates stay separate from ordinary children and the
@@ -171,11 +178,11 @@ unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling; foreign content; framesets/frames; noscript and applet/marquee/object
 specific algorithms. Fragment contexts outside the supported parser subset are
-rejected. Nested anchors/nobr, adoption-agency reparenting whose common ancestor
-requires table foster parenting, and table text requiring both foster parenting
+rejected. Adoption-agency reparenting whose common ancestor requires table
+foster parenting, and table text requiring both foster parenting
 and formatting reconstruction throw instead of returning an incorrect tree.
 The adoption agency remains a bounded subset, not full HTML tree-construction
-conformance.
+conformance; this recovery does not implement full anchor semantics.
 
 Doctype classification follows the cached
 [initial insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode)

@@ -673,11 +673,29 @@ public static class HtmlParser
                         Insert(tag with { Name = "img" }, push: false);
                         return;
                     case "a":
-                        if (FindFormatting("a") >= 0) { throw Unsupported("Nested anchor adoption is not implemented."); }
+                        var anchorIndex = FindFormatting("a");
+                        if (anchorIndex >= 0)
+                        {
+                            Error("nested-a-start-tag");
+                            var originalAnchor = formatting[anchorIndex]!.Element;
+                            AdoptionEndTag("a");
+                            var remainingEntry = FindFormattingElementIndex(originalAnchor);
+                            if (remainingEntry >= 0) { formatting.RemoveAt(remainingEntry); }
+                            var remainingOpen = open.IndexOf(originalAnchor);
+                            if (remainingOpen >= 0)
+                            {
+                                FlushText();
+                                open.RemoveAt(remainingOpen);
+                            }
+                        }
                         break;
                     case "nobr":
                         ReconstructFormatting();
-                        if (InScope("nobr")) { throw Unsupported("Nested nobr adoption is not implemented."); }
+                        if (InScope("nobr"))
+                        {
+                            Error("nested-nobr-start-tag");
+                            AdoptionEndTag("nobr");
+                        }
                         break;
                 }
 
@@ -690,6 +708,7 @@ public static class HtmlParser
 
                 if (FormattingTags.Contains(tag.Name))
                 {
+                    // For nobr this is the second reconstruction after adoption, if needed.
                     ReconstructFormatting();
                     var element = Insert(tag);
                     PushFormatting(element, tag);
@@ -911,7 +930,7 @@ public static class HtmlParser
                 for (var index = open.Count - 1; index > stackIndex; index--)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (open[index].LocalName is "html" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template")
+                    if (open[index].LocalName is "html" or "caption" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template")
                     {
                         Error("formatting-element-not-in-scope");
                         return;
@@ -1868,7 +1887,7 @@ public static class HtmlParser
             {
                 var current = open[index].LocalName;
                 if (current == name) { return true; }
-                if (current is "html" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template"
+                if (current is "html" or "caption" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template"
                     || buttonScope && current == "button" || listScope && current is "ol" or "ul") { return false; }
             }
 

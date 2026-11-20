@@ -5,6 +5,23 @@ namespace VisualWeb.Engine.Html.Tests;
 
 public sealed class FragmentTests
 {
+    [Theory]
+    [InlineData("a")]
+    [InlineData("nobr")]
+    public void FragmentNestedFormattingStartsUseAdjustedAdoptionParent(string tag)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment($"<{tag} id=old>before<div>inside<{tag} id=new>after</{tag}></div>",
+            document.CreateElement("div"), cancellationToken: TestContext.Current.CancellationToken);
+        var original = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+        var div = Assert.IsType<DomElement>(result.Fragment.LastChild);
+        Assert.Equal("before", original.TextContent);
+        Assert.Equal("old", Assert.IsType<DomElement>(div.FirstChild).GetAttribute("id"));
+        Assert.Equal("new", Assert.IsType<DomElement>(div.LastChild).GetAttribute("id"));
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Contains(result.Errors, error => error.Code == $"nested-{tag}-start-tag");
+    }
+
     [Fact]
     public void FragmentFormattingReconstructionPreservesOwnershipAndCountsNodes()
     {

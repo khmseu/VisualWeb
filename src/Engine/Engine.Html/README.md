@@ -26,9 +26,15 @@ branch and bounded furthest-block adoption-agency recovery, including inner
 clone/removal, bookmark shifts, reparenting and stack/list replacement. Clones
 count toward node limits; the outer loop is capped at eight iterations and
 inner-loop list removal follows the after-three-iterations rule. Adjusted
-parents cover fragments and template contents. Reparenting that requires table
-foster parenting, nested anchors/nobr and table-text foster parenting requiring
-reconstruction throw explicitly. This is not the full adoption-agency algorithm.
+parents cover fragments and template contents. Nested anchor starts report an
+error, run adoption and remove the original anchor from the list and stack if
+still present before reconstruction. Nested `nobr` starts reconstruct before
+the scope check and again after reporting an error and running adoption.
+Scope checks include the `caption` boundary; supported captions are created
+through table insertion and add a formatting marker.
+Reparenting that requires table foster parenting and table-text foster parenting
+requiring reconstruction throw explicitly. This is not the full adoption-agency
+algorithm or full anchor semantics.
 `listing` parses normal markup and strips its first LF; `xmp` is RAWTEXT until
 its closing tag, and `plaintext` consumes the rest as literal text. Apparent
 links, scripts and styles in those literal modes are not DOM elements.

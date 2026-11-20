@@ -714,6 +714,8 @@ public sealed class TreeTests
     [InlineData("<table><input type=text></table>")]
     [InlineData("<table><input type=h\u0131dden></table>")]
     [InlineData("<table><b><p>x</b></table>")]
+    [InlineData("<a><table><a>x")]
+    [InlineData("<nobr><table><nobr>x")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
@@ -731,12 +733,181 @@ public sealed class TreeTests
     [InlineData("<div><form></div><input>")]
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
-    [InlineData("<a><a>x")]
-    [InlineData("<nobr><nobr>x")]
-    [InlineData("<p><a>x</p><a>y")]
     [InlineData("<p><b>x</p><table>y</table>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("nobr")]
+    public void NestedFormattingStartsAdoptAndReconstructDescendants(string tag)
+    {
+        var result = Parse($"<!doctype html><{tag} id=old><i class=kept>one<{tag} id=new>two</{tag}>three");
+        var body = result.Document.Body!;
+        var original = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var originalItalic = Assert.IsType<DomElement>(original.FirstChild);
+        var rebuiltItalic = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        var replacement = Assert.IsType<DomElement>(rebuiltItalic.FirstChild);
+        Assert.Equal("old", original.GetAttribute("id"));
+        Assert.Equal("one", originalItalic.TextContent);
+        Assert.Equal("i", rebuiltItalic.LocalName);
+        Assert.Equal("kept", rebuiltItalic.GetAttribute("class"));
+        Assert.NotSame(originalItalic, rebuiltItalic);
+        Assert.Equal(tag, replacement.LocalName);
+        Assert.Equal("new", replacement.GetAttribute("id"));
+        Assert.Equal("two", replacement.TextContent);
+        Assert.Equal("three", Assert.IsType<DomText>(rebuiltItalic.LastChild).Data);
+        Assert.Contains(result.Errors, error => error.Code == $"nested-{tag}-start-tag");
+        Assert.Contains(result.Errors, error => error.Code == "misnested-formatting-end-tag");
+    }
+
+    [Fact]
+    public void NestedAnchorRemovesStaleOriginalBeforeReconstructing()
+    {
+        var result = Parse("<!doctype html><p><a id=old><i class=kept>x</p><a id=new>y</a>z");
+        var body = result.Document.Body!;
+        var rebuiltItalic = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("i", rebuiltItalic.LocalName);
+        Assert.Equal("kept", rebuiltItalic.GetAttribute("class"));
+        var anchor = Assert.IsType<DomElement>(rebuiltItalic.FirstChild);
+        Assert.Equal("new", anchor.GetAttribute("id"));
+        Assert.Equal("y", anchor.TextContent);
+        Assert.Equal("z", Assert.IsType<DomText>(rebuiltItalic.LastChild).Data);
+        Assert.Contains(result.Errors, error => error.Code == "nested-a-start-tag");
+        Assert.Contains(result.Errors, error => error.Code == "formatting-element-not-open");
+    }
+
+    [Fact]
+    public void NestedAnchorRemovesAdoptionCloneBeforeInsertingNewAnchor()
+    {
+        var result = Parse("<!doctype html><a id=old>before<div>inside<a id=new>after</a>more</div>");
+        var body = result.Document.Body!;
+        var original = Assert.IsType<DomElement>(body.FirstChild);
+        var div = Assert.IsType<DomElement>(body.LastChild);
+        var adopted = Assert.IsType<DomElement>(div.ChildNodes[0]);
+        var replacement = Assert.IsType<DomElement>(div.ChildNodes[1]);
+
+        Assert.Equal("old", original.GetAttribute("id"));
+        Assert.Equal("before", original.TextContent);
+        Assert.Equal("old", adopted.GetAttribute("id"));
+        Assert.Equal("inside", adopted.TextContent);
+        Assert.Equal("new", replacement.GetAttribute("id"));
+        Assert.Equal("after", replacement.TextContent);
+        Assert.Equal("more", Assert.IsType<DomText>(div.LastChild).Data);
+        Assert.Contains(result.Errors, error => error.Code == "nested-a-start-tag");
+    }
+
+    [Fact]
+    public void NestedNobrReconstructsBeforeCheckingScopeAndAgainAfterAdoption()
+    {
+        var result = Parse("<!doctype html><p><nobr id=old><i class=kept>x</p><nobr id=new>y</nobr>z");
+        var rebuiltOld = Assert.IsType<DomElement>(result.Document.Body!.ChildNodes[1]);
+        var rebuiltOldItalic = Assert.IsType<DomElement>(rebuiltOld.FirstChild);
+        var rebuiltItalic = Assert.IsType<DomElement>(result.Document.Body.ChildNodes[2]);
+        Assert.Equal("old", rebuiltOld.GetAttribute("id"));
+        Assert.Empty(rebuiltOldItalic.ChildNodes);
+        Assert.Equal("kept", rebuiltItalic.GetAttribute("class"));
+        Assert.NotSame(rebuiltOldItalic, rebuiltItalic);
+        Assert.Equal("new", Assert.IsType<DomElement>(rebuiltItalic.FirstChild).GetAttribute("id"));
+        Assert.Equal("yz", rebuiltItalic.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "nested-nobr-start-tag");
+        Assert.Contains(result.Errors, error => error.Code == "misnested-formatting-end-tag");
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("nobr")]
+    public void NestedFormattingStartsUseFurthestBlockAdoption(string tag)
+    {
+        var result = Parse($"<!doctype html><{tag} id=old>before<div>inside<{tag} id=new>after</{tag}></div>");
+        var body = result.Document.Body!;
+        var original = Assert.IsType<DomElement>(body.FirstChild);
+        var div = Assert.IsType<DomElement>(body.LastChild);
+        var recreated = Assert.IsType<DomElement>(div.FirstChild);
+        var replacement = Assert.IsType<DomElement>(div.LastChild);
+        Assert.Equal("before", original.TextContent);
+        Assert.Equal("old", recreated.GetAttribute("id"));
+        Assert.Equal("inside", recreated.TextContent);
+        Assert.Equal("new", replacement.GetAttribute("id"));
+        Assert.Equal("after", replacement.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == $"nested-{tag}-start-tag");
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("nobr")]
+    public void NestedFormattingRecoveryHonorsLimitsAndCancellation(string tag)
+    {
+        var input = $"<!doctype html><{tag}><i>x<{tag}>y";
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 10 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxDepth = 3 }));
+        Assert.Equal("xy", Parse(input, new() { MaxNodes = 11, MaxDepth = 4 }).Document.Body!.TextContent);
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("nobr")]
+    public void NestedFormattingFurthestBlockCloneCountsTowardNodeLimit(string tag)
+    {
+        var input = $"<!doctype html><{tag} id=old><div>x<{tag} id=new>";
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 8 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 9 }));
+        var body = Parse(input, new() { MaxNodes = 10 }).Document.Body!;
+        var div = Assert.IsType<DomElement>(body.LastChild);
+        Assert.Equal("old", Assert.IsType<DomElement>(div.FirstChild).GetAttribute("id"));
+        Assert.Equal("new", Assert.IsType<DomElement>(div.LastChild).GetAttribute("id"));
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("nobr")]
+    public void FormattingMarkersKeepOuterEntriesSeparateFromNestedStarts(string tag)
+    {
+        var result = Parse($"<!doctype html><{tag} id=outer><template><{tag} id=inner>x<{tag} id=second>z</{tag}></template>y</{tag}>");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var template = Assert.IsType<DomTemplateElement>(outer.FirstChild);
+        Assert.Equal("inner", Assert.IsType<DomElement>(template.Content.FirstChild).GetAttribute("id"));
+        Assert.Equal("second", Assert.IsType<DomElement>(template.Content.LastChild).GetAttribute("id"));
+        Assert.Equal("y", Assert.IsType<DomText>(outer.LastChild).Data);
+        Assert.Single(result.Errors, error => error.Code == $"nested-{tag}-start-tag");
+    }
+
+    [Fact]
+    public void NestedAnchorInTableCaptionHonorsFormattingMarker()
+    {
+        var result = Parse("<!doctype html><a id=outer><table><caption><a id=inner>x");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var table = Assert.IsType<DomElement>(outer.FirstChild);
+        var caption = Assert.IsType<DomElement>(table.FirstChild);
+        var inner = Assert.IsType<DomElement>(caption.FirstChild);
+
+        Assert.Equal("outer", outer.GetAttribute("id"));
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("caption", caption.LocalName);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("x", inner.TextContent);
+        Assert.DoesNotContain(result.Errors, error => error.Code == "nested-a-start-tag");
+    }
+
+    [Fact]
+    public void NestedNobrInTableCaptionDoesNotReportNesting()
+    {
+        var result = Parse("<!doctype html><nobr id=outer><table><caption><nobr id=inner>x");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var table = Assert.IsType<DomElement>(outer.FirstChild);
+        var caption = Assert.IsType<DomElement>(table.FirstChild);
+        var inner = Assert.IsType<DomElement>(caption.FirstChild);
+
+        Assert.Equal("outer", outer.GetAttribute("id"));
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("caption", caption.LocalName);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.DoesNotContain(result.Errors, error => error.Code == "nested-nobr-start-tag");
+    }
 
     [Fact]
     public void FormattingEndTagReconstructsRemainingDescendantWithTokenAttributes()

@@ -432,10 +432,16 @@ parser work includes:
   template content use adjusted insertion parents. The outer loop is capped at
   eight iterations, inner-list removal follows the after-three-iterations rule,
   and cancellation/open-stack depth checks remain active during recovery.
-  Nested anchors/nobr, adoption reparenting that needs table foster parenting,
-  and table-text foster parenting requiring formatting reconstruction still
-  fail explicitly. The adoption algorithm and overall tree construction remain
-  bounded subsets, not full HTML conformance.
+  Nested anchor starts now report a parse error, run adoption and remove the
+  original anchor from the active-formatting list and open stack if still
+  present before reconstruction. Nested `nobr` starts reconstruct before
+  checking scope and, when in scope, report a parse error, run adoption and
+  reconstruct again. Adoption reparenting that needs table foster parenting and
+  table-text foster parenting requiring formatting reconstruction still fail
+  explicitly. The adoption algorithm and overall tree construction remain
+  bounded subsets, not full HTML conformance or full anchor semantics.
+  Focused tree/fragment tests cover recovery, markers, attributes, diagnostics,
+  limits and cancellation; all 7,362 Engine.Html tests pass.
 
 Fragment parsing validation: 32 focused cases and all 7,327 Engine.Html tests
 pass. The final solution build has zero warnings/errors; the full solution test
