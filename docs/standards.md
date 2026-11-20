@@ -144,8 +144,9 @@ removal and `nobr` post-adoption reconstruction respectively. Non-hidden input
 starts in table, table-body and row modes use in-body handling with bounded
 foster-parent insertion; inputs in cells use ordinary in-body insertion.
 `br` and `hr` starts in those table modes also follow in-body handling with
-bounded foster-parent insertion. `div` and `p` starts and end tags in those modes also follow in-body handling
-with bounded foster-parent insertion.
+bounded foster-parent insertion. `div`, `p` and `h1`-`h6` starts and end tags
+in those modes also follow in-body handling with bounded foster-parent
+insertion.
 Adoption reparenting that requires table foster parenting and table-text foster
 parenting requiring reconstruction remain explicitly unsupported; this
 increment does not change the coarse HTML percentage below. Other table tokens

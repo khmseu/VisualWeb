@@ -786,7 +786,25 @@ public sealed class TreeTests
     [InlineData("p", "<table>", "<tr><td>cell</td></tr></table>")]
     [InlineData("p", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("p", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
-    public void DivAndParagraphStartAndEndInTableModesUseFosterParenting(
+    [InlineData("h1", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("h1", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("h1", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("h2", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("h2", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("h2", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("h3", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("h3", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("h3", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("h4", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("h4", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("h4", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("h5", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("h5", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("h5", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("h6", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("h6", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("h6", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    public void BlockAndHeadingStartAndEndInTableModesUseFosterParenting(
         string tagName, string tableStart, string tableEnd)
     {
         var result = Parse("<!doctype html><div id=host>before" + tableStart
