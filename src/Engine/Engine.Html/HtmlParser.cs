@@ -1061,7 +1061,7 @@ public static class HtmlParser
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in table."); }
             if (!tag.IsEndTag)
             {
-                if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt")
+                if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1143,7 +1143,7 @@ public static class HtmlParser
                 }
             }
 
-            if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt")
+            if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;
