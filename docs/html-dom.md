@@ -105,8 +105,9 @@ after-after-body modes. Supported behavior includes:
   also selects the bounded table modes for `caption`/`colgroup`/table sections,
   `col`, `tr` and `td`/`th`; nested tables use the existing bounded table subset.
   EOF in these modes closes open templates and reports template EOF diagnostics.
-  Select insertion modes within template content, foreign content and broader
-  template algorithms remain explicitly unsupported.
+  A `select` start in template content uses the bounded in-body/select parser;
+  nested selects, foreign content and broader template algorithms remain
+  explicitly unsupported.
 - `HtmlParser.ParseFragment` returns a context-document-owned `DocumentFragment`.
   It selects the bounded insertion mode for supported in-body, table, select and
   template contexts plus the `html` context's before-head mode, and starts
@@ -168,8 +169,9 @@ after-after-body modes. Supported behavior includes:
   in-head/template processing and restore the originating table mode on close.
   Template content selects in-table, in-column-group, in-table-body and in-row
   modes for supported start tags and uses the existing bounded table
-  construction. Select modes within template content and other unsupported
-  table algorithms remain explicit failures.
+  construction. A `select` start uses bounded in-body/select parsing; nested
+  selects and other unsupported table/template algorithms remain explicit
+  failures.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

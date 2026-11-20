@@ -227,8 +227,45 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "eof-in-template");
     }
 
+    [Fact]
+    public void TemplateContentUsesBoundedSelectParsingAndInertOwnerDocument()
+    {
+        var result = Parse("<template><select id=inside>"
+            + "<option value=one>One<option value=two>Two</select>"
+            + "<p id=after-select>after</p></template><p id=outside>outside</p>");
+        var template = Assert.IsType<DomTemplateElement>(
+            Assert.Single(Descendants(result.Document), element => element.LocalName == "template"));
+        var select = Assert.IsType<DomElement>(template.Content.FirstChild);
+        var options = select.ChildNodes.OfType<DomElement>().ToArray();
+        var afterSelect = Assert.IsType<DomElement>(select.NextSibling);
+
+        Assert.Equal("select", select.LocalName);
+        Assert.Collection(options,
+            option =>
+            {
+                Assert.Equal("option", option.LocalName);
+                Assert.Equal("one", option.GetAttribute("value"));
+                Assert.Equal("One", option.TextContent);
+            },
+            option =>
+            {
+                Assert.Equal("option", option.LocalName);
+                Assert.Equal("two", option.GetAttribute("value"));
+                Assert.Equal("Two", option.TextContent);
+            });
+        Assert.Same(template.Content, select.ParentNode);
+        Assert.Same(template.Content.OwnerDocument, select.OwnerDocument);
+        Assert.NotSame(result.Document, select.OwnerDocument);
+        Assert.Equal("p", afterSelect.LocalName);
+        Assert.Equal("after", afterSelect.TextContent);
+        Assert.Same(template.Content.OwnerDocument, afterSelect.OwnerDocument);
+        Assert.DoesNotContain(result.Errors, error => error.Code == "eof-in-template");
+        Assert.Null(result.Document.GetElementById("inside"));
+        Assert.Null(result.Document.GetElementById("after-select"));
+        Assert.Equal("outside", result.Document.GetElementById("outside")!.TextContent);
+    }
+
     [Theory]
-    [InlineData("<template><select><option>x</option></select></template>")]
     [InlineData("<template><svg><path></path></svg></template>")]
     public void UnsupportedTemplateInsertionContextsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));

@@ -26,7 +26,7 @@ namespace VisualWeb.Engine.Html;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported; bounded table insertion modes apply within template
 /// content, including template EOF recovery;
-/// other foster-parenting cases, nested tables in captions, select template content, unsupported fragment contexts, scripting,
+/// other foster-parenting cases, nested tables in captions, nested selects, unsupported fragment contexts, scripting,
 /// and adoption-agency reparenting requiring table foster parenting are unsupported.</remarks>
 public static class HtmlParser
 {
@@ -253,14 +253,6 @@ public static class HtmlParser
 
                 if (token is HtmlTag contextTag)
                 {
-                    if (open.Any(element => element.LocalName == "template"))
-                    {
-                        if (contextTag.Name == "select")
-                        {
-                            throw Unsupported("Select insertion modes inside template content are not implemented.");
-                        }
-                    }
-
                     if (contextTag.Name == "template" && open.Any(element => element.LocalName == "select"))
                     {
                         throw Unsupported("Template insertion inside select content is not implemented.");
@@ -1645,8 +1637,6 @@ public static class HtmlParser
                     return ReprocessTemplateTokenIn(Mode.InTableBody);
                 case "td" or "th":
                     return ReprocessTemplateTokenIn(Mode.InRow);
-                case "select":
-                    throw Unsupported("Select insertion modes inside template content are not implemented.");
                 default:
                     return ReprocessTemplateTokenIn(Mode.InBody);
             }

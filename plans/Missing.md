@@ -423,8 +423,9 @@ and matching ends in table, table-body and row modes use in-head/template
 processing and restore the table insertion mode on close. Template content uses
 the bounded table algorithms for supported `table`, caption/column/section,
 row and cell starts through the `in template` insertion-mode rules; EOF in
-these modes closes open templates with diagnostics. Select
-modes, other unsupported table algorithms and broader template behavior remain
+these modes closes open templates with diagnostics. A `select` start within
+template content uses the bounded in-body/select parser; nested selects and
+other unsupported table algorithms and broader template behavior remain
 unsupported.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and

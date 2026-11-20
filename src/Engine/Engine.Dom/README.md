@@ -11,9 +11,11 @@ document; adoption and deep cloning include nested template contents. HTML
 document parsing supports templates in head/body with ordinary supported
 in-body content and nested templates inserted into their separate `Content`
 fragments. Template content is inert. Template content using table or select
-insertion contexts, templates inside table/select contexts, foreign content,
-and fragment parsing remain unsupported; broader template algorithms are
-deferred.
+insertion contexts uses Engine.Html's bounded table and select subsets; templates
+opened inside table, table-body or row content use the supported template rules.
+Templates opened inside select content, foreign content and broader template
+algorithms remain unsupported. Engine.Html fragment parsing supports a bounded
+set of contexts; it is not full HTML fragment parsing.
 
 Child/attribute collections have read-only public views. Attribute names and
 HTML node names fold ASCII only. Text content, sibling links, connection status,

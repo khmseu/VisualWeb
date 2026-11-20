@@ -58,8 +58,9 @@ table-body and row modes use in-head/template processing and restore the table
 insertion mode. Within template content, supported table starts select the
 bounded in-table, in-column-group, in-table-body and in-row algorithms, and
 nested tables use the existing table subset. EOF in these modes closes open
-templates with diagnostics. Select modes, foreign content and
-other unsupported template algorithms remain explicit failures.
+templates with diagnostics. A `select` start uses the bounded in-body/select
+parser; nested selects, foreign content and other unsupported template
+algorithms remain explicit failures.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,

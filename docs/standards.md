@@ -165,8 +165,9 @@ retaining its in-body paragraph/formatting handling before RAWTEXT. `pre` and
 `listing` retain initial-line-feed suppression. Template starts and matching
 ends in table, table-body and row modes use in-head/template processing and
 restore the originating table insertion mode on close. Template contents select
-bounded table modes for supported caption/column/section, row and cell starts;
-select and other unsupported table algorithms within template content remain
+bounded table modes for supported caption/column/section, row and cell starts.
+A `select` start within template content uses the bounded in-body/select parser;
+nested selects and other unsupported table/template algorithms remain
 unsupported. `span` start and end tags use in-body foster parenting in table,
 column-group, table-body and row modes. Other formatting-element adoption
 algorithms there remain unsupported. `plaintext` starts and unmatched end tags
