@@ -397,6 +397,9 @@ also use in-body handling with bounded foster-parent insertion: `div`, `p`,
 `details`, `dialog`, `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`,
 `header`, `hgroup`, `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary`
 and `ul`. `pre` and `listing` retain initial-line-feed suppression. Other
+supported void elements `area`, `base`, `basefont`, `bgsound`, `embed`,
+`keygen`, `link`, `meta`, `param`, `source` and `track` also use the bounded
+foster-parented in-body path; this does not add resource loading. Other
 table tokens requiring foster parenting remain unsupported.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and

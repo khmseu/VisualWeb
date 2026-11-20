@@ -156,6 +156,9 @@ after-after-body modes. Supported behavior includes:
   table-body and row modes also use in-body handling with bounded foster-parent
   insertion and a parse-error diagnostic. `img` and `wbr` starts and end tags
   in those modes also use in-body handling with bounded foster-parent insertion.
+  `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,
+  `param`, `source` and `track` starts and end tags use the same bounded path;
+  this does not add resource loading.
   `div`, `p`, `pre`, `listing`,
   `h1`-`h6`, `li`, `dd`, `dt`, `button` and the other supported in-body block
   elements (`address`, `article`, `aside`, `blockquote`, `center`, `details`,

@@ -17,7 +17,7 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
 /// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, non-hidden inputs,
-/// <c>br</c>/<c>hr</c> starts, <c>img</c>/<c>wbr</c> start/end tokens, and
+/// <c>br</c>/<c>hr</c> starts, supported void-element start/end tokens, and
 /// supported block/list-item start/end tags in table, table-body, and row modes with
 /// bounded foster-parent insertion are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
@@ -1062,7 +1062,8 @@ public static class HtmlParser
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in table."); }
             if (!tag.IsEndTag)
             {
-                if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "wbr")
+                if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
+                    || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "wbr")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1144,7 +1145,8 @@ public static class HtmlParser
                 }
             }
 
-            if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "wbr")
+            if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
+                || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "wbr")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;
@@ -2121,6 +2123,10 @@ public static class HtmlParser
     {
         "area", "base", "basefont", "bgsound", "br", "embed", "hr", "img", "input", "keygen", "link", "meta",
         "param", "source", "track", "wbr"
+    };
+    private static readonly HashSet<string> FosterParentedVoidTags = new(StringComparer.Ordinal)
+    {
+        "area", "base", "basefont", "bgsound", "embed", "keygen", "link", "meta", "param", "source", "track"
     };
     private static readonly HashSet<string> HeadTags = new(StringComparer.Ordinal)
     {

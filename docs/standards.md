@@ -151,7 +151,10 @@ covers the `img` and `wbr` start and end tags, `div`, `p`, `pre`, `listing`,
 `address`, `article`, `aside`, `blockquote`, `center`, `details`, `dialog`,
 `dir`, `dl`,
 `fieldset`, `figcaption`, `figure`, `footer`, `header`, `hgroup`, `main`,
-`menu`, `nav`, `ol`, `search`, `section`, `summary` and `ul`. `pre` and
+`menu`, `nav`, `ol`, `search`, `section`, `summary` and `ul`. Other supported
+void-element tokens (`area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`,
+`link`, `meta`, `param`, `source` and `track`) use the same bounded route;
+resource loading is not implied. `pre` and
 `listing` retain initial-line-feed suppression.
 Adoption reparenting that requires table foster parenting and table-text foster
 parenting requiring reconstruction remain explicitly unsupported; this
