@@ -191,11 +191,13 @@ after-after-body modes. Supported behavior includes:
   `dialog`, `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`, `header`,
   `hgroup`, `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary` and
   `ul`) in those modes use in-body handling with bounded foster-parent
-  insertion. `a` and `span` start/end tags in table, column-group, table-body
-  and row modes use the same in-body foster-parent path; `option` and `optgroup`
-  starts and ends use that path in the same modes. Bounded nested-anchor
-  recovery applies; adoption reparenting that needs table foster parenting
-  remains unsupported.
+  insertion. Formatting-element start/end tags, including `a`, and `span`
+  start/end tags
+  in table, column-group, table-body and row modes use the same bounded in-body
+  foster-parent path. This includes the existing bounded nested-anchor and
+  nested-`nobr` recovery. `option` and `optgroup` starts and ends use that path
+  in the same modes. Adoption reparenting that itself requires table foster
+  parenting remains unsupported.
   `plaintext` starts and
   unmatched end tags in those modes use the fostered in-body path; a start
   switches to PLAINTEXT so the rest of the input is literal text. Character

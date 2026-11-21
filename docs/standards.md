@@ -168,11 +168,12 @@ restore the originating table insertion mode on close. Template contents select
 bounded table modes for supported caption/column/section, row and cell starts.
 A `select` start within template content uses the bounded in-body/select parser;
 nested selects and other unsupported table/template algorithms remain
-unsupported. `span` start and end tags use in-body foster parenting in table,
-column-group, table-body and row modes. `option` and `optgroup` starts and ends
-use the same bounded foster-parented in-body handling in those modes. `a`
-start/end handling uses the path too, including bounded nested-anchor recovery;
-adoption reparenting that needs table foster parenting remains unsupported.
+unsupported. Formatting-element start/end tags, including `a`, and `span`
+start/end tags use bounded in-body foster parenting in table, column-group,
+table-body and row modes, including existing bounded nested-anchor and
+nested-`nobr` recovery. `option` and `optgroup` starts and ends use the same
+path. Adoption reparenting that itself requires table foster parenting remains
+unsupported.
 `plaintext`
 starts and unmatched end tags use in-body foster parenting in those modes; a
 start switches to PLAINTEXT and consumes the remainder of the input as literal

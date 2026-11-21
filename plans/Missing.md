@@ -413,12 +413,12 @@ and end tags in those modes use the same path: `div`, `p`,
 and `ul`. `pre` and `listing` retain initial-line-feed suppression. Other
 supported void elements `area`, `base`, `basefont`, `bgsound`, `embed`,
 `keygen`, `link`, `meta`, `param`, `source` and `track` also use the bounded
-foster-parented in-body path; this does not add resource loading. `span` start
-and end tags also use bounded in-body foster parenting in table, column-group,
-table-body and row modes. `a` start/end tags and `option`/`optgroup`
-starts and ends use the same bounded in-body foster-parent path in those modes.
-Bounded nested-anchor recovery applies; adoption reparenting that needs table
-foster parenting remains unsupported.
+foster-parented in-body path; this does not add resource loading. Formatting
+element start/end tags, including `a`, and `span` start/end tags use bounded
+in-body foster parenting in table, column-group, table-body and row modes.
+This includes the existing bounded nested-anchor and nested-`nobr` recovery.
+`option` and `optgroup` starts and ends use the same path. Adoption reparenting
+that itself requires table foster parenting remains unsupported.
 `plaintext` starts and
 unmatched end tags in those modes use the same path; a start switches to the
 PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other table tokens requiring foster

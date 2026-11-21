@@ -19,11 +19,11 @@ namespace VisualWeb.Engine.Html;
 /// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, non-hidden inputs,
 /// <c>br</c>/<c>hr</c> starts, the <c>image</c> alias, supported void-element start/end tokens, and
 /// supported block/list-item start/end tags in table, table-body, and row modes with
-/// bounded foster-parent insertion are supported. <c>a</c>, <c>span</c>, <c>option</c>, and <c>optgroup</c>
-/// start/end tags and <c>plaintext</c> tokens also use bounded foster-parent insertion in table, column-group,
-/// table-body, and row modes. <c>plaintext</c>
-/// starts consume the remaining input as text; other formatting-element adoption algorithms in those modes
-/// remain unsupported;
+/// bounded foster-parent insertion are supported. Formatting-element start/end tags, <c>span</c>,
+/// <c>option</c>, and <c>optgroup</c> start/end tags and <c>plaintext</c> tokens also use bounded
+/// foster-parent insertion in table, column-group, table-body, and row modes. <c>plaintext</c>
+/// starts consume the remaining input as text; adoption reparenting that itself requires table foster
+/// parenting remains unsupported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported; bounded table insertion modes apply within template
 /// content, including template EOF recovery;
@@ -1071,8 +1071,9 @@ public static class HtmlParser
             if (!tag.IsEndTag)
             {
                 if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
+                    || FormattingTags.Contains(tag.Name)
                     || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext"
-                        or "iframe" or "noembed" or "noframes" or "xmp" or "a" or "span" or "option" or "optgroup")
+                        or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1155,8 +1156,9 @@ public static class HtmlParser
             }
 
             if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
+                || FormattingTags.Contains(tag.Name)
                 || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext"
-                    or "iframe" or "noembed" or "noframes" or "xmp" or "a" or "span" or "option" or "optgroup")
+                    or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;

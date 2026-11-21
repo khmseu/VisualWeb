@@ -20,10 +20,13 @@ recovery;
 only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
-exception, `a`, `span` and `option`/`optgroup` foster parenting in
-table/column-group/table-body/row modes, `plaintext` starts and unmatched end
-tags in those modes, root-attribute merging for in-table `html` starts, and
-template start/end processing in table, table-body and row modes.
+exception, formatting-element and `span` foster parenting, `option`/`optgroup`
+foster parenting in table/column-group/table-body/row modes, `plaintext` starts
+and unmatched end tags in those modes, root-attribute merging for in-table
+`html` starts, and template start/end processing in table, table-body and row
+modes. Formatting-element start/end tags use the bounded in-body path, including
+existing nested-anchor and nested-`nobr` recovery; adoption reparenting that
+itself needs table foster parenting remains unsupported.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.

@@ -953,6 +953,62 @@ public sealed class TreeTests
     [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
     [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void FormattingStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<b id=bold><i id=italic>content</i></b>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var bold = Assert.IsType<DomElement>(host.ChildNodes[1]);
+        var italic = Assert.IsType<DomElement>(Assert.Single(bold.ChildNodes));
+        var table = Assert.IsType<DomElement>(host.ChildNodes[2]);
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal("b", element.LocalName);
+                Assert.Equal("bold", element.GetAttribute("id"));
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Equal("i", italic.LocalName);
+        Assert.Equal("italic", italic.GetAttribute("id"));
+        Assert.Equal("content", italic.TextContent);
+        Assert.Same(bold, italic.ParentNode);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-b-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-i-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-i-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-b-end-in-table");
+    }
+
+    [Fact]
+    public void NestedNobrInsideTableUsesBoundedInBodyRecovery()
+    {
+        var result = Parse("<!doctype html><div id=host><nobr id=outer><table>"
+            + "<nobr id=inner>text</nobr><tbody><tr><td>cell</td></tr></tbody></table></nobr></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var outer = Assert.IsType<DomElement>(Assert.Single(host.ChildNodes));
+        var inner = Assert.IsType<DomElement>(outer.FirstChild);
+        var table = Assert.IsType<DomElement>(outer.LastChild);
+
+        Assert.Equal("nobr", outer.LocalName);
+        Assert.Equal("outer", outer.GetAttribute("id"));
+        Assert.Equal("nobr", inner.LocalName);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("text", inner.TextContent);
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-nobr-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-nobr-end-in-table");
+    }
+
+    [Theory]
+    [InlineData("<table>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
     public void OptionAndOptgroupStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
     {
         var result = Parse("<!doctype html><div id=host>before" + tableStart
@@ -1003,10 +1059,6 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "fostered-span-start-in-table");
         Assert.Contains(result.Errors, error => error.Code == "fostered-span-end-in-table");
     }
-
-    [Fact]
-    public void OtherFormattingElementsInTableModesRemainExplicitlyUnsupported() =>
-        Assert.Throws<UnsupportedHtmlException>(() => Parse("<table><strong>content</strong></table>"));
 
     [Theory]
     [InlineData("<table>")]
@@ -1740,7 +1792,6 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]
-    [InlineData("<nobr><table><nobr>x")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
