@@ -892,6 +892,63 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>", false)]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>", false)]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>", false)]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>", true)]
+    public void LabelStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd, bool hasColumnGroup)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<label id=label for=control data-kind=example>content</label>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        DomElement? table = null;
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var label = Assert.IsType<DomElement>(node);
+                Assert.Equal("label", label.LocalName);
+                Assert.Equal("label", label.GetAttribute("id"));
+                Assert.Equal("control", label.GetAttribute("for"));
+                Assert.Equal("example", label.GetAttribute("data-kind"));
+                Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(label.ChildNodes)).Data);
+            },
+            node => table = Assert.IsType<DomElement>(node),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Equal("table", table!.LocalName);
+        Assert.Equal(hasColumnGroup ? new[] { "colgroup", "tbody" } : new[] { "tbody" },
+            table.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var body = Assert.IsType<DomElement>(table.LastChild);
+        var row = Assert.IsType<DomElement>(Assert.Single(body.ChildNodes));
+        Assert.Equal("tr", row.LocalName);
+        var cell = Assert.IsType<DomElement>(Assert.Single(row.ChildNodes));
+        Assert.Equal("td", cell.LocalName);
+        Assert.Equal("cell", cell.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-label-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-label-end-in-table");
+    }
+
+    [Theory]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void UnmatchedLabelEndInTableModesUsesFosteredInBodyRecovery(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "</label>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Equal("cell", Assert.Single(Descendants(result.Document), element => element.LocalName == "td").TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-label-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
+    [Theory]
     [InlineData("<table>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
     [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]

@@ -17210,3 +17210,30 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Test-/Build-/Format-Ausgaben und aktueller Chat.
+
+### KP-589 - Label in Tabellenmodi
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Die gestagten Dateien committen und danach die HTML/DOM-Arbeit
+  fortsetzen. Die beiden Kontextdateien wurden als `1bced43` committed und
+  gepusht; der zuvor bereits gepushte Ruby-Commit bleibt unveraendert.
+- Belegt: `label`-Start- und Endtags verwenden nun in Table-, TableBody-, Row-
+  und ColumnGroup-Kontexten den bestehenden begrenzten Foster-Parent-/In-Body-
+  Pfad. ColumnGroup schliesst vor Reprocessing; unmatched Endtags erhalten
+  bestehende Recovery-Diagnostik. Neue Form-APIs werden nicht hinzugefuegt.
+- Verifikation: Acht fokussierte Regressionen schlugen vor der Umsetzung fehl
+  und bestehen danach; Engine.Html.Tests besteht mit 7.512 Tests und der
+  Solution-Build ohne Warnungen/Fehler. Der erste Volltest scheiterte mit zwei
+  Browser-V8-Deadlinefehlern bei gleichzeitig laufender Formatverifikation.
+  Nach erfolgreicher Formatverifikation bestanden beide Methoden isoliert
+  (vier Faelle); der erneute Volltest ohne gleichzeitige Formatverifikation
+  besteht mit 17.508 Tests und zwei bedingten Browser-Skips. Ein
+  Ursache-Nachweis fuer die ersten Deadlinefehler liegt nicht vor.
+  Source-Commit steht aus.
+- CI-Evidenz: Fuer `bca3299` und `1bced43` bestehen Windows, CodeQL und Prebuild; Linux
+  Trunk scheitert an denselben 28 vorhandenen Markdownlint-Befunden in
+  unveraenderten Plan-/Core-Testdateien.
+- Quellen: `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Test-/Build-Ausgaben, `git log`, GitHub Actions und aktueller Chat.

@@ -195,9 +195,12 @@ after-after-body modes. Supported behavior includes:
   start/end tags
   in table, column-group, table-body and row modes use the same bounded in-body
   foster-parent path. This includes the existing bounded nested-anchor and
-  nested-`nobr` recovery. `option` and `optgroup` starts and ends use that path
-  in the same modes. Adoption reparenting that itself requires table foster
-  parenting remains unsupported. `select` starts and unmatched end tags in
+  nested-`nobr` recovery. `option`, `optgroup` and `label` starts and ends use
+  that path in the same modes. Column-group fallback closes the open `colgroup`
+  before reprocessing `label` in table mode; an unmatched `label` end tag
+  reports the fostered-table and in-body unexpected-end diagnostics. Adoption
+  reparenting that itself requires table foster parenting remains unsupported.
+  `select` starts and unmatched end tags in
   those modes also use bounded fostered in-body handling; an open select uses
   the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`
   start/end tags also use this path; ruby annotation recovery remains bounded.

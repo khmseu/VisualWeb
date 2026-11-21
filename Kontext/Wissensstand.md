@@ -390,6 +390,19 @@ unveraenderten Plan-/Core-Testdateien. Der Dev-Environment-Prebuild besteht.
 Siehe
 [KP-587](./Kontextprotokoll.md#kp-587---select-in-tabellenmodi).
 
+**Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589; lokal validiert):**
+`label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
+in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags
+erhalten die bestehende Recovery-Diagnostik. Acht fokussierte Faelle waren
+vorher rot und bestehen nach der Umsetzung; Engine.Html.Tests besteht mit
+7.512 Tests, der Solution-Build ohne Warnungen/Fehler und die
+Formatverifikation. Ein erster Volltest scheiterte mit zwei Browser-V8-
+Deadlinefehlern bei gleichzeitiger Formatverifikation; der isolierte Nachtest
+beider Methoden und der erneute Volltest (17.508 Tests, zwei bedingte Skips)
+bestehen. Die Ursache der ersten Deadlinefehler ist nicht nachgewiesen. Der
+Source-Commit steht aus. Keine Form-APIs werden neu bereitgestellt. Siehe
+[KP-589](./Kontextprotokoll.md#kp-589---label-in-tabellenmodi).
+
 **Ruby-Foster-Parenting in Tabellenmodi (2026-11-21; KP-588; validiert und gepusht):**
 `ruby`, `rb`, `rtc`, `rp` und `rt` nutzen mit Start- und Endtags den
 vorhandenen begrenzten Foster-Parent-/In-Body-Pfad in Table-, ColumnGroup-,
@@ -398,8 +411,9 @@ den bestehenden Ruby-Parserpfad; Ruby-spezifisches Styling/Layout bleibt
 unsupported. Engine.Html.Tests (7.504), Solution-Build, Volltest (17.500
 bestanden, zwei bedingte Browser-Skips), Formatverifikation und Diff-Check
 bestehen. Commit `bca3299` enthaelt unbeabsichtigt auch zuvor gestagte
-Kontextaenderungen und liegt auf `origin/main`. CodeQL besteht; Linux, Windows
-und Prebuild liefen bei der letzten Abfrage noch. Siehe
+Kontextaenderungen und liegt auf `origin/main`. Windows, CodeQL und Prebuild
+bestehen; Linux Trunk scheitert an 28 vorhandenen Markdownlint-Befunden in
+unveraenderten Plan-/Core-Testdateien. Siehe
 [KP-588](./Kontextprotokoll.md#kp-588---ruby-annotationen-in-tabellenmodi).
 
 **Formatting-Elemente in Tabellenmodi (2026-11-20; KP-586; committed und gepusht):**

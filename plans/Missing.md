@@ -417,7 +417,9 @@ foster-parented in-body path; this does not add resource loading. Formatting
 element start/end tags, including `a`, and `span` start/end tags use bounded
 in-body foster parenting in table, column-group, table-body and row modes.
 This includes the existing bounded nested-anchor and nested-`nobr` recovery.
-`option` and `optgroup` starts and ends use the same path. Adoption reparenting
+`option`, `optgroup` and `label` starts and ends use the same path. Column-group
+fallback closes the open `colgroup` before table-mode reprocessing, and
+unmatched `label` ends receive in-body recovery. Adoption reparenting
 that itself requires table foster parenting remains unsupported. `select`
 starts and unmatched end tags also use bounded fostered in-body handling; an
 open select uses the existing bounded select-token rules. `ruby`, `rb`, `rtc`,

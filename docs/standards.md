@@ -171,8 +171,10 @@ nested selects and other unsupported table/template algorithms remain
 unsupported. Formatting-element start/end tags, including `a`, and `span`
 start/end tags use bounded in-body foster parenting in table, column-group,
 table-body and row modes, including existing bounded nested-anchor and
-nested-`nobr` recovery. `option` and `optgroup` starts and ends use the same
-path. Adoption reparenting that itself requires table foster parenting remains
+nested-`nobr` recovery. `option`, `optgroup` and `label` starts and ends use the
+same path; column-group fallback closes the open `colgroup` before table-mode
+reprocessing, and unmatched `label` ends receive in-body recovery. Adoption
+reparenting that itself requires table foster parenting remains
 unsupported.
 `select` starts and unmatched end tags in those modes also use bounded fostered
 in-body handling; an open select uses the existing bounded select-token rules.

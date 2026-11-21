@@ -21,8 +21,8 @@ only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
 exception, formatting-element and `span` foster parenting, `option`/`optgroup`
-foster parenting in table/column-group/table-body/row modes, `plaintext` starts
-and unmatched end tags in those modes, root-attribute merging for in-table
+and `label` start/end foster parenting in table/column-group/table-body/row
+modes, `plaintext` starts and unmatched end tags in those modes, root-attribute merging for in-table
 `html` starts, and template start/end processing in table, table-body and row
 modes. Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery; adoption reparenting that
@@ -30,6 +30,8 @@ itself needs table foster parenting remains unsupported. `select` starts and
 unmatched end tags use bounded fostered in-body handling; an open select uses
 the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`
 start/end tags use the same path with existing bounded ruby recovery.
+Column-group fallback closes the open `colgroup` before reprocessing a `label`
+token in table mode; unmatched `label` end tags receive in-body recovery.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.
