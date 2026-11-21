@@ -420,7 +420,9 @@ This includes the existing bounded nested-anchor and nested-`nobr` recovery.
 `option` and `optgroup` starts and ends use the same path. Adoption reparenting
 that itself requires table foster parenting remains unsupported. `select`
 starts and unmatched end tags also use bounded fostered in-body handling; an
-open select uses the existing bounded select-token rules.
+open select uses the existing bounded select-token rules. `ruby`, `rb`, `rtc`,
+`rp` and `rt` start/end tags use the same path with existing bounded ruby
+recovery.
 `plaintext` starts and
 unmatched end tags in those modes use the same path; a start switches to the
 PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other table tokens requiring foster

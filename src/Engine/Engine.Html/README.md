@@ -28,7 +28,8 @@ modes. Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery; adoption reparenting that
 itself needs table foster parenting remains unsupported. `select` starts and
 unmatched end tags use bounded fostered in-body handling; an open select uses
-the existing bounded select-token rules.
+the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`
+start/end tags use the same path with existing bounded ruby recovery.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.

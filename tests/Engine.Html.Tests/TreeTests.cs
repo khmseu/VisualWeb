@@ -988,6 +988,35 @@ public sealed class TreeTests
     [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
     [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void RubyAnnotationElementsInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<ruby><rb>base<rtc><rt>reading<rt>alternate</rt></rtc><rp>(</rp></rb></ruby>"
+            + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var ruby = Assert.IsType<DomElement>(host.ChildNodes[1]);
+        var table = Assert.IsType<DomElement>(host.ChildNodes[2]);
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("ruby", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Equal("basereadingalternate(", ruby.TextContent);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-ruby-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-ruby-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-rb-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-rtc-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-rt-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-rp-start-in-table");
+    }
+
+    [Theory]
+    [InlineData("<table>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
     public void SelectStartInTableModesUsesFosterParenting(string tableStart, string tableEnd)
     {
         var result = Parse("<!doctype html><div id=host>before" + tableStart

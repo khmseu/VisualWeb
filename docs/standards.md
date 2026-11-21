@@ -176,6 +176,8 @@ path. Adoption reparenting that itself requires table foster parenting remains
 unsupported.
 `select` starts and unmatched end tags in those modes also use bounded fostered
 in-body handling; an open select uses the existing bounded select-token rules.
+`ruby`, `rb`, `rtc`, `rp` and `rt` start/end tags use the same path, retaining
+the existing bounded ruby annotation recovery.
 `plaintext`
 starts and unmatched end tags use in-body foster parenting in those modes; a
 start switches to PLAINTEXT and consumes the remainder of the input as literal

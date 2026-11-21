@@ -4,11 +4,11 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-19, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-20, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
-**WHATWG-HTML/DOM-Auftrag (2026-11-19; KP-523 bis KP-529; begrenzter Plan beschlossen):**
+**WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige
 Features parallel bearbeiten. Beschlossen ist ein gestufter Template-Start:
 Phase 1 fuehrt native template contents als `DocumentFragment` mit inertem
@@ -19,13 +19,13 @@ Vollkonformitaet sind ausgeschlossen. Spaetere Inkremente bleiben separat zu
 waehlen. Die heuristische Ranking-Reihenfolge (URL ~80%, Encoding ~55%,
 HTML/DOM je ~20%) wird durch die ausdrueckliche Nutzerprioritaet uebersteuert.
 Die lokalen HTML-/DOM-Caches haben `checkedAt: 2026-11-07` und sind am
-2026-11-19 frisch. Der begrenzte Plan ist mit `3a02cca` (native DOM),
+2026-11-20 frisch. Der begrenzte Plan ist mit `3a02cca` (native DOM),
 `a752387` (Parser-Subset) und `5752d3b` (Inertheit/Grenztests) abgeschlossen.
 Phase 2 baut Templates in Head/Body mit begrenztem In-Body-Inhalt und
 verschachtelten Templates in getrennten inert-owner-Dokumenten;
 Content-Fragmente zaehlen gegen `MaxNodes`, Scripts loesen keinen
-Parser-Completion-Callback aus. Tabellen-/Select-Kontexte, Foreign Content
-und Fragment Parsing bleiben unsupported. Phase 3 ergaenzt ausschliesslich
+Parser-Completion-Callback aus. Foreign Content und Table/Select-Template-
+Kontexte bleiben unsupported. Phase 3 ergaenzt ausschliesslich
 Regressionsabdeckung: exakte Template-`MaxDepth`-Grenze, Inertheit von Inhalt,
 Styles und Scripts bei statischem/Prozess-Rendering einschliesslich retained
 Resize sowie Clone-Abbruch waehrend des Preflights des Template-Inhalts.
@@ -42,7 +42,7 @@ Template-Plan ab, nicht die WHATWG-HTML/DOM-Vollkonformitaet. Siehe
 [Gesamtabschluss](../plans/whatwg-html-dom-completion-complete.md) und
 [KP-528](./Kontextprotokoll.md#kp-528---template-plan-committed-und-abgeschlossen).
 
-**HTML/DOM-Fragment Parsing (2026-11-19; KP-530; implementiert und validiert):**
+**HTML/DOM-Fragment Parsing (2026-11-20; KP-530/531; committed und gepusht):**
 Der Nutzer waehlte fuer Fragment Parsing alle derzeit unterstuetzten
 Dokument-Kontexte einschliesslich Table-, Select-, Template- und Text-Modi;
 SVG/MathML, `noscript` und `frameset` bleiben explizit unsupported.
@@ -51,13 +51,315 @@ Inkrements. `HtmlParser.ParseFragment` liefert ein kontextdokument-eigenes
 `DocumentFragment`, setzt die bestehenden begrenzten Einfuegemodi und
 Texttokenizerzustaende um und uebernimmt den Form-Pointer aus der Kontext-
 Ancestor-Kette. Das `html`-Fragment ignoriert `</html>` im AfterBody-Modus,
-statt in den Dokumentmodus AfterAfterBody zu wechseln. 32 fokussierte Faelle;
-Engine.Html 7.327/7.327; gesamter
+statt in den Dokumentmodus AfterAfterBody zu wechseln. Commit `bbeeff7` ist
+auf `origin/main`. 32 fokussierte Faelle; Engine.Html 7.327/7.327; gesamter
 Solution-Testlauf 17.323 bestanden und 2 bedingte Browserfaelle uebersprungen.
 Solution-Build (0 Warnungen/Fehler), Formatverifikation und `git diff --check`
-bestanden. Siehe
+bestanden. Windows, CodeQL und Prebuild-CI bestehen; Linux x64/arm64 bestehen,
+der Linux-Trunk-Job scheitert mit 28 Markdownlint-Befunden ausschliesslich in
+unveraenderten Abschluss-/Plan-Dokumenten und `tests/Core.Tests/Data/README.md`.
+Der gleiche Trunk-Job scheiterte auf dem unmittelbaren Basis-Commit; keine der
+beanstandeten Dateien gehoert zu diesem Inkrement. Siehe
 [HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md) und
-[KP-530](./Kontextprotokoll.md#kp-530---fragment-parsing-umfang-beschlossen).
+[KP-530](./Kontextprotokoll.md#kp-530---fragment-parsing-umfang-beschlossen),
+[KP-531](./Kontextprotokoll.md#kp-531---fragment-parsing-committed-und-ci-geprueft).
+
+**HTML/DOM-Aktive Formatierung (2026-11-20; KP-532/534; furthest-block-Erweiterung committed und gepusht):**
+Der Parser speichert Token-Attribut-Snapshots, setzt die ungeordnete
+Drei-Eintraege-Noah's-Ark-Grenze um, rekonstruiert aktive Formatierung und
+beachtet Template-/Caption-/Cell-Marker. Der Adoption-Agency-Zweig ohne
+furthest block ist implementiert; begrenztes Furthest-Block-Reparenting
+unterstuetzt Clone/Removal, Bookmark-Verschiebungen und offene-Elemente-Stack-
+Reihenfolge. Nested anchors/nobr, Reparenting mit noetigem Table-Foster-
+Parenting sowie Table-Text-Foster-Parenting mit noetiger Rekonstruktion scheitern
+weiterhin explizit. Commit `b4b4a88` ist auf `origin/main`. Engine.Html
+7.346/7.346, Solution-Build (0 Warnungen/Fehler), voller Solution-Testlauf
+(17.342 bestanden, 2 bedingte Browserfaelle uebersprungen), Formatverifikation
+und `git diff --check` bestehen. Der Read-only-Code-Review ist APPROVED; die
+geforderten Kommentar-/Abdeckungsnits wurden behoben. Fuer `f748224` bestehen
+Linux x64/arm64, Windows x64/arm64, CodeQL und Dev-Environment-Prebuild. Der
+Linux-Trunk-Job meldet dieselben 28 Markdownlint-Befunde in unveraenderten
+Plan-/Abschlussdokumenten und `tests/Core.Tests/Data/README.md` wie der direkte
+Basislauf. Der Prebuild fuer `47bb853` ist inzwischen erfolgreich abgeschlossen
+(Run `44664881257`, aktualisiert 2026-11-20T03:26:49Z; KP-543).
+Der inkrementelle Parserumfang ist keine Vollkonformitaetsbehauptung. Siehe
+[HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md) und
+[KP-532](./Kontextprotokoll.md#kp-532---aktive-formatierung-implementiert-und-validiert).
+
+**Nested Anchor/Nobr-Recovery (2026-11-20; KP-540/542; committed und gepusht):**
+Commit `47bb853` ergaenzt nested-`a`/`nobr`-Starttag-Recovery und Caption-
+Scope-Grenzen. Engine.Html.Tests (7.362), Solution-Build, Volltests (17.358
+bestanden, 2 bedingte Browser-Skips), Formatverifikation und Diff-Check
+bestanden. Windows x64/arm64 und CodeQL bestehen. Linux x64/arm64 bestehen;
+der Linux-Workflow scheitert ausschliesslich an denselben 28 Trunk-
+Markdownlint-Befunden in unveraenderten Dateien wie der Basislauf. Siehe
+[KP-540](./Kontextprotokoll.md#kp-540---nested-anchornobr-inkrement-gepusht),
+[KP-542](./Kontextprotokoll.md#kp-542---nested-formatting-ci-verifiziert) und
+[KP-543](./Kontextprotokoll.md#kp-543---prebuild-abgeschlossen-und-naechster-html-schnitt-gestartet).
+**HTML-Tabellen-Input-Foster-Parenting (2026-11-20; KP-543 bis KP-545; committed und gepusht):**
+Commit `c82754a` leitet nicht versteckte `input`-Starttags in Table-,
+TableBody- und Row-Modi durch die begrenzte In-Body-/Foster-Parent-Logik.
+Zellen behalten normale In-Body-Einfuegung; versteckte Inputs bleiben direkte
+Tabellenkinder. Andere Tokens mit Foster-Parent-Bedarf und Adoption-Agency-
+Reparenting, das Table-Foster-Parenting erfordert, bleiben unsupported.
+Sechs fokussierte Faelle bestehen; Engine.Html.Tests 7.365/7.365, Solution-
+Build ohne Warnungen/Fehler, Solution-Volltests 17.361 bestanden mit 2
+bedingten Browser-Skips, Formatverifikation und Diff-Check bestehen. Commit
+`c82754a` ist auf `origin/main`. Linux, Windows, CodeQL und Prebuild laufen
+nicht mehr: Windows x64/arm64, Linux x64/arm64, CodeQL und Prebuild bestehen;
+der Linux-Workflow scheitert nur am Trunk-Job mit denselben unveraenderten
+Markdownlint-Befunden wie die frueheren Basislaeufe. Details stehen in
+[KP-546](./Kontextprotokoll.md#kp-546---ci-fuer-table-input-commit-gestartet).
+Siehe [KP-545](./Kontextprotokoll.md#kp-545---table-input-foster-parenting-committed).
+
+**HTML-Tabellen-`br`/`hr`-Foster-Parenting (2026-11-20; KP-547; lokal validiert):**
+`br`- und `hr`-Starttags in Table-, TableBody- und Row-Modi laufen durch
+In-Body-Verarbeitung bei temporaer aktiviertem, begrenztem Foster-Parenting;
+Parsefehler werden diagnostiziert und der vorherige Foster-Parenting-Zustand
+wird wiederhergestellt. Andere Foster-Parenting-Tokens bleiben unsupported.
+Vier fokussierte Faelle, Engine.Html.Tests (7.369), Solution-Build (0
+Warnungen/Fehler), zweiter Volltestlauf (17.365 bestanden, zwei bedingte
+Browser-Skips), Formatverifikation und `git diff --check` bestehen. Der erste
+Volltestlauf hatte waehrend paralleler Formatverifikation einen Timeout in
+einem nicht betroffenen Engine.Scripting-URL-Test; dessen gezielter Retry und
+der zweite Volltestlauf bestehen. Commit `776c3d7` ist erstellt und auf
+`origin/main` verifiziert. Die Linux x64/arm64, Windows x64/arm64,
+Push-on-main und Prebuild Jobs bestehen; der Linux-Workflow scheitert nur am
+Trunk-Job mit 28 Markdownlint-Befunden in unveraenderten Plan- und
+Core-Testdateien. Siehe
+[KP-547](./Kontextprotokoll.md#kp-547---brhr-in-table-modes) und
+[KP-548](./Kontextprotokoll.md#kp-548---brhr-commit-gepusht).
+
+**HTML-Tabellen-`div`-Foster-Parenting (2026-11-20; KP-549/550; committed und gepusht):**
+`div`-Start- und Endtags in Table-, TableBody- und Row-Modi laufen jetzt lokal
+durch die bestehende In-Body-Verarbeitung bei begrenztem Foster-Parenting.
+Drei neue Faelle belegen gefosterte Blockeinsetzung, Textreihenfolge und
+Diagnostik; sie scheiterten vor der Aenderung explizit mit
+`UnsupportedHtmlException`. Engine.Html.Tests 7.371/7.371, Solution-Build
+(0 Warnungen/Fehler), Volltests (17.367 bestanden, zwei bedingte
+Browser-Skips), Formatverifikation und Diff-Check bestehen. Code und
+Dokumentation sind als `2461c70` committed und auf `origin/main` verifiziert;
+weitere Tokens bleiben unsupported. Windows x64/arm64, Push-on-main und
+Commit-Prebuild bestehen; Linux x64/arm64 bestehen, aber der Linux-Workflow
+scheitert am Trunk-Job wegen unveraenderter Markdownlint-Befunde. Siehe
+[KP-549](./Kontextprotokoll.md#kp-549---div-table-foster-parenting) und
+[KP-550](./Kontextprotokoll.md#kp-550---div-commit-gepusht).
+
+**HTML-Tabellen-`p`-Foster-Parenting (2026-11-20; KP-551/552; committed und gepusht):**
+`p`-Start- und Endtags in denselben drei Tabellenmodi nutzen jetzt die
+begrenzte In-Body-/Foster-Parent-Verarbeitung. Die drei neuen
+Paragraph-Faelle scheiterten vor der Aenderung explizit; zusammen mit den
+Div-Faellen bestehen nun sechs. Engine.Html.Tests 7.374/7.374,
+Solution-Build (0 Warnungen/Fehler), Volltestlauf (17.370 bestanden, zwei
+bedingte Browser-Skips), Formatverifikation und Diff-Check bestehen. Code und
+Dokumentation sind als `7ff60cf` committed und auf `origin/main` verifiziert.
+Windows confinement, Commit-Prebuild und Push-on-main bestehen; Linux x64/arm64
+bestehen, aber der Linux-Workflow scheitert im Trunk-Job an unveraenderten
+Markdownlint-Befunden in Plan- und Core-Testdateien. Siehe
+[KP-551](./Kontextprotokoll.md#kp-551---p-table-foster-parenting) und
+[KP-552](./Kontextprotokoll.md#kp-552---p-commit-gepusht).
+
+**HTML-Tabellen-Heading-Foster-Parenting (2026-11-20; KP-553; committed und gepusht):**
+`h1`-`h6`-Start- und Endtags in Table-, TableBody- und Row-Modi nutzen jetzt
+die begrenzte In-Body-/Foster-Parent-Verarbeitung. 18 neue Faelle scheiterten
+zunaechst explizit; zusammen mit den bisherigen Block-/Paragraph-Faellen
+bestehen 24. Engine.Html.Tests (7.392), Solution-Build, Volltestlauf (17.388
+bestanden, zwei bedingte Browser-Skips), Formatverifikation und Diff-Check
+bestanden. Commit `7767e07` ist auf `origin/main` verifiziert. Windows confinement und
+Push-on-main bestehen; Linux x64/arm64 bestehen, aber der Linux-Workflow
+scheitert im Trunk-Job an den unveraenderten Markdownlint-Befunden.
+Commit-Prebuild laeuft bei der letzten Abfrage noch. Siehe
+[KP-553](./Kontextprotokoll.md#kp-553---heading-table-foster-parenting).
+
+**HTML-Tabellen-`pre`/`listing`-Foster-Parenting (2026-11-20; KP-554/555; committed und gepusht):**
+Start- und Endtags fuer `pre` und `listing` in Table-, TableBody- und
+Row-Modi laufen durch dieselbe begrenzte In-Body-/Foster-Parent-Verarbeitung.
+Die standardisierte Entfernung eines direkt folgenden LF bleibt aktiv.
+Zeichen nach einem gefosterten Starttag werden gemaess In-Table-Regel in das
+aktuelle Element eingefuegt, nicht als Geschwistertext vor die Tabelle. Sechs
+fokussierte Faelle, Engine.Html.Tests (7.398), Solution-Build (0
+Warnungen/Fehler), Volltestlauf (17.394 bestanden, zwei bedingte
+Browser-Skips), Formatverifikation und Diff-Check bestehen. Commit `374c73d`
+ist auf `origin/main` verifiziert. Windows confinement und Push-on-main
+bestehen; Linux x64/arm64 bestehen, aber der Linux-Workflow scheitert im
+Trunk-Job an den unveraenderten Markdownlint-Befunden. Commit-Prebuild
+besteht. Andere Foster-Parenting-Tokens bleiben unsupported. Siehe
+[KP-554](./Kontextprotokoll.md#kp-554---pre-listing-table-foster-parenting) und
+[KP-555](./Kontextprotokoll.md#kp-555---pre-listing-commit-gepusht).
+
+**Weitere Blockelemente im Tabellen-Foster-Parenting (2026-11-20; KP-556; lokal validiert):**
+Die verbleibenden 23 generischen Blockelemente des In-Body-Teilumfangs
+verwenden in Table-, TableBody- und Row-Modi dieselbe begrenzte
+Foster-Parent-Verarbeitung. Die Regressionen durchlaufen alle drei Modi je
+Element und pruefen Geschwisterreihenfolge und Diagnostik. Engine.Html.Tests
+(7.421), Solution-Build (0 Warnungen/Fehler), Volltestlauf (17.417 bestanden,
+zwei bedingte Browser-Skips), Formatverifikation und Diff-Check bestehen.
+Commit `064ef98` ist auf `origin/main` verifiziert. Windows confinement und
+Push-on-main bestehen; Linux x64/arm64 bestehen, aber der Linux-Workflow
+scheitert im Trunk-Job an den unveraenderten Markdownlint-Befunden.
+Commit-Prebuild laeuft bei der letzten Abfrage noch. Tokens ausserhalb der
+unterstuetzten Blockelemente bleiben explizit unsupported.
+
+**HTML-Tabellen-Listenelemente (2026-11-20; KP-558; lokal validiert):**
+`li`, `dd` und `dt` starten und enden in Table-, TableBody- und Row-Modi
+jetzt mit begrenzter In-Body-/Foster-Parent-Verarbeitung. Neun Szenarien,
+Engine.Html.Tests (7.424), Solution-Build (0 Warnungen/Fehler),
+Volltestlauf (17.420 bestanden, zwei bedingte Browser-Skips),
+Formatverifikation und Diff-Check bestehen. Commit `9a4f7d7` ist auf
+`origin/main` verifiziert; Linux, Windows, Push-on-main und Prebuild laufen
+noch. Weitere foster-pflichtige Tokens bleiben unsupported.
+
+**HTML-Tabellen-Button-Foster-Parenting (2026-11-20; KP-560; committed und gepusht):**
+`button`-Start- und Endtags in Table-, TableBody- und Row-Modi nutzen dieselbe
+begrenzte In-Body-/Foster-Parent-Verarbeitung. Die Regression prueft
+Einordnung, Geschwistertext und Diagnostik in allen drei Modi. Engine.Html.Tests
+(7.425), Solution-Build (0 Warnungen/Fehler), Volltestlauf (17.421 bestanden,
+zwei bedingte Browser-Skips), Formatverifikation und Diff-Check bestehen.
+Commit `fd35613` ist nach `origin/main` gepusht. Windows confinement und
+Push-on-main bestehen; Linux x64/arm64 bestehen, aber der Linux-Workflow
+scheitert im Trunk-Job an bekannten Markdownlint-Befunden in unveraenderten
+Plan- und Core-Testdateien. Commit-Prebuild besteht. Siehe
+[KP-560](./Kontextprotokoll.md#kp-560---button-table-foster-parenting)
+und [KP-561](./Kontextprotokoll.md#kp-561---button-commit-gepusht).
+
+**HTML-Tabellen-`img`-Foster-Parenting (2026-11-20; KP-562; committed und gepusht):**
+`img`-Start- und Endtags in Table-, TableBody- und Row-Modi laufen durch die
+begrenzte In-Body-/Foster-Parent-Verarbeitung. Die Regression prueft das
+gefosterte Void-Element und beide Parsefehlerdiagnosen. Engine.Html.Tests
+(7.426), Solution-Build (0 Warnungen/Fehler), Volltestlauf (17.422 bestanden,
+zwei bedingte Browser-Skips), Formatverifikation und Diff-Check bestehen.
+Commit `0c4c429` ist nach `origin/main` gepusht; seine CI-Jobs laufen bei der
+letzten Abfrage bestanden fuer Windows, Push-on-main und Prebuild. Linux
+x64/arm64 bestehen; Trunk scheitert an unveraenderten Markdownlint-Befunden.
+Siehe
+[KP-562](./Kontextprotokoll.md#kp-562---img-table-foster-parenting) und
+[KP-563](./Kontextprotokoll.md#kp-563---img-commit-gepusht).
+
+**HTML-Tabellen-`wbr`-Foster-Parenting (2026-11-20; KP-564; committed und gepusht):**
+`wbr`-Start- und Endtags in Table-, TableBody- und Row-Modi folgen jetzt der
+begrenzten In-Body-/Foster-Parent-Verarbeitung. Der Test prueft Reihenfolge und
+Diagnostik in allen drei Modi. Engine.Html.Tests (7.427), Solution-Build
+(0 Warnungen/Fehler), Volltestlauf (17.423 bestanden, zwei bedingte
+Browser-Skips), Formatverifikation und Diff-Check bestehen. Commit `5c5f6b8`
+ist nach `origin/main` gepusht. Windows confinement und Push-on-main bestehen;
+Linux x64/arm64 bestehen, aber Trunk scheitert an unveraenderten
+Markdownlint-Befunden. Commit-Prebuild laeuft bei der letzten Abfrage noch.
+Siehe [KP-564](./Kontextprotokoll.md#kp-564---wbr-table-foster-parenting) und
+[KP-565](./Kontextprotokoll.md#kp-565---wbr-commit-gepusht).
+
+**HTML-Tabellen-Foster-Parenting weiterer Void-Elemente (2026-11-20; KP-567; committed und gepusht):**
+Die elf in-body-Void-Tags `area`, `base`, `basefont`, `bgsound`, `embed`,
+`keygen`, `link`, `meta`, `param`, `source` und `track` werden in Table-,
+TableBody- und Row-Modi begrenzt mit In-Body-/Foster-Parent-Regeln verarbeitet.
+Die Tests validieren alle Tags in allen drei Modi samt Baumordnung und
+Endtagdiagnostik; es wird kein Ressourcenladen eingefuehrt. Engine.Html.Tests
+(7.438), Solution-Build (0 Warnungen/Fehler), Volltestlauf (17.434 bestanden,
+zwei bedingte Browser-Skips), Formatverifikation und Diff-Check bestehen.
+Commit `ad3ea20` ist nach `origin/main` gepusht; CI-Jobs laufen bei der
+letzten Abfrage. Siehe
+[KP-567](./Kontextprotokoll.md#kp-567---remaining-void-table-foster-parenting)
+und [KP-568](./Kontextprotokoll.md#kp-568---void-commit-gepusht).
+
+**Weitere Table-Foster-Tokens (2026-11-20; KP-569 bis KP-577; committed und gepusht):**
+Die begrenzte In-Body-/Foster-Parent-Verarbeitung in Table-, TableBody- und
+Row-Modi umfasst seit KP-568 `button`, `img`, `wbr`, den `image`-Alias, elf
+weitere Void-Tags, `textarea`, `title`, `iframe`, `noembed`, `noframes` sowie
+`xmp`.
+`textarea` erhaelt RCDATA mit Unterdrueckung eines initialen LF; `title` erhaelt RCDATA
+ohne diese Unterdrueckung. Die drei letzten Elemente nutzen RAWTEXT; es werden
+keine Browsing-Kontexte oder Ressourcenladungen hinzugefuegt. `xmp` erhaelt
+ebenfalls RAWTEXT. Die fokussierten
+Tests, Solution-Builds, Volltests und Formatverifikation bestehen; zuletzt
+17.447 Solution-Tests plus zwei bedingte Skips und 7.451 Engine.Html-Tests.
+Commits `fd35613`, `0c4c429`, `5c5f6b8`, `ad3ea20`, `dae8b59`, `995aada`,
+`da64411`, `d3d89df` und `c2b39dd` sind auf `origin/main` gepusht. Bei
+`995aada` bestanden Windows, Linux x64/arm64, CodeQL und Prebuild; Trunk
+scheiterte mit Markdownlint-Befunden in unveraenderten Plan- und
+Core-Testdateien. Bei `da64411` bestanden Windows, Linux x64/arm64, CodeQL
+und Prebuild; Trunk meldete dieselben Befunde. Bei `d3d89df` bestanden Windows,
+Linux x64/arm64 und CodeQL; Trunk meldete wieder dieselben Baseline-Befunde,
+Prebuild lief zuletzt noch. Bei `c2b39dd` bestehen Windows confinement und
+CodeQL; Linux development scheitert mit Markdownlint-Befunden in unveraenderten
+Plan-Abschlussdokumenten und `tests/Core.Tests/Data/README.md`; Dev Environment
+Prebuild besteht (Run `44713851177`).
+Weitere foster-pflichtige Tokens bleiben explizit unsupported, bis ein
+separates Inkrement sie abdeckt. Siehe
+[KP-569](./Kontextprotokoll.md#kp-569---button-commit-gepusht) bis
+[KP-577](./Kontextprotokoll.md#kp-577---xmp-table-modes).
+
+**Table-Foster-Text-Routing (2026-11-20; KP-578; lokal validiert):**
+Eine Pruefung von `specs/cache/html.html#parsing-main-intable` zeigte, dass
+Zeichen nur dann im Table-Text-Modus gepuffert werden, wenn der (angepasste)
+aktuelle Knoten `table`, `tbody`, `template`, `tfoot`, `thead` oder `tr` ist.
+Nach einem gefosterten Nicht-Tabellen-Element muss In-Body-Verarbeitung den
+Text als Kind dieses Elements einfuegen. Die vorherigen Tests und diese
+Wissensnotiz erwarteten hier faelschlich Geschwistertext; KP-578 korrigiert
+Implementierung, Tests und Support-Dokumentation. Auch die Fragment-Parsing-
+Sonderregel fuer den angepassten aktuellen Knoten bleibt erhalten. Engine.Html
+7.452/7.452, Solution-Build (0 Warnungen/Fehler), Volltests (17.448 bestanden,
+zwei bedingte Skips), Formatverifikation und staged Diff-Check bestehen.
+Commit `f4e2e5a` ist nach `origin/main` gepusht; Windows, Linux, CodeQL und
+Prebuild-CI liefen bei letzter Abfrage noch. Die Linux-CI fuer den
+vorherigen XMP-Commit scheitert nur an den unveraenderten Markdownlint-
+Befunden. Die beiden Kontextdateien bleiben ausserhalb des Source-Commits.
+Siehe
+[KP-578](./Kontextprotokoll.md#kp-578---table-foster-text-routing).
+
+**HTML-Template-Verarbeitung in Tabellenmodi (2026-11-20; KP-579; committed und gepusht):**
+Template-Start- und Endtags in Table-, TableBody- und Row-Modi verwenden die
+vorhandene In-Head-/Template-Verarbeitung; beim Schliessen wird der passende
+Tabellenmodus wiederhergestellt. Das vorhandene native `Content`-Fragment bleibt
+unveraendert. Engine.Html (7.453/7.453), Solution-Build (0 Warnungen/Fehler),
+Formatverifikation und Diff-Check bestehen. Der Volltestlauf hatte einen
+V8-Deadline-Fehler in `UrlBindingTests.UrlComponentSettersMatchPinnedControlCharacterWptCases`;
+der isolierte Test besteht (1/1). Commit `f7e1f2f` ist nach `origin/main`
+gepusht. Windows, Linux x64/arm64, CodeQL und Prebuild bestehen; Linux Trunk
+scheitert an unveraenderten Markdownlint-Befunden. Die CI fuer `f4e2e5a` ist
+abgeschlossen: Windows, CodeQL und Prebuild bestehen, Linux scheitert an
+unveraenderten Markdownlint-Befunden. Die Kontextdateien
+bleiben ausserhalb des Source-Commits. Die anschliessende Auswahl der
+Tabellen-Insertion-Modes innerhalb des `InTemplate`-Modus ist in KP-580
+umgesetzt.
+Siehe [KP-579](./Kontextprotokoll.md#kp-579---template-table-modes).
+
+**Template-Tabelleninhalt (2026-11-20; KP-580; committed und gepusht):**
+Der Schnitt erweitert die Insertion-Mode-Auswahl innerhalb
+von Template-Inhalt fuer die vorhandenen begrenzten Tabellenalgorithmen und
+behebt die EOF-Schliessung offener Templates in diesen Modi. Engine.Html.Tests
+bestehen mit 7.471 Tests, der Solution-Build mit null Warnungen/Fehlern und
+die finale Formatpruefung. Der parallele Volltestlauf scheiterte an xUnit-
+Discovery im Paint-Projekt, das isoliert und im seriellen Volltest besteht;
+der serielle Volltest besteht mit 17.467 Tests und zwei bedingten Skips.
+Commit `bbe5c07` ist gepusht; Linux x64/arm64, Windows, Push-on-main und
+Prebuild bestehen. Linux Trunk scheitert an 28 Markdownlint-Befunden in
+unveraenderten Dateien.
+Der vermeintliche Konflikt mit Furthest-Block-Adoption entstand aus dem Lesen
+eines veralteten Checkpoints: `b4b4a88` ist bereits in `HEAD` enthalten.
+Siehe [KP-580](./Kontextprotokoll.md#kp-580---checkpoint-klaerung-und-template-tabelleninhalt).
+
+**Span-Foster-Parenting in Tabellenmodi (2026-11-20; KP-581; abgeschlossen):**
+`span`-Start und -Endtags nutzen nun begrenztes In-Body-Foster-Parenting in
+Table-, ColumnGroup-, TableBody- und Row-Modi; Formatierungs-Reparatur fuer
+andere Tags bleibt unsupported. Template-Tabelleninhalt ist abgedeckt.
+Engine.Html.Tests (7.477), Solution-Build (0 Warnungen/Fehler),
+Formatverifikation und der serielle Volltest (17.473 bestanden, zwei
+bedingte Browser-Skips) bestehen.
+Commit `95d78ac` ist gepusht; Linux x64/arm64, Windows und Push-on-main
+bestehen. Linux Trunk meldet die bekannten 28 Markdownlint-Befunde in
+unveraenderten Dateien; Prebuild `44798780949` ist ebenfalls erfolgreich.
+Siehe [KP-581](./Kontextprotokoll.md#kp-581---span-foster-parenting-in-tabellenmodi).
+
+**Plaintext-Foster-Parenting in Tabellenmodi (2026-11-20; KP-582; gepusht):**
+`plaintext`-Starttags und unpassende Endtags werden aus Table-, ColumnGroup-,
+TableBody- und Row-Modi foster-parented. Der Start schaltet auf PLAINTEXT und
+macht den Rest des Dokuments zu literalem Text; Template-Tabelleninhalt ist
+mitgetestet. Sechs fokussierte Faelle, Engine.Html.Tests (7.483), Solution-Build
+(0 Warnungen/Fehler), Formatverifikation und serieller Volltest (17.479
+bestanden, zwei bedingte Browser-Skips) bestehen. Commit `72fcea7` ist gepusht;
+Linux x64/arm64, Windows x64/arm64 und Push-on-main bestehen. Linux Trunk
+meldet dieselben 28 bestehenden Markdownlint-Befunde in unbeteiligten Dateien;
+Prebuild `44802344668` ist erfolgreich. Siehe
+[KP-582](./Kontextprotokoll.md#kp-582---plaintext-foster-parenting-in-tabellenmodi).
 
 **URL-IDL-Legacy-Alias (2026-11-19; KP-509; Beschluss umgesetzt):** Der
 Nutzer stimmte der minimalen Window-Global-Integration fuer
@@ -3076,7 +3378,7 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-038 | Bedeutet „WHATWG URL vollstaendig“ die Core/.NET-Spezifikationsalgorithmen oder auch die browserseitige JavaScript-URL-/URLSearchParams-API mit Live-Linkage und Web-IDL-Verhalten? | Beantwortet: Nutzer genehmigte Core-Algorithmen sowie browserseitige URL-/URLSearchParams-Semantik und interface-spezifisches Web IDL | Allgemeine Web-IDL-Generierung bleibt ausgeschlossen; Umsetzung folgt dem genehmigten Sechs-Phasen-Plan | Nutzerbestaetigung 2026-11-18; [Plan](../plans/whatwg-url-completion-plan.md), [Core guide](../docs/core.md#url), [URL spec cache](../specs/cache/url.html), [KP-468](./Kontextprotokoll.md#kp-468---url-planumfang-genehmigt) |
 | Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Umgesetzt sind begrenzte PageRendering-Bindungen fuer readonly `document.URL`, `document.documentURI`, `Node.baseURI` und die URL-Komponenten von `<a>`/`<area>`. Die Nutzeranweisung vom 2026-11-19 erweitert das Ziel auf breitere HTML/DOM-Folgearbeit, waehlt aber noch kein erstes Inkrement | Keine Vollintegration oder Prozentsteigerung aus den begrenzten Teilumfaengen ableiten; mit Q-040 die Reichweite des neuen Auftrags klaeren | Nutzeranweisung „let's do the html/dom related changes next“ und „complete WHATWH html and dom“; KP-513 bis KP-515, KP-523, [HTML/DOM](../docs/html-dom.md), [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Support-Inventar](../docs/standards.md#implemented-subsets) |
 | Q-040 | Was bedeutet der Auftrag, WHATWG HTML und DOM zu „vervollstaendigen“, und welches erste zusammengehoerige HTML-/DOM-Inkrement ist gemeint? | Beantwortet fuer den ersten mehrphasigen Template-Umfang: Nutzer genehmigte bounded Template-Contents, Parser-Subset und Inertheits-/Limitintegration. Ein vollstaendiger HTML/DOM-Abschlussendpunkt ist weiterhin nicht definiert | Phase 1-3 des [Plans](../plans/whatwg-html-dom-completion-plan.md) in separaten, getesteten Phasen ausfuehren; danach den naechsten Inkrementumfang anhand des aktualisierten Trackers waehlen | Ausdrueckliche Nutzerfreigabe 2026-11-19; KP-524; [HTML/DOM guide](../docs/html-dom.md), [approved plan](../plans/whatwg-html-dom-completion-plan.md) |
-| Q-041 | Welchen Umfang soll die naechste HTML/DOM-Arbeit nach dem Template-Plan haben? | Offen; naechster Trackerpunkt ist Fragment Parsing, aber der Kontextumfang ist nicht gewaehlt | Option 1: oeffentlichen `HtmlParser.ParseFragment` fuer body-artige Kontexte aus dem bestehenden In-Body-Subset einfuehren und spezielle Kontexte explizit ablehnen. Option 2: Fragment Parsing in allen bereits unterstuetzten Dokument-Kontexten (einschliesslich Table/Select/Template/Text-Modi) als groesseren Inkrementumfang. Option 3: weitere Arbeit blockieren, bis diese Entscheidung getroffen ist. In allen Varianten keine Script-Bindings oder `innerHTML` hinzufuegen | Aktueller Nutzerauftrag „commit, then continue“; [Missing.md](../plans/Missing.md#4-general-html-and-dom-compatibility), [HTML fragment parsing](../specs/cache/html.html#parsing-html-fragments), [html-parser-guide](../docs/html-dom.md#static-document-tree-subset), [KP-529](./Kontextprotokoll.md#kp-529---fragment-parsing-als-naechster-trackerpunkt-offen) |
+| Q-041 | Welchen Umfang soll die naechste HTML/DOM-Arbeit nach dem Template-Plan haben? | Beantwortet: Nutzer waehlt Option 2; bounded Fragment Parsing in allen bereits unterstuetzten Kontexten ist in KP-530/531 umgesetzt | Kontextdokument-eigenes `DocumentFragment` fuer bestehende In-Body-, Table-, Select-, Template- und Text-Modi; SVG/MathML, frameset/frame, `noscript` sowie nicht unterstuetzte Algorithmen scheitern explizit. Keine Script-Bindings oder `innerHTML` | Ausdrueckliche Nutzerwahl „2“; [KP-530](./Kontextprotokoll.md#kp-530---fragment-parsing-umfang-beschlossen), [KP-531](./Kontextprotokoll.md#kp-531---fragment-parsing-committed-und-ci-geprueft), [HTML fragment parsing](../specs/cache/html.html#parsing-html-fragments) |
 
 Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
 festgehaltene Ausschluss von Top-Level-await ist ersetzt.
@@ -3169,29 +3471,54 @@ festgehaltene Ausschluss von Top-Level-await ist ersetzt.
   sowie Formulare ab. Verhalten und Entwicklungsgrenze stehen in Browser-
   README und Shell-Guide. Gewaehlter Umfang ist vollstaendig vorhanden; kein
   neues Implementierungsinkrement oder Pass-2-Codecommit erzeugt.
+- HTML/DOM-Fortsetzung: `bbeeff7` fuehrt bounded Fragment Parsing fuer die
+  bereits unterstuetzten Kontexte ein und ist gepusht; Linux Trunk meldete
+  dieselben 28 Markdownlint-Probleme wie der unmittelbar vorherige Commit.
+  `f748224` fuehrt die bounded aktive Formatierung und den no-furthest-block-
+  Adoption-Agency-Zweig ein und ist gepusht; Engine.Html (7.339), Solution-
+  Build, Volltests und Formatverifikation bestanden. Linux- und Windows-
+  Plattformjobs sowie CodeQL sind erfolgreich; nur der bekannte Trunk-
+  Markdownlint-Job scheitert. Der Dev-Environment-Prebuild `44657161646` ist
+  laut GitHub erfolgreich abgeschlossen.
 - Geschriebene Kontextdateien erneut gelesen; lokale Links und Markdown-Anker,
   eindeutige REQ-/DEC-/Q-/KP-IDs, Quellenregister und Whitespace automatisiert
   geprueft. Externe GitHub-Links sind Quellenverweise, keine Browser-Abnahmetests.
 
 ## Naechste Schritte
 
-**Aktueller Einstieg (2026-11-19; KP-528):** Der genehmigte bounded
-Template-Plan ist abgeschlossen und seine drei Phasen sind mit `3a02cca`,
-`a752387` und `5752d3b` committed. Die Abschlussnotiz
-[whatwg-html-dom-completion-complete.md](../plans/whatwg-html-dom-completion-complete.md)
-ist angelegt. Der groessere Nutzerwunsch „WHATWG HTML und DOM vervollstaendigen“
-hat weiterhin keinen vollstaendigen Konformitaetsendpunkt; die uebrigen
-Standardsluecken bleiben offen. Naechster Schritt ist, ein neues, bounded
-HTML/DOM-Inkrement separat zu waehlen und zu genehmigen. Naechster
-Trackerpunkt ist Fragment Parsing: `HtmlParser` hat keine
-`ParseFragment`-Schnittstelle, und `TreeTests.Cases` ueberspringt
-`#document-fragment`-Fixtures. Offen ist, ob zuerst nur body-artige Kontexte
-im vorhandenen In-Body-Subset oder alle bereits unterstuetzten Parser-Kontexte
-abgedeckt werden sollen; siehe Q-041 und
-[KP-529](./Kontextprotokoll.md#kp-529---fragment-parsing-als-naechster-trackerpunkt-offen).
-Vor dieser Wahl keine Implementierung beginnen. Script-Bindings,
-`innerHTML`, Foreign Content und unimplementierte Parser-Modi bleiben
-ausgeschlossen oder deferred.
+**Aktueller Einstieg (2026-11-20; KP-531/534/537):** Der Template-Plan ist mit
+`3a02cca`, `a752387` und `5752d3b` abgeschlossen. Bounded Fragment Parsing ist
+mit `bbeeff7` committed und gepusht; aktive Formatierung mit no-furthest-block
+und bounded furthest-block-Reparenting ist mit `b4b4a88` committed und gepusht.
+Linux x64/arm64, Windows x64/arm64 und CodeQL bestehen; Trunk scheitert mit
+denselben 28 Markdownlint-Befunden in unveraenderten Plan-/Abschlussdokumenten
+und `tests/Core.Tests/Data/README.md` wie der Basislauf. Der Dev-Environment-
+Prebuild `44657161646` ist erfolgreich. Der grosse Nutzerauftrag bleibt
+inkrementell: WHATWG-HTML/DOM-Vollkonformitaet ist kein abgeschlossener
+Endpunkt. Die In-Body-Recovery fuer verschachtelte `<a>`- und `<nobr>`-Starttags
+auf Basis des Adoption-Agency-Algorithmus ist implementiert; Review ist
+APPROVED. Engine.Html (7.362), alle Solution-Tests (17.358 bestanden, zwei
+bedingte Browser-Skips), Solution-Build (0 Warnungen/Fehler),
+Formatverifikation und Diff-Check bestehen. Commit `47bb853` ist auf `main`
+gepusht. Linux x64/arm64, Windows x64/arm64 und CodeQL bestehen. Der Linux-
+Trunk-Job meldet weiterhin 28 Markdownlint-Befunde ausschliesslich in
+unveraenderten WHATWG-Abschluss-/Plan-Dokumenten und
+`tests/Core.Tests/Data/README.md`, ausserdem eine Trunk-Warnung zu nicht mehr
+unterstuetztem Check-upload/`check-mode: all`. Der Dev-Environment-Prebuild
+laeuft noch. Die
+`caption`-Grenzen sind in beiden Scope-Pruefungen ergaenzt. Ein isolierter
+Caption-Fall ist in der aktuellen Parser-Teilmenge nicht direkt konstruierbar:
+Caption ausserhalb einer Tabelle wird abgelehnt, waehrend echte Tabellen-
+Captions sowohl eine Tabellen-Scope-Grenze als auch einen Formatting-Marker
+einfuehren. Der Review-Hinweis zur nested-anchor-Clone-Leakage wurde nach
+Regressions- und Referenzpruefung zurueckgezogen; siehe KP-536 bis KP-539 und
+[Missing.md](../plans/Missing.md#4-general-html-and-dom-compatibility).
+Table-Foster-Parenting mit noetiger Rekonstruktion bleibt ein separater
+spaeterer Schnitt. Die Parser-Algorithmen bleiben bounded; Foreign Content,
+Script-Bindings, `innerHTML` und andere nicht implementierte Algorithmen
+bleiben unsupported/deferred. Nach Abschluss des Prebuilds den naechsten
+Tracker-Schnitt waehlen; die beiden Kontextdateien bleiben lokale, nicht im
+Code-Commit enthaltene Aenderungen.
 
 **Aktueller Einstieg (2026-11-07):** Ein neuer Zehn-Passen-Auftrag laeuft.
 Pass 1 erweitert den in Pass 5 bewusst top-only gehaltenen Caption-Umfang als

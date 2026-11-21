@@ -15943,3 +15943,1072 @@ third_party` bestanden; `git diff --check` bestanden. Ein erster
   Commit-/Push-Status belegt die Repository-Historie.
 - Naechster Schritt: weitere WHATWG-HTML/DOM-Luecken bleiben offen und werden
   als separate Inkremente behandelt.
+
+### KP-531 - Fragment Parsing committed und CI geprueft
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Nutzerangabe aus dem verfuegbaren Gespraechsverlauf: „commit, then continue“;
+  die Fortsetzung folgt getrennten, getesteten Inkrementen.
+- Belegt: Fragment Parsing wurde als `bbeeff7` (`feat(html): add bounded
+fragment parsing`) auf `origin/main` gepusht. Die Aenderung liefert ein
+  kontextdokument-eigenes `DocumentFragment` fuer die in KP-530 gewaehlten
+  bereits unterstuetzten Kontexte und aktualisiert HTML-Guide,
+  Support-Inventar und Missing-Tracker.
+- Verifikation: fokussierte Fragmenttests 32/32; Engine.Html.Tests 7.327/7.327;
+  Solution-Build ohne Warnungen/Fehler; Volltest 17.323 bestanden mit zwei
+  bedingt uebersprungenen Browserfaellen; Formatverifikation bestanden.
+- CI-Nachweis: Workflow `44645026998` fuer `bbeeff7`: Windows, CodeQL,
+  Prebuild sowie Linux-x64/arm64-Tests und native Smokes erfolgreich. Der
+  einzige Linux-Workflowfehler ist der Trunk-Job mit 28 Markdownlint-Befunden
+  in unveraenderten WHATWG-Abschluss-/Plan-Dokumenten und
+  `tests/Core.Tests/Data/README.md`. Derselbe Trunk-Job scheiterte auf dem
+  direkten Basisstand im Workflow `44633625820`; keine betroffene Datei
+  gehoert zum Fragment-Inkrement. Diese Baseline wurde nicht in diesem
+  Inkrement geaendert.
+- Quelle: Git-Commit `bbeeff7`, [Missing.md](../plans/Missing.md),
+  [HTML/DOM-Guide](../docs/html-dom.md) und die genannten GitHub-Workflow-IDs.
+- Status: Fragment Parsing ist implementiert, committed, gepusht und durch
+  lokale Tests sowie CI-Matrizen belegt; das Scheitern des separaten
+  Markdownlint-Jobs bleibt dokumentiert.
+
+### KP-532 - Aktive Formatierung implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Der naechste Parser-Schnitt fuehrt aktive Formatierung mit
+  Token-Attribut-Snapshots, der ungeordneten Drei-Eintraege-Noah's-Ark-Regel,
+  Rekonstruktion und Template-/Caption-/Cell-Markern ein. Formatting-End-Tags
+  behandeln den Adoption-Agency-Zweig ohne furthest block. Furthest-block-
+  Reparenting, nested anchors/nobr sowie Table-Text-Foster-Parenting, das
+  Rekonstruktion erfordert, bleiben explizit unsupported.
+- Umsetzungshinweis: Die Membership-Pruefung fuer den aktuellen Formatierungs-
+  Knoten laeuft rueckwaerts und cancellation-aware; damit vermeidet der
+  normale Stapel-Abbau eine wiederholte Vorwaertssuche durch die wachsende
+  Formatierungsliste.
+- Belegt: Regressionen in `TreeTests.cs` und `FragmentTests.cs` decken
+  Rekonstruktion, Token-Snapshot, Attributreihenfolge, Marker, Fehler-/Node-
+  und Tiefenlimits sowie Fragment-Ownership ab. HTML-Guide, README,
+  Support-Inventar und Missing-Tracker nennen den exakt begrenzten Umfang.
+- Verifikation: Engine.Html.Tests 7.339/7.339; `dotnet build VisualWeb.slnx`
+  ohne Warnungen/Fehler; Volltest mit 17.245 bestandenen Tests und zwei
+  bedingten Browser-Skips; Solution-Formatverifikation bestanden.
+- Belegt: Commit `f748224` (`feat(html): implement active formatting recovery`)
+  ist auf `origin/main` gepusht. CI fuer diesen Commit lief bei Erstellung
+  dieses Eintrags noch teilweise.
+- CI-Nachweis: Workflow `44651233820` besteht fuer Linux x64/arm64 Build,
+  Tests und native Smokes; nur Trunk scheitert mit denselben unveraenderten
+  28 Markdownlint-Befunden wie beim direkten Basislauf. Workflow `44651233949`
+  besteht fuer Windows x64/arm64; CodeQL `44651234383` besteht. Der separate
+  Dev-Environment-Prebuild `44651233647` ist bei Dokumentation noch in Arbeit.
+- Quelle: [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs),
+  [FragmentTests](../tests/Engine.Html.Tests/FragmentTests.cs),
+  [HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md)
+  und Git-Commit `f748224`.
+
+### KP-533 - Furthest-block Adoption-Agency lokal validiert
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Nutzerangabe aus dem verfuegbaren Gespraechsverlauf: „commit, then continue“;
+  die HTML/DOM-Fortsetzung erfolgt inkrementell. Das vorherige `2` bezog sich
+  auf die dort angebotene Fragment-Kontext-Option, nicht auf die Passanzahl.
+- Belegt: Der Adoption-Agency-Zweig implementiert nun bounded Furthest-Block-
+  Reparenting mit innerem Clone/Removal, Bookmark-/Listenindex-Anpassung,
+  Reparenting des Furthest Block, Stack-Reihenfolge und Outer-Loop-Limit.
+  Template- und Fragment-Einfuege-Eltern werden angepasst. Ein zu Table-
+  Foster-Parenting fuehrender gemeinsamer Vorfahr wird explizit abgelehnt;
+  Table-Content-Foster-Parenting-Starts werden bereits vor Erreichen dieses
+  Zweigs unsupported abgelehnt.
+- Regressionen: Standard-/Furthest-Block- und `div`-Faelle, Entfernung nicht
+  aktiver Formatting-Nodes, mehrere Clone-/Stack-Positionen, Node-/Depth-
+  Limits, Template-/Fragment-Eltern, Cancellation und explizite Ablehnung
+  table-foerdernder Eingaben.
+- Review: Code-Review APPROVED. Die stale XML-Remarks wurden aktualisiert und
+  eine table-formatting-start-Abdeckung hinzugefuegt.
+- Verifikation: Engine.Html.Tests 7.346/7.346; Solution-Build ohne
+  Warnungen/Fehler; vollstaendige Solution-Suites bestehen (17.342 bestanden,
+  zwei bedingte Browser-Skips); Formatverifikation und `git diff --check`
+  bestehen. Diese Werte betreffen den aktuellen lokalen Worktree.
+- Belegt: CI des Basis-Commits `f748224` ist abgeschlossen: Linux x64/arm64,
+  Windows x64/arm64, CodeQL und Dev-Environment-Prebuild bestehen. Der Linux-
+  Trunk-Job scheitert mit denselben 28 Markdownlint-Befunden in unveraenderten
+  Plan-/Abschlussdokumenten und `tests/Core.Tests/Data/README.md`, die auch im
+  direkten Basislauf auftraten.
+- Status: Furthest-block-Aenderung ist lokal validiert; eigener Commit/Push
+  und deren CI stehen noch aus.
+- Quelle: [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs),
+  [FragmentTests](../tests/Engine.Html.Tests/FragmentTests.cs),
+  [HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md)
+  sowie die lokale Test-/Build-/Format-Ausgabe und Review dieses Turns.
+
+### KP-534 - Furthest-block Adoption committed und gepusht
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Commit `b4b4a88` (`feat(html): implement furthest-block adoption
+recovery`) wurde auf `origin/main` gepusht. Er enthaelt Parser, fokussierte
+  Tree-/Fragment-Regressionen, HTML-Guide, Engine.Html README,
+  Standards-Inventar und Missing-Tracker. Die zwei Kontextdateien wurden
+  nach dem Commit lokal fortgeschrieben und sind nicht Bestandteil dieses
+  Code-Commits.
+- Verifikation vor dem Commit: Engine.Html.Tests 7.346/7.346;
+  `dotnet build VisualWeb.slnx` ohne Warnungen/Fehler;
+  `dotnet test VisualWeb.slnx --no-build` mit 17.342 bestandenen Tests und
+  zwei bedingten Browser-Skips; Formatverifikation sowie
+  `git diff --check` bestanden.
+- Status: CI fuer `b4b4a88` steht noch aus. Der naechste Arbeitsschritt ist,
+  den Push-CI-Lauf zu beobachten und danach den naechsten umsetzbaren
+  HTML/DOM-Punkt aus `plans/Missing.md` zu waehlen.
+- Quelle: Git-Commit `b4b4a88`, `origin/main` und die genannten lokalen
+  Validierungsergebnisse.
+
+### KP-535 - Furthest-block CI-Matrix geprueft
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Fuer `b4b4a88` bestehen die Linux-x64- und Linux-arm64-Jobs mit
+  Release-Build, Tests, Confinement-Smokes und Browser-Smokes. Windows x64 und
+  arm64 sowie alle Push-/CodeQL-Jobs bestehen ebenfalls.
+- Belegt: Der Linux-Trunk-Job scheitert mit denselben 28 Markdownlint-Befunden
+  ausschliesslich in unveraenderten WHATWG-Abschluss-/Plan-Dokumenten und
+  `tests/Core.Tests/Data/README.md` wie die direkten Basislaeufe. Die geaenderten
+  HTML-/Standards-/Missing-Dokumente werden nicht als Befunde gelistet.
+- Offen zum Dokumentationszeitpunkt: Dev-Environment-Prebuild
+  `44657161646` laeuft noch.
+- Ableitung aus dem aktualisierten [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility):
+  Nach dem Adoption-Agency-Furthest-Block-Schnitt bleibt als naechster kleiner
+  aktiver Formatierungsfall die nested-anchor/nobr-Starttag-Recovery; Table-
+  Foster-Parenting mit Reconstruction bleibt ein separater, spaeterer Schnitt.
+- Quelle: Workflows `44657161803`, `44657161744`, `44657161458` und
+  `44657161646`, [Missing.md](../plans/Missing.md) und Git-Commit `b4b4a88`.
+
+### KP-536 - Nested-anchor/nobr-Starttag-Recovery begonnen
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Fortsetzung des uebergreifenden WHATWG HTML/DOM-Auftrags nach
+  getrennten Commits („commit, then continue“).
+- Ableitung/Arbeitsauswahl: Nach Furthest-Block-Recovery nennt der aktualisierte
+  [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility)
+  nested anchors/nobr weiterhin als kleine, zusammengehoerige aktive
+  Formatierungs-Luecke. Der Schnitt bleibt auf In-Body-Starttags begrenzt und
+  baut auf dem gepushten Adoption-Agency-Zweig `b4b4a88` auf.
+- Belegt: Die lokale HTML-Quelle im Manifest hat `checkedAt` 2026-11-07 und
+  ist am 2026-11-20 frisch. Die In-Body-Regeln unterscheiden die explizite
+  Entfernung des alten Anchors nach Adoption von der anschliessenden
+  Rekonstruktion bei `nobr`; Table-Foster-Parenting bleibt unsupported.
+- Status: Implementierung und fokussierte Regressionen laufen. Der
+  Dev-Environment-Prebuild fuer `b4b4a88` ist noch in Arbeit; Linux-, Windows-
+  und CodeQL-Validierungen sind bestanden, abgesehen vom bekannten
+  Trunk-Markdownlint-Baseline-Fehler ohne Befunde in geaenderten Dateien.
+
+### KP-537 - Caption-Scope-Reviewkorrektur
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Der Read-only-Review beanstandete, dass `caption` sowohl in
+  `InScope` als auch in der Scope-Pruefung von `AdoptionEndTag` als Grenze
+  fehlte. Beide Boundary-Listen enthalten jetzt `caption`.
+- Belegt: Direkte Tests mit `<caption>` ausserhalb einer Tabelle erreichen
+  diese Pruefungen nicht, weil der Parser solche Eingaben in seiner
+  unterstuetzten Teilmenge explizit ablehnt. Im unterstuetzten Tabellenfall
+  stoppt fuer `nobr` bereits die `table`-Grenze den Scan; beim verschachtelten
+  `a` verhindert der Caption-Formatting-Marker, dass der vorangehende Anchor
+  als aktiver Formatting-Eintrag gefunden wird. Die aktuellen zwei
+  Tabellen-Caption-Tests bestaetigen dieses unterstuetzte Verhalten, isolieren
+  aber nicht allein die neu ergaenzte `caption`-Grenze.
+- Belegt: Der lokale Dev-Environment-Prebuild fuer `b4b4a88`,
+  Workflow `44657161646`, wurde per `gh run view` als `completed/success`
+  bestaetigt (aktualisiert 2026-11-20T02:17:35Z).
+- Verifikation: Beide fokussierten Caption-Faelle bestehen nach der Korrektur.
+  Vollstaendige Engine.Html-/Solution-Tests, Build, Formatpruefung und
+  unabhaengiger Review der gesamten Aenderung stehen noch aus; es gibt noch
+  keinen Commit fuer diesen Inkrement.
+- Quelle: [HtmlParser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs), lokale WHATWG-HTML-
+  Quelle [html.html](../specs/cache/html.html) und Workflow `44657161646`.
+
+### KP-538 - Nested-anchor-Clone-Review abgeschlossen
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Der Read-only-Review meldete zunaechst einen moeglichen Leak eines
+  durch Adoption erzeugten Anchor-Clones. Der gezielte Test
+  `NestedAnchorRemovesAdoptionCloneBeforeInsertingNewAnchor` besteht jedoch
+  unveraendert mit der bestehenden Parserlogik. Diese fuehrt nach dem
+  Furthest-Block-Schritt die Adoption-Aussenschleife fort; deren Folgeiteration
+  entfernt den Clone im no-furthest-block-Zweig aus Stack und Formatting-Liste.
+- Belegt: Lokales html5lib 1.1 und Headless Chromium erzeugen fuer
+  `<a id=outer>before<div>inside<a id=inner>after</a>more</div>` dieselbe
+  Baumform: der Clone enthaelt `inside`, der neue Anchor `after`, und `more`
+  ist ein Geschwistertext im `div`. Der Reviewer zog den Befund zurueck und
+  bestaetigte APPROVED; eine tag-basierte Clonebereinigung wurde deshalb nicht
+  hinzugefuegt.
+- Verifikation: Engine.Html.Tests 7.362/7.362; `dotnet build VisualWeb.slnx`
+  erfolgreich mit null Warnungen/Fehlern. `dotnet test VisualWeb.slnx --no-build`
+  laeuft noch; Formatpruefung und Diff-Check stehen aus. Ein vorheriger
+  Volltest-/Formatlauf wurde vor Abschluss wegen des inzwischen
+  zurueckgezogenen Reviewhinweises gestoppt und gilt nicht als Verifikation.
+- Quelle: [HtmlParser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs), lokale Referenzparser-
+  Ausgabe und Read-only-Review dieses Turns.
+
+### KP-539 - HTML-Inkrement lokal voll validiert
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Der unabhaengige Read-only-Review ist nach der Korrektur seines
+  Clone-Befunds APPROVED. Direkte Caption-ausserhalb-Tabelle-Tests bleiben
+  wegen der expliziten Parsergrenze unzulaessig; die akzeptierten
+  Tabellen-Caption-Faelle sind abgedeckt.
+- Verifikation: Engine.Html.Tests 7.362/7.362; `dotnet build VisualWeb.slnx`
+  erfolgreich mit null Warnungen/Fehlern; `dotnet test VisualWeb.slnx --no-build`
+  mit allen Testsuiten erfolgreich (17.358 bestanden, zwei bedingte
+  Browser-Skips); Formatverifikation mit
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+  und `git diff --check` bestanden.
+- Status: Code-/Test-/Subsystemdokumentations- und Tracker-Aenderungen sind
+  voll validiert; fokussierter Commit, Push und CI-Beobachtung stehen aus.
+- Quelle: lokale Test-, Build-, Format- und Diff-Check-Ausgaben sowie
+  APPROVED-Review dieses Turns.
+
+### KP-540 - Nested-anchor/nobr-Inkrement gepusht
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Commit `47bb853` (`feat(html): implement nested anchor/nobr recovery`)
+  ist auf `origin/main` gepusht. Er umfasst Parser, fokussierte Tree-/Fragment-
+  Tests, HTML-/Engine.Html-Dokumentation, Standards-Inventar und Missing-Tracker.
+  Die lokalen Kontextdateien wurden bewusst nicht in den Code-Commit aufgenommen.
+- Verifikation vor dem Commit: Engine.Html.Tests 7.362/7.362, Solution-Build
+  ohne Warnungen/Fehler, Solution-Volltests 17.358 bestanden mit zwei
+  bedingten Browser-Skips, Formatverifikation und Diff-Check bestanden.
+- Belegt: Fuer den Push wurden Linux development (`44664881685`), Windows
+  confinement (`44664881504`), CodeQL (`44664881171`) und Dev Environment
+  Prebuild (`44664881257`) gestartet; beim letzten Statuscheck liefen alle
+  vier.
+- Status: CI-Ergebnisse abwarten und Fehler beheben, falls vorhanden; erst
+  danach den naechsten umsetzbaren Tracker-Schnitt waehlen.
+- Quelle: Git-Commit `47bb853`, `origin/main`, Workflows und lokale
+  Validierungsausgaben dieses Turns.
+
+### KP-541 - Linux/Windows/CodeQL-CI geprueft
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Linux x64/arm64 und Windows x64/arm64 Jobs bestehen; CodeQL ist
+  erfolgreich. Linux development als Gesamtworkflow scheitert allein am
+  Trunk-check-Job. Dieser meldet dieselben 28 Markdownlint-Befunde wie der
+  Basislauf, ausschliesslich in unveraenderten WHATWG-Abschluss-/Plan-Dateien
+  und `tests/Core.Tests/Data/README.md`; keine geaenderte Datei aus Commit
+  `47bb853` ist betroffen. Die Trunk Action gibt zusaetzlich die Warnung aus,
+  dass Check uploads und check-all mode nicht mehr unterstuetzt werden.
+- Offen: Dev-Environment-Prebuild `44664881257` laeuft beim letzten Statuscheck
+  noch; dessen Abschluss ist vor der Auswahl des naechsten Inkrements abzuwarten.
+- Quelle: Linux-Workflow `44664881685` samt Trunk-Job-Log,
+  Windows-Workflow `44664881504` und CodeQL-Workflow `44664881171`.
+
+### KP-542 - Nested-Formatting-CI verifiziert
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Linux x64/arm64 und Windows x64/arm64 bestehen fuer Commit
+  `47bb853`; CodeQL ist erfolgreich. Linux development ist wegen des Trunk-
+  Jobs als Gesamtworkflow fehlgeschlagen. Die gemeldeten 28 Markdownlint-
+  Befunde liegen in unveraenderten Dateien; die Parseraenderung ist davon
+  nicht betroffen.
+- Offen: Dev-Environment-Prebuild `44664881257` laeuft bei der letzten
+  Statusabfrage weiterhin (Schritt „Create Template“).
+- Quelle: GitHub Actions Runs `44664881685`, `44664881504`, `44664881171`
+  und `44664881257`, abgefragt am 2026-11-20.
+
+### KP-543 - Prebuild abgeschlossen und naechster HTML-Schnitt gestartet
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Dev-Environment-Prebuild `44664881257` fuer `47bb853` wurde
+  erfolgreich abgeschlossen und zuletzt um 2026-11-20T03:26:49Z aktualisiert.
+- Ableitung aus dem Nutzerauftrag und [Missing.md](../plans/Missing.md):
+  naechster kleiner HTML-Parser-Schnitt ist die standarddefinierte
+  Foster-Parent-Behandlung nicht versteckter `input`-Starttags in table,
+  table-body und row insertion modes; andere Token bleiben unsupported.
+- Belegt: Der Regressionstest fuer table-mode input scheiterte vor der
+  Implementierung mit der bisherigen `UnsupportedHtmlException`. Nach der
+  Aenderung bestehen fuenf fokussierte Faelle fuer Table-/Row-/Cell-Verhalten.
+- Offen: Vollstaendige Engine.Html- und Solution-Validierung sowie Commit/Push
+  fuer den neuen Schnitt stehen aus.
+- Quelle: Run `44664881257`, lokaler HTML-Cache/Manifest, Parser und
+  fokussierte `TreeTests` dieses Turns.
+
+### KP-544 - Foster-Parent-Input-Tests und Teilvalidierung
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Die Tests decken nicht gesetztes, regulaeres und nicht-ASCII
+  `type=hidden`, TableBody-/Row-Modi und unveraenderte In-Cell-Einfuegung ab.
+  Insgesamt bestehen sechs fokussierte Faelle; Engine.Html.Tests besteht mit
+  7.365 Tests. Der Solution-Build hat null Warnungen/Fehler; Formatverifikation
+  und `git diff --check` bestehen.
+- Offen: `dotnet test VisualWeb.slnx --no-build` laeuft noch; Commit und Push
+  fuer den neuen Schnitt stehen aus.
+- Quelle: lokale Test-, Build- und Format-Ausgaben sowie die geaenderten
+  `TreeTests`, `HtmlParser` und Support-Dokumentation dieses Turns.
+
+### KP-545 - Table-Input-Foster-Parenting committed
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Commit `c82754a` (`feat(html): foster non-hidden table inputs`) ist
+  auf `origin/main`. Nicht versteckte Inputs in table-, table-body- und
+  row-modes folgen der In-Body-Verarbeitung mit bounded foster insertion;
+  In-Cell-Einfuegung bleibt unveraendert. Andere Foster-Parenting-Pfade und
+  adoption-agency reparenting mit Table-Foster-Bedarf bleiben unsupported.
+- Verifikation: Sechs fokussierte neue Faelle; Engine.Html.Tests 7.365/7.365;
+  `dotnet build VisualWeb.slnx` ohne Warnungen/Fehler;
+  `dotnet test VisualWeb.slnx --no-build` 17.361 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Offen: CI-Runs fuer `c82754a` waren bei der ersten Abfrage nach dem Push
+  noch nicht in `gh run list` sichtbar.
+- Quelle: Commit `c82754a`, `origin/main`, lokale Validierung und
+  `gh run list --commit c82754a` am 2026-11-20.
+
+### KP-546 - CI fuer Table-Input-Commit gestartet
+
+- Dokumentiert am: 2026-11-20, Europe/Berlin (UTC+01:00).
+- Belegt: Die Actions-Runs fuer den gepushten Commit `c82754a` sind
+  `44670342629` (Dev-Environment-Prebuild), `44670342376` (CodeQL),
+  `44670342638` (Linux development) und `44670342661` (Windows confinement).
+  Bei der letzten direkten Abfrage liefen alle noch. Linux-Trunk checks sind
+  bereits fehlgeschlagen; Linux x64/arm64 build/test jobs laufen weiter.
+  Windows und CodeQL-Analysen laufen ebenfalls.
+- Belegt: Der Trunk-Job meldet dieselben 28 Markdownlint-Befunde in
+  unveraenderten Dateien wie die vorherigen Basislaeufe; kein geaenderter
+  HTML-Parser-/Test-/Dokumentationspfad wurde genannt.
+- Offen: Ergebnisse der verbleibenden CI-Jobs abwarten und etwaige neue
+  regressionsbezogene Fehler behandeln.
+- Quelle: GitHub Actions Runs `44670342629`, `44670342376`, `44670342638`
+  und `44670342661`, direkt abgefragt am 2026-11-20.
+
+### KP-547 - br/hr in table modes
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Nutzeranforderung, WHATWG-HTML/DOM-Fortsetzung; setzt den in
+  KP-543 bis KP-546 dokumentierten Tabellen-Inkrementen fort.
+- Belegt: `br`- und `hr`-Starttags in Table-, TableBody- und Row-Modi werden
+  ueber die vorhandene In-Body-Verarbeitung mit temporaer aktiviertem,
+  begrenztem Foster-Parenting verarbeitet. Parsefehler werden diagnostiziert;
+  ein `finally` stellt den vorherigen Foster-Parenting-Zustand wieder her.
+  Andere Tokens mit Foster-Parenting-Bedarf bleiben unsupported.
+- Tests: Vier neue Tree-Tests decken Table-, TableBody- und Row-Modi sowie
+  beide Void-Elemente ab. Engine.Html.Tests: 7.369 bestanden.
+- Validierung: `dotnet build VisualWeb.slnx` ohne Warnungen/Fehler;
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestanden. Der erste parallele
+  Solution-Volltestlauf hatte einen Timeout in
+  `Engine.Scripting.Tests.UrlBindingTests.UrlComponentSettersMatchPinnedControlCharacterWptCases`;
+  gezielter Retry bestand. Ein zweiter Volltestlauf bestand mit 17.365 Tests
+  und zwei bedingten Browser-Skips.
+- CI-Nachtrag zu `c82754a`: Prebuild (`44670342629`), CodeQL (`44670342376`),
+  Windows x64/arm64 sowie Linux x64/arm64 bestehen. Der Linux-Workflow
+  (`44670342638`) scheitert ausschliesslich am Trunk-Job wegen derselben 28
+  Markdownlint-Befunde in unveraenderten Dateien wie fruehere Basislaeufe.
+  Windows confinement (`44670342661`) besteht.
+- Status: Code, Tests, HTML/DOM-Guide, Engine.Html-README,
+  Standardsinventar und `plans/Missing.md` sind lokal geaendert; dieses
+  Inkrement ist noch nicht committed oder gepusht.
+- Quelle: lokale Arbeitskopie, `dotnet`-Validierung und GitHub Actions Runs
+  `44670342629`, `44670342376`, `44670342638` und `44670342661`, abgefragt
+  am 2026-11-20.
+
+### KP-548 - br/hr commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Die sechs zusammengehoerigen Code-, Test- und Dokumentationsdateien
+  wurden als `776c3d7` (`feat(html): foster br and hr table starts`) committed
+  und nach `origin/main` gepusht. `git ls-remote` bestaetigte denselben SHA
+  fuer `refs/heads/main`; nur die zwei lokalen Kontextdateien bleiben
+  uncommitted.
+- Offen: Die ersten zwei Abfragen von `gh run list --commit 776c3d7` zeigten
+  noch keine Actions-Runs. CI-Sichtbarkeit und Ergebnisse spaeter pruefen.
+- Quelle: Commit `776c3d7`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --commit 776c3d7`, direkt abgefragt am 2026-11-20.
+
+### KP-549 - div table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung des vom Nutzer angeforderten WHATWG-HTML/DOM-Ausbaus;
+  naechster begrenzter Tabellen-Inkrement nach KP-547/548.
+- Belegt: Die lokale HTML-Cachefassung wird gemaess Manifest-ID `html` am
+  2026-11-07 geprueft und ist am 2026-11-20 innerhalb der 30-Tage-Grenze.
+  Sie verlangt im Table-Modus fuer "Anything else" Fehlerdiagnostik,
+  Foster-Parenting und In-Body-Verarbeitung
+  (`specs/cache/html.html`, Abschnitt `parsing-main-intable`, um Zeile 99000).
+- TDD: Drei neue Tree-Faelle fuer Table-, TableBody- und Row-Modi scheiterten
+  zuerst jeweils explizit mit `UnsupportedHtmlException`. Danach wurden
+  `div`-Start- und Endtags auf die bestehende temporaere Foster-Parent-
+  Verarbeitung geleitet. Die Tests verifizieren die gefosterte leere
+  Blockeinsetzung, Textreihenfolge und beide Diagnosen.
+- Validierung: Engine.Html.Tests 7.371 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.367 bestanden mit zwei bedingten
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Offen: Das separate `div`-Inkrement ist noch uncommitted. Andere Table-
+  Foster-Tokens bleiben unsupported.
+- CI-Nachtrag fuer `776c3d7`: Linux x64/arm64 und Windows x64/arm64 sowie
+  Push-on-main (`44673981246`) bestehen. Linux development
+  (`44673981135`) scheitert nur beim Trunk-Job: 28 Markdownlint-Befunde in
+  unveraenderten `plans/whatwg-*-completion-*.md`-Dateien und
+  `tests/Core.Tests/Data/README.md`. Windows confinement
+  (`44673981204`) besteht. Der Dev-Environment-Prebuild
+  (`44673980859`) laeuft bei der letzten Abfrage noch.
+- Quelle: `specs/manifest.json`, `specs/cache/html.html`, lokale Regressionen
+  und Validierung, GitHub Actions Runs `44673981246`, `44673981204`,
+  `44673981135` und `44673980859`, abgefragt am 2026-11-20.
+
+### KP-550 - div commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Die sechs zusammengehoerigen Code-, Test- und Dokumentationsdateien
+  wurden als `2461c70` (`feat(html): foster divs from table modes`) committed
+  und nach `origin/main` gepusht. `git ls-remote` bestaetigte denselben SHA;
+  nur die beiden lokalen Kontextdateien bleiben uncommitted.
+- Offen: GitHub Actions fuer `2461c70` sind mit `44676460349` (Linux
+  development), `44676460190` (Windows confinement), `44676460074`
+  (Commit-Prebuild) und `44676459935` (Push on main) gestartet und laufen
+  bei der ersten Abfrage noch.
+- Quelle: Commit `2461c70`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 12`, direkt abgefragt am 2026-11-20.
+
+### KP-551 - p table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung des begrenzten Table-Foster-Parenting-Umfangs aus
+  KP-549/550.
+- TDD: Die drei Paragraph-Faelle fuer Table-, TableBody- und Row-Modi
+  scheiterten vor der Codeaenderung mit `UnsupportedHtmlException`. Danach
+  wurden `p`-Start- und Endtags an denselben bestehenden
+  Foster-Parent-Helper wie `div` gebunden. Die gemeinsame Theory testet beide
+  Tags, gefosterte Blockeinsetzung, Textreihenfolge und Parsefehler.
+- Validierung: Engine.Html.Tests 7.374 bestanden; `dotnet build
+VisualWeb.slnx` ohne Warnungen/Fehler; Volltestlauf 17.370 bestanden mit
+  zwei bedingten Browser-Skips; Formatverifikation und `git diff --check`
+  bestanden.
+- Offen: Das separate `p`-Inkrement ist noch uncommitted. Andere Table-
+  Foster-Tokens bleiben unsupported.
+- CI-Nachtrag fuer `2461c70`: Linux x64/arm64 und Windows x64/arm64 sowie
+  Push-on-main (`44676459935`) bestehen. Linux development
+  (`44676460349`) scheitert nur beim Trunk-Job wegen unveraenderter
+  Markdownlint-Befunde. Windows confinement (`44676460190`) besteht. Der
+  Commit-Prebuild (`44676460074`) laeuft bei der letzten Abfrage noch.
+- Quelle: lokale Regressionen und Validierung sowie GitHub Actions Runs
+  `44676460349`, `44676460190`, `44676460074` und `44676459935`, abgefragt
+  am 2026-11-20.
+
+### KP-552 - p commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Die sechs zusammengehoerigen Code-, Test- und Dokumentationsdateien
+  wurden als `7ff60cf` (`feat(html): foster paragraphs from table modes`)
+  committed und nach `origin/main` gepusht. `git ls-remote` bestaetigte
+  denselben SHA; nur die beiden lokalen Kontextdateien bleiben uncommitted.
+- Offen: GitHub Actions fuer `7ff60cf` sind mit `44678736301` (Linux
+  development), `44678736261` (Windows confinement), `44678736226`
+  (Commit-Prebuild) und `44678735897` (Push on main) gestartet und laufen
+  bei der ersten Abfrage noch.
+- Quelle: Commit `7ff60cf`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 10`, direkt abgefragt am 2026-11-20.
+
+### KP-553 - heading table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung des vom Nutzer angeforderten WHATWG-HTML/DOM-Ausbaus;
+  naechster begrenzter Tabellen-Foster-Parenting-Inkrement.
+- TDD: 18 neue Tree-Faelle fuer `h1`-`h6`-Start- und Endtags in Table-,
+  TableBody- und Row-Modi scheiterten zunaechst explizit. Danach wurden die
+  Heading-Tags in Table-Modi an den bestehenden begrenzten
+  Foster-Parent-Helper gebunden; die gemeinsame Theory umfasst nun 24
+  Block-/Heading-Faelle.
+- Validierung: Engine.Html.Tests 7.392 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.388 bestanden mit zwei bedingten
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Die sieben Code-, Test- und Dokumentationsdateien wurden als
+  `7767e07` (`feat(html): foster headings from table modes`) committed und
+  nach `origin/main` gepusht. Windows confinement und Push-on-main bestehen.
+  Linux x64/arm64 bestehen; der Linux-Workflow scheitert im Trunk-Job an den
+  unveraenderten Markdownlint-Befunden. Der Commit-Prebuild laeuft bei der
+  letzten Abfrage noch.
+- CI-Nachtrag fuer `7ff60cf`: Windows confinement, Commit-Prebuild und
+  Push-on-main bestehen. Linux x64/arm64 bestehen; der Linux-Workflow
+  scheitert im Trunk-Job an Markdownlint-Befunden in unveraenderten Plan-
+  und Core-Testdateien. Die Logs listen weiterhin die bekannten
+  Markdownlint-Baseline-Funde; diese Arbeit hat sie nicht veraendert.
+- Quelle: lokale Tests/Build/Format, Commit `7767e07`, `git status`,
+  `git ls-remote`, GitHub Actions Runs `44681366137`, `44681366066`,
+  `44681366062`, `44681365666`, `44678736301`, `44678736261`,
+  `44678736226` und `44678735897`, abgefragt am 2026-11-20.
+
+### KP-554 - pre/listing table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Naechster begrenzter HTML-Tabellen-Foster-Parenting-Schnitt nach
+  Heading-Tags; der Gesamtauftrag des Nutzers bleibt WHATWG HTML/DOM weiter
+  auszubauen, ohne unimplementierte Algorithmen nur anzunaehern.
+- Belegt: Die lokale HTML-Spezifikation schreibt fuer den Table-Modus bei
+  "Anything else" Fehlerdiagnostik, temporaeres Foster-Parenting und
+  In-Body-Verarbeitung vor (`specs/cache/html.html`, `parsing-main-intable`).
+  Der Cache-Manifeststempel bleibt innerhalb des 30-Tage-Fensters.
+- TDD: Sechs neue `pre`-/`listing`-Tree-Faelle ueber Table-, TableBody- und
+  Row-Modi scheiterten zuerst explizit mit `UnsupportedHtmlException`.
+  Danach wurden die Start- und Endtags an denselben Helper gebunden.
+  Die Tests pruefen Element-/Textreihenfolge, Parsefehler und das Entfernen
+  eines direkt folgenden LF.
+- Validierung: Engine.Html.Tests 7.398 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.394 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Die sieben Code-, Test- und Dokumentationsdateien wurden als
+  `374c73d` (`feat(html): foster pre and listing in table modes`) committed
+  und nach `origin/main` gepusht. Andere Table-Foster-Tokens bleiben
+  unsupported.
+- Quelle: `specs/manifest.json`, `specs/cache/html.html`, Regressionen,
+  lokale Build-/Test-/Formatlaeufe und `git status`, abgefragt am 2026-11-20.
+
+### KP-555 - pre/listing commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: `374c73d` ist auf `origin/main` verifiziert. GitHub Actions fuer
+- Windows confinement (`44684211657`) und Push-on-main (`44684210855`)
+  bestehen. Linux development (`44684211681`) scheitert im Trunk-Job wegen
+  der bekannten Markdownlint-Befunde in unveraenderten Plan- und
+  Core-Testdateien; Linux x64/arm64 Jobs bestehen. Der Commit-Prebuild
+  (`44684210469`) besteht.
+- Quelle: Commit `374c73d`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 8`, direkt abgefragt am 2026-11-20.
+
+### KP-556 - weitere block tags im table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der begrenzten Tabellen-Token-Abdeckung; die WHATWG-
+  In-Table-Regel fuer "Anything else" verlangt Foster-Parenting mit
+  In-Body-Verarbeitung.
+- TDD: 23 Regressionen fuer `address`, `article`, `aside`, `blockquote`,
+  `center`, `details`, `dialog`, `dir`, `dl`, `fieldset`, `figcaption`,
+  `figure`, `footer`, `header`, `hgroup`, `main`, `menu`, `nav`, `ol`,
+  `search`, `section`, `summary` und `ul` scheiterten zuerst alle explizit
+  mit `UnsupportedHtmlException`. Nach Nutzung desselben Foster-Parent-
+  Helpers fuer die vorhandene Block-Tag-Menge bestehen alle 23 Tests. Jede
+  Regression prueft Table-, TableBody- und Row-Modus.
+- Validierung: Engine.Html.Tests 7.421 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.417 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Die sieben Code-, Test- und Dokumentationsdateien wurden als
+  `064ef98` (`feat(html): foster block tags from table modes`) committed und
+  nach `origin/main` gepusht. Andere Table-Foster-Tokens bleiben unsupported.
+- Quelle: `specs/cache/html.html`, `HtmlParser.cs`, Tree-Regressionen,
+  lokale Build-/Test-/Formatlaeufe und `git status`, abgefragt am 2026-11-20.
+
+### KP-557 - block tags commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: `064ef98` ist auf `origin/main` verifiziert. Windows confinement
+  (`44687359538`) und Push-on-main (`44687359040`) bestehen. Linux
+  development (`44687359398`) scheitert im Trunk-Job wegen der bekannten
+  Markdownlint-Befunde in unveraenderten Plan- und Core-Testdateien; Linux
+  x64/arm64 Jobs bestehen. Der Commit-Prebuild (`44687358530`) lief bei der
+  letzten Abfrage noch.
+- Quelle: Commit `064ef98`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 8`, direkt abgefragt am 2026-11-20.
+
+### KP-558 - list-item foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der WHATWG-Table-Mode-Abdeckung fuer In-Body-Tokens.
+- TDD: Tests fuer `li`, `dd` und `dt` in Table-, TableBody- und Row-Modi
+  scheiterten zuerst mit `UnsupportedHtmlException`; nach Route an denselben
+  begrenzten Foster-Parent-Helper bestehen alle drei Testfaelle, die je alle
+  drei Modi pruefen.
+- Validierung: Engine.Html.Tests 7.424 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.420 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Die sieben Code-, Test- und Dokumentationsdateien wurden als
+  `9a4f7d7` (`feat(html): foster list items from table modes`) committed und
+  nach `origin/main` gepusht. Weitere foster-pflichtige Tokens bleiben
+  unsupported.
+- Quelle: `specs/cache/html.html`, `HtmlParser.cs`, Tree-Regressionen und
+  lokale Build-/Test-/Formatlaeufe, abgefragt am 2026-11-20.
+
+### KP-559 - list-item commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: `9a4f7d7` ist auf `origin/main` verifiziert. GitHub Actions fuer
+  Windows confinement (`44690045914`), Linux development (`44690045871`),
+  Push-on-main (`44690045507`) und Commit-Prebuild (`44690045380`) laufen
+  bei der letzten Abfrage.
+- Quelle: Commit `9a4f7d7`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 8`, direkt abgefragt am 2026-11-20.
+
+### KP-560 - button table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der begrenzten WHATWG-Table-Mode-Abdeckung fuer
+  In-Body-Tokens; keine korrespondierende DOM-Aenderung.
+- TDD: Der Button-Test prueft Start-/Endverarbeitung und resultierende
+  Geschwisterreihenfolge in Table-, TableBody- und Row-Modi. Vor der
+  Implementierung wurde `button` an den vorhandenen bounded
+  Foster-Parent-Helper angeschlossen.
+- Validierung: Engine.Html.Tests 7.425 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.421 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Commit `fd35613` (`feat(html): foster buttons from table modes`) ist
+  nach `origin/main` gepusht. Windows confinement und Push-on-main bestehen.
+  Linux x64/arm64 bestehen; Trunk scheitert an bestehenden Markdownlint-
+  Befunden in Plan- und Core-Testdateien. Commit-Prebuild laeuft bei der
+  letzten Abfrage noch.
+- Quelle: `specs/cache/html.html`, `HtmlParser.cs`, Tree-Regressionen,
+  lokale Build-/Test-/Formatlaeufe, Commit `fd35613`, GitHub Actions Runs
+  `44692344703`, `44692344614`, `44692344059` und `44692367400`, abgefragt
+  am 2026-11-20.
+
+### KP-561 - button commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Commit `fd35613` ist auf `origin/main` verifiziert. Windows
+  confinement und Push-on-main bestehen; Linux x64/arm64 bestehen, waehrend
+  der Trunk-Job an unveraenderten Markdownlint-Befunden scheitert.
+- Quelle: Commit `fd35613`, `git status`, `git ls-remote origin refs/heads/main`,
+  Actions-Job `136140882721` und Run `44692367400`, abgefragt am 2026-11-20.
+
+### KP-562 - img table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Naechster begrenzter WHATWG-Table-Mode-Token nach Button;
+  kein korrespondierendes DOM-Feature.
+- Belegt: Die neue Tree-Regression prueft `img`-Start- und Endtags in Table-,
+  TableBody- und Row-Modi, gefosterte Elementposition sowie beide
+  Parsefehlerdiagnosen. Der Test scheiterte vor der Implementierung mit
+  `UnsupportedHtmlException`; danach bestehen alle drei Modi.
+- Validierung: Engine.Html.Tests 7.426 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.422 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Commit `0c4c429` (`feat(html): foster images from table modes`) ist
+  nach `origin/main` gepusht. Windows confinement, Linux development,
+  Push-on-main und Commit-Prebuild laufen bei der letzten Abfrage.
+- Quelle: `specs/cache/html.html`, Manifesteintrag `html` (geprueft
+  2026-11-07, innerhalb der 30-Tage-Frist), `HtmlParser.cs`,
+  Tree-Regressionen, lokale Build-/Test-/Formatlaeufe und Actions Runs
+  `44695033354`, `44695033310`, `44695033854`, `44695033269`, abgefragt
+  am 2026-11-20.
+
+### KP-563 - img commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Commit `0c4c429` ist auf `origin/main` verifiziert; Windows-, Linux-,
+  Push-on-main- und Prebuild-Jobs waren bei der letzten Abfrage noch offen.
+- Quelle: Commit `0c4c429`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 8`, abgefragt am 2026-11-20.
+
+### KP-564 - wbr table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der begrenzten In-Table-Foster-Parent-Abdeckung fuer
+  unterstuetzte In-Body-Void-Elemente.
+- TDD: Der neue `wbr`-Test scheiterte zuerst explizit mit
+  `UnsupportedHtmlException`. Nach Weiterleitung der Start- und Endtokens an
+  den bestehenden bounded Helper besteht die Regression in Table-, TableBody-
+  und Row-Modi; sie prueft Void-Elementposition und Parsefehlerdiagnostik.
+- Validierung: Engine.Html.Tests 7.427 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.423 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Commit `5c5f6b8` (`feat(html): foster wbr from table modes`) ist nach
+  `origin/main` gepusht. Windows-, Linux-, Push-on-main- und Prebuild-Jobs
+  laufen bei der letzten Abfrage.
+- Quelle: `specs/cache/html.html`, Manifesteintrag `html` (geprueft
+  2026-11-07), `HtmlParser.cs`, Tree-Regressionen, lokale Build-/Test-/
+  Formatlaeufe und Actions Runs `44697714311`, `44697714396`,
+  `44697712586`, `44697712689`, abgefragt am 2026-11-20.
+
+### KP-565 - wbr commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Commit `5c5f6b8` ist auf `origin/main` verifiziert; CI-Jobs waren
+  bei der letzten Abfrage noch offen.
+- Quelle: Commit `5c5f6b8`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 8`, abgefragt am 2026-11-20.
+
+### KP-566 - wbr CI
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Windows confinement (`44697714311`) und Push-on-main
+  (`44697712586`) bestehen; Linux x64/arm64 bestehen, aber Trunk checks
+  scheitern (`44697714396`). Commit-Prebuild (`44697712689`) laeuft bei der
+  letzten Abfrage noch.
+- Quelle: GitHub Actions Run `44697714396` (Jobs Linux x64, Linux arm64 und
+  Trunk checks), `gh run list --limit 8`, abgefragt am 2026-11-20.
+
+### KP-567 - remaining void table foster parenting
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der WHATWG-In-Table-Anything-Else-Regel fuer die
+  verbleibenden im Body unterstuetzten Void-Tags.
+- TDD: Elf Regressionen (`area`, `base`, `basefont`, `bgsound`, `embed`,
+  `keygen`, `link`, `meta`, `param`, `source`, `track`) scheiterten zuerst
+  explizit mit `UnsupportedHtmlException`. Nach Nutzung desselben bounded
+  Foster-Parent-Helpers bestehen alle Tags in Table-, TableBody- und Row-Modi.
+  Baumordnung und Endtagdiagnostik werden geprueft; Ressourcen bleiben inert.
+- Validierung: Engine.Html.Tests 7.438 bestanden; Solution-Build ohne
+  Warnungen/Fehler; Volltestlauf 17.434 bestanden, zwei bedingte
+  Browser-Skips; Formatverifikation und `git diff --check` bestanden.
+- Belegt: Commit `ad3ea20` (`feat(html): foster void elements from table modes`)
+  ist nach `origin/main` gepusht. Windows-, Linux-, Push-on-main- und
+  Prebuild-Jobs laufen bei der letzten Abfrage.
+- Quelle: `specs/cache/html.html`, Manifesteintrag `html` (geprueft
+  2026-11-07), `HtmlParser.cs`, Tree-Regressionen, lokale Build-/Test-/
+  Formatlaeufe und Actions Runs `44700536853`, `44700536979`,
+  `44700535932`, `44700536764`, abgefragt am 2026-11-20.
+
+### KP-568 - void commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Commit `ad3ea20` ist auf `origin/main` verifiziert; die vier
+  zugehoerigen CI-Jobs waren bei der letzten Abfrage noch offen.
+- Quelle: Commit `ad3ea20`, `git status`, `git ls-remote origin refs/heads/main`
+  und `gh run list --limit 8`, abgefragt am 2026-11-20.
+
+### KP-569 - button commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der begrenzten In-Table-Foster-Parenting-Abdeckung.
+- Belegt: `button`-Start-/Endtags werden in Table-, TableBody- und Row-Modi
+  durch die bestehende In-Body-/Foster-Parent-Verarbeitung geleitet. Die
+  fokussierte Regression prueft Baumordnung, Geschwistertext und Diagnostik.
+  Engine.Html.Tests (7.425), Solution-Build, Volltests (17.421 bestanden,
+  zwei bedingte Browser-Skips), Formatverifikation und Diff-Check bestanden.
+- Belegt: Commit `fd35613` ist nach `origin/main` gepusht. Windows, Linux x64/
+  arm64, Push-on-main und Prebuild bestanden; Linux-Trunk meldete bekannte
+  Markdownlint-Befunde in unveraenderten Plan-/Core-Testdateien.
+- Quelle: Uebergebene Sitzungszusammenfassung sowie aktuelle Git-Historie;
+  CI-Status aus der Zusammenfassung dieser Sitzung, abgefragt am 2026-11-20.
+
+### KP-570 - img commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: `img`-Start-/Endtags verwenden in den drei Tabellenmodi den
+  begrenzten Foster-Parent-Helper. Engine.Html.Tests (7.426), Solution-Build,
+  Volltests (17.422 bestanden, zwei bedingte Browser-Skips),
+  Formatverifikation und Diff-Check bestanden.
+- Belegt: Commit `0c4c429` ist nach `origin/main` gepusht. Windows,
+  Push-on-main und Prebuild bestanden; Linux x64/arm64 bestanden, Linux-Trunk
+  scheiterte an bekannten Markdownlint-Befunden.
+- Quelle: Uebergebene Sitzungszusammenfassung und aktuelle Git-Historie;
+  CI-Status aus der Zusammenfassung dieser Sitzung, abgefragt am 2026-11-20.
+
+### KP-571 - wbr commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: `wbr`-Start-/Endtags nutzen denselben bounded Helper. Engine.Html.Tests
+  (7.427), Solution-Build, Volltests (17.423 bestanden, zwei bedingte
+  Browser-Skips), Formatverifikation und Diff-Check bestanden.
+- Belegt: Commit `5c5f6b8` ist nach `origin/main` gepusht. Die bisherige
+  Sitzungszusammenfassung dokumentiert wiederkehrende Linux-Trunk-
+  Markdownlint-Befunde; der komplette Status dieses Commits wurde hier nicht
+  erneut abgefragt.
+- Quelle: Uebergebene Sitzungszusammenfassung und aktuelle Git-Historie,
+  abgefragt am 2026-11-20.
+
+### KP-572 - remaining void commit gepusht
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Elf Void-Tags (`area`, `base`, `basefont`, `bgsound`, `embed`,
+  `keygen`, `link`, `meta`, `param`, `source`, `track`) verwenden in Table-,
+  TableBody- und Row-Modi denselben bounded Helper. Engine.Html.Tests (7.438),
+  Solution-Build, Volltests (17.434 bestanden, zwei bedingte Browser-Skips),
+  Formatverifikation und Diff-Check bestanden.
+- Belegt: Commit `ad3ea20` ist nach `origin/main` gepusht. Bei der letzten
+  abgefragten Actions-Liste war Windows erfolgreich, CodeQL erfolgreich,
+  Linux development fehlgeschlagen und Dev Environment Prebuild noch aktiv;
+  die Ursache und der Endstatus des Prebuilds wurden hier nicht erneut
+  geprueft.
+- Quelle: Uebergebene Sitzungszusammenfassung, `gh run list --limit 10` und
+  aktuelle Git-Historie, abgefragt am 2026-11-20.
+
+### KP-573 - image alias commit und CI
+
+- Dokumentiert am: 2026-11-20.
+- Belegt: Die `image`-Start-/Endtags laufen in den drei Tabellenmodi durch die
+  begrenzte In-Body-/Foster-Parent-Verarbeitung; der Starttag wird von der
+  bestehenden In-Body-Regel als `img` normalisiert. Der neue Test prueft
+  Alias-Recovery, Foster-Reihenfolge und Diagnostik in allen drei Modi.
+  Engine.Html.Tests (7.439), Solution-Build, Volltests (17.435 bestanden,
+  zwei bedingte Browser-Skips), Formatverifikation und Diff-Check bestanden.
+- Belegt: Commit `dae8b59` wurde auf `origin/main` gepusht. Die vier Actions-
+  Runs sind teilweise abgeschlossen: Windows confinement, Linux x64/arm64 und
+  CodeQL bestehen; Trunk checks scheitern an Markdownlint-Befunden in
+  unveraenderten Plan- und Core-Testdateien. Dev Environment Prebuild lief bei
+  der letzten Abfrage noch.
+- Quelle: Uebergebene Sitzungszusammenfassung, `gh run list --limit 10`,
+  `gh run view 44703169816` einschliesslich Trunk-Joblogs,
+  `git show --stat HEAD` und Push-Ausgabe, abgefragt am 2026-11-20.
+
+### KP-574 - textarea table modes
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Begrenzte Fortsetzung der In-Table-Anything-Else-Regel; kein
+  gleichartiges neues DOM-Verhalten erforderlich.
+- TDD: Zwei neue Regressionen fuer Table-, TableBody- und Row-Modi scheiterten
+  zuerst explizit mit `UnsupportedHtmlException`. Die eine prueft gefosterte
+  `textarea`-Einsetzung, RCDATA-Text, Unterdrueckung des initialen LF und
+  Rueckkehr in den jeweiligen Tabellenmodus; die andere prueft den
+  fostered-in-body-Pfad fuer ein unpassendes Endtag ohne Baumveraenderung.
+- Belegt: Engine.Html.Tests 7.441 bestanden; Solution-Build ohne Warnungen/
+  Fehler; Volltests 17.437 bestanden und zwei bedingte Browser-Skips;
+  Formatverifikation sowie staged/unstaged `git diff --check` bestanden.
+- Belegt: Commit `995aada` (`feat(html): foster textarea from table modes`) ist
+  nach `origin/main` gepusht. Windows, Linux x64/arm64 und CodeQL bestehen;
+  Trunk checks scheitern an Markdownlint-Befunden in unveraenderten Plan- und
+  Core-Testdateien. Dev Environment Prebuild lief bei der letzten Abfrage noch.
+- Quelle: `specs/cache/html.html#parsing-main-intable` (Manifesteintrag `html`,
+  geprueft 2026-11-07), `HtmlParser.cs`, Tree-Regressionen, lokale Build-/
+  Test-/Formatlaeufe, `gh run view 44705746174` und `gh run list --limit 8`,
+  abgefragt am 2026-11-20.
+
+### KP-575 - title table modes
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Begrenzte Fortsetzung der In-Table-Anything-Else-Regel; das vorhandene
+  RCDATA-Verhalten wird wiederverwendet.
+- TDD: Zwei neue Regressionen fuer Table-, TableBody- und Row-Modi scheiterten
+  zunaechst explizit mit `UnsupportedHtmlException`. Sie pruefen gefosterte
+  Titel-Einsetzung, RCDATA mit dekodierter Referenz und erhaltenem
+  Anfangs-LF, Wiederaufnahme des Tabellenmodus sowie unmatched-end recovery.
+- Belegt: Engine.Html.Tests 7.443 bestanden; Solution-Build ohne Warnungen/
+  Fehler; Volltests 17.439 bestanden und zwei bedingte Browser-Skips;
+  Formatverifikation sowie staged `git diff --check` bestanden.
+- Belegt: Commit `da64411` (`feat(html): foster title tags from table modes`)
+  ist auf `origin/main` gepusht. Windows confinement, Linux x64/arm64 und
+  CodeQL bestehen; Trunk scheitert an denselben Markdownlint-Befunden in
+  unveraenderten Plan- und Core-Testdateien. Dev Environment Prebuild lief bei
+  der letzten Abfrage noch.
+- Quelle: `specs/cache/html.html#parsing-main-intable` (Manifesteintrag `html`,
+  geprueft 2026-11-07), `HtmlParser.cs`, Tree-Regressionen, lokale Build-/
+  Test-/Formatlaeufe, `gh run view 44708544422` und `gh run list --limit 8`,
+  abgefragt am 2026-11-20.
+
+### KP-576 - rawtext elements table modes
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Erweiterung der In-Table-Anything-Else-Regel fuer die bereits
+  implementierten RAWTEXT-Startpfade `iframe`, `noembed` und `noframes`.
+  Parsing bleibt auf Text beschraenkt; neue Browsing-Kontexte oder Resource-
+  Loading entstehen nicht.
+- TDD: Zwei parametrische Regressionen fuer alle drei Elemente und Table-,
+  TableBody- und Row-Modi scheiterten zunaechst mit
+  `UnsupportedHtmlException`. Sie pruefen fostered Reihenfolge, Literaltext
+  einschliesslich Markup/Referenztext, Tabellenmodus-Wiederaufnahme und
+  unmatched-end recovery.
+- Belegt: Engine.Html.Tests 7.449 bestanden; Solution-Build ohne Warnungen/
+  Fehler; Volltests 17.445 bestanden und zwei bedingte Browser-Skips;
+  Formatverifikation sowie staged `git diff --check` bestanden.
+- Belegt: Commit `d3d89df` (`feat(html): foster raw-text elements from table modes`)
+  ist nach `origin/main` gepusht. Windows, Linux x64/arm64 und CodeQL bestehen;
+  Trunk scheitert mit Markdownlint-Befunden in unveraenderten Plan- und
+  Core-Testdateien. Dev Environment Prebuild lief bei der letzten Abfrage noch.
+- Quelle: `specs/cache/html.html#parsing-main-intable` (Manifesteintrag `html`,
+  geprueft 2026-11-07), `HtmlParser.cs`, Tree-Regressionen, lokale Build-/
+  Test-/Formatlaeufe, `gh run view 44711209669`, Joblogs, Push-Ausgabe und
+  `gh run list --limit 12`, abgefragt am 2026-11-20.
+
+### KP-577 - xmp table modes
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung der begrenzten In-Table-Anything-Else-Regel fuer das
+  bestehende `xmp`-RAWTEXT-Verhalten und dessen In-Body-Absatz-/Formatierungs-
+  Verarbeitung.
+- TDD: Zwei neue Regressionen fuer Table-, TableBody- und Row-Modi scheiterten
+  zuerst explizit mit `UnsupportedHtmlException`. Sie pruefen gefosterte
+  Einsetzung, unverarbeiteten RAWTEXT-Inhalt, Tabellenmodus-Wiederaufnahme
+  und unmatched-end recovery.
+- Belegt: Engine.Html.Tests 7.451 bestanden; Solution-Build ohne Warnungen/
+  Fehler; Volltests 17.447 bestanden und zwei bedingte Browser-Skips;
+  Formatverifikation und staged `git diff --check` bestanden.
+- Belegt: Commit `c2b39dd` (`feat(html): foster xmp from table modes`) ist nach
+  `origin/main` gepusht. Die zugehoerigen CI-Runs waren in der letzten
+  `gh run list --limit 12`-Abfrage noch nicht aufgefuehrt.
+- Quelle: `specs/cache/html.html#parsing-main-intable` (Manifesteintrag `html`,
+  geprueft 2026-11-07), `HtmlParser.cs`, Tree-Regressionen, lokale Build-/
+  Test-/Formatlaeufe, Push-Ausgabe und `gh run list --limit 12`, abgefragt
+  am 2026-11-20.
+
+### KP-578 - table foster text routing
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Bei der Fortsetzung der Table-Foster-Arbeit fiel auf, dass bestehende
+  Tree-Tests Zeichen nach einem gefosterten Nicht-Tabellen-Starttag als
+  Geschwistertext vor der Tabelle erwarteten.
+- Belegt: Der lokale Cache `specs/cache/html.html#parsing-main-intable`
+  (Manifest-ID `html`, `checkedAt` 2026-11-07) puffert Zeichen fuer den
+  In-Table-Text-Modus nur, wenn der aktuelle Knoten `table`, `tbody`,
+  `template`, `tfoot`, `thead` oder `tr` ist. Sonst greift die Anything-Else-
+  Regel mit In-Body-Verarbeitung. Der vorherige Parser puffert unconditional;
+  die bisherigen Tests stimmen an dieser Stelle nicht mit der Spezifikation
+  ueberein.
+- TDD: Eine neue Regression fuer fostered `button`-Inhalt in Table-,
+  TableBody- und Row-Modi scheiterte vor dem Parser-Fix, weil der Button leer
+  blieb. Der Fix routet Zeichen bei Nicht-Tabellen-Knoten durch die bestehende
+  Foster-/In-Body-Verarbeitung; Erwartungen fuer die vorhandenen Block-,
+  Heading-, Pre/Listing-, List- und Button-Tests wurden korrigiert.
+- Belegt: Der HTML-Fragments-Test fuer Table-Kontext entdeckte, dass die
+  Bedingung den im Fragmentalgorithmus angepassten aktuellen Knoten verwenden
+  muss. `AdjustedCurrentNode` bildet die Fragmentkontext-Ausnahme ab. Danach
+  bestehen Engine.Html.Tests 7.452/7.452 und `dotnet build VisualWeb.slnx`
+  mit null Warnungen und null Fehlern. `dotnet test VisualWeb.slnx --no-build`
+  besteht mit 17.448 Tests und zwei bedingten Skips; Formatverifikation und
+  staged `git diff --check` bestehen. Commit `f4e2e5a` wurde gepusht; die
+  CI-Runs fuer Windows, Linux, CodeQL und Prebuild waren bei der letzten
+  Abfrage queued/in progress. Die Kontextdateien selbst wurden nicht committed.
+- Belegt: Die nachtraeglich abgefragte CI fuer den vorigen Commit `c2b39dd`
+  zeigt Windows confinement und CodeQL erfolgreich. Linux development
+  scheitert im Trunk-Check mit Markdownlint-Befunden in unveraenderten
+  Abschluss-/Plan-Dateien und `tests/Core.Tests/Data/README.md`; die
+  Dev-Environment-Prebuild ist erfolgreich (Run `44713851177`).
+- Belegt: Die neue CI fuer `f4e2e5a` ist fuer Windows, Linux, CodeQL und
+  Prebuild gestartet; Abschlussergebnisse stehen noch aus.
+- Quelle: lokale HTML-Spezifikation, `HtmlParser.cs`, `TreeTests.cs`,
+  `FragmentTests.cs`, die dokumentierte Testausgabe und der aktuelle Chat-
+  Fortsetzungsauftrag vom 2026-11-20, `gh run list --limit 12`,
+  `gh run view 44713851734 --log-failed` und
+  `gh run view 44713851177`. Fruehere, nun widerlegte
+  Geschwistertext-Erwartungen bleiben in den jeweiligen KP-Eintraegen als
+  historische Evidenz erhalten; diese Korrektur supersediert sie.
+
+### KP-579 - template table modes
+
+- Dokumentiert am: 2026-11-20.
+- Bezug: Fortsetzung des ausdruecklichen Nutzerauftrags, WHATWG HTML und DOM
+  inkrementell weiterzuentwickeln und nach jedem abgeschlossenen Schnitt zu
+  committen. Dieser Abschnitt dokumentiert einen Parser-Schnitt; eine neue
+  DOM-Aenderung war fuer die vorhandene native Template-Content-Fragmente nicht
+  erforderlich.
+- Belegt: Template-Start- und Endtags in Table-, TableBody- und Row-Modi laufen
+  durch die vorhandenen `StartTemplate`-/`CloseTemplate`-Regeln. Das native
+  `DomTemplateElement.Content` nimmt Inhalt auf; nach dem Ende wird der
+  urspruengliche Tabellenmodus wiederhergestellt. Die fruehere pauschale
+  Ablehnung dieser Tags wurde entfernt. Table-/Select-Insertion-Modes
+  innerhalb von Template-Inhalt bleiben weiterhin unsupported.
+- TDD und Validierung: Dokument-Regressionen fuer Table-, TableBody- und
+  Row-Modi sowie ein Table-Kontext-Fragment-Test pruefen Template-Inhalt,
+  Einfuegeort und Moduswiederherstellung. Zwei fokussierte Faelle und alle
+  7.453 Engine.Html-Tests bestehen. `dotnet build VisualWeb.slnx` besteht mit
+  null Warnungen und null Fehlern; Formatverifikation und `git diff --check`
+  bestehen. Der Volltestlauf hat einen Deadline-Fehler im unabhaengigen
+  `UrlBindingTests.UrlComponentSettersMatchPinnedControlCharacterWptCases`
+  gemeldet; derselbe Test besteht isoliert (1/1). Der Volltestlauf wird daher
+  als nicht vollstaendig bestanden dokumentiert, nicht als Erfolg umgedeutet.
+- Belegt: Die sechs Parser-, Test- und Dokumentationsdateien wurden als
+  `f7e1f2f` (`feat(html): process templates in table modes`) committed und nach
+  `origin/main` gepusht. Die CI-Runs fuer diesen SHA sind Linux `44721359737`,
+  CodeQL `44721359474`, Windows `44721359276` und Prebuild `44721358978`;
+  sie liefen bei letzter Abfrage noch. Fuer den vorherigen Commit `f4e2e5a`
+  sind Windows, CodeQL und Prebuild erfolgreich; Linux `44717234213`
+  scheitert an Markdownlint-Befunden in unveraenderten Dateien.
+- Abgeleitet/offen: Der Cache-Abschnitt
+  `specs/cache/html.html#parsing-main-intemplate` (Manifest-ID `html`,
+  `checkedAt: 2026-11-07`, am 2026-11-20 innerhalb von 30 Tagen) spezifiziert
+  den Wechsel zu In-Table, In-Column-Group, In-Table-Body und In-Row fuer
+  passende Starttags. Die Implementierung dieser internen Template-Modi ist
+  der naechste konkrete Kandidat; sie ist in diesem Commit nicht enthalten.
+- Quelle: `HtmlParser.cs`, `TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `plans/Missing.md`, lokale HTML-Spezifikation,
+  dokumentierte lokale Validierung, `git show f7e1f2f`,
+  `gh run list --limit 12` sowie `gh run view` fuer die abgeschlossenen
+  `f4e2e5a`-Laeufe, abgefragt am 2026-11-20.
+
+### KP-580 - Checkpoint-Klaerung und Template-Tabelleninhalt
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe: Der Nutzer kann die vermeintlich widerspruechlichen
+  Arbeitsstaende nicht selbst klaeren und bittet um Untersuchung.
+- Belegt/Korrektur: Der Assistent hatte den alten Session-Checkpoint 006 statt
+  des neueren Checkpoints 015 gelesen und daraus faelschlich einen aktuellen
+  Konflikt abgeleitet. `b4b4a88` mit Furthest-Block-Adoption ist bereits ein
+  Vorfahre von `HEAD`; die aktuelle Aenderung betrifft Tabellenmodi im
+  Template-Inhalt. Die staged Kontextdateien bleiben vom Source-Commit getrennt.
+- Belegt: Der aktuelle Schnitt verwendet die vorhandenen Tabellenalgorithmen
+  fuer die spezifikationsdefinierte Insertion-Mode-Auswahl im Template und
+  verarbeitet Template-Tags im Column-Group-Modus. Bei der Pruefung zeigten
+  fuenf Regressionen, dass EOF in neuen Tabellenmodi die Template-Schliessung
+  uebersprang. Die gemeinsame EOF-Weiterleitung und weitere Tests decken jetzt
+  auch verschachtelte Templates und gepufferten Tabellentext ab.
+- Belegt: Engine.Html.Tests bestehen mit 7.471 Tests; der Solution-Build
+  besteht ohne Warnungen/Fehler und die finale Formatpruefung ist erfolgreich.
+  Ein Volltestlauf scheiterte am V8-Deadline-Test
+  `UrlComponentSettersMatchPinnedControlCharacterWptCases`; derselbe Test
+  besteht isoliert. Der vorherige Basiskommit `f7e1f2f` meldete im Volltest
+  denselben Fehler (KP-579). Ein weiterer paralleler Volltestlauf scheiterte
+  an einer xUnit-Discovery-Ausgabe im Paint-Projekt; Paint (90 Tests) besteht
+  isoliert und in einem danach gestarteten seriellen Volltestlauf. Der serielle
+  Volltestlauf `dotnet test VisualWeb.slnx --no-build -m:1` besteht mit 17.467
+  Tests und zwei bedingten Browser-Skips.
+- Belegt: Die sechs betreffenden Code-/Test-/Dokumentationsdateien wurden als
+  `bbe5c07` committed und nach `origin/main` gepusht. Der Commit-Hook
+  formatierte `docs/standards.md` und meldete anschliessend keine Befunde;
+  dessen temporaere Indexabweichung wurde an den committed Stand angepasst.
+  Die Kontextdateien bleiben uncommitted und ihre bereits staged Versionen
+  wurden nicht veraendert. CI fuer diesen Commit: Windows `44792841060`,
+  Linux x64/arm64 `44792840727` und Push-on-main `44792840263` bestehen;
+  Linux Trunk scheitert mit 28 Markdownlint-Befunden in unveraenderten Plan-
+  und Core-Testdateien. Prebuild `44792840522` ist inzwischen erfolgreich.
+- Belegt: Fuer `f7e1f2f` bestehen Linux x64/arm64, Windows, CodeQL und
+  Dev-Environment-Prebuild. Linux Trunk ist fehlgeschlagen; die zuvor
+  dokumentierten Markdownlint-Befunde betreffen unveraenderte Dateien.
+- Quelle: Session-Checkpoint-Index und Checkpoints 006, 007 und 015,
+  `git merge-base --is-ancestor b4b4a88 HEAD`, Diff, Testlaeufe,
+  Commit-/Push-Ausgabe, `gh run list`, `gh run view 44792840727` und Trunk-Log,
+  `gh run view 44721359737`, `44721359474`, `44721359276`, `44721358978`;
+  Nutzeranfrage im aktuellen Chat.
+
+### KP-581 - Span-Foster-Parenting in Tabellenmodi
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe/Ableitung: Der Nutzer bittet um Fortsetzung nach dem Commit;
+  im ueberlieferten urspruenglichen Auftrag liegt der Fokus auf WHATWG HTML
+  und DOM. Deshalb bleibt dieser Schnitt innerhalb der dokumentierten
+  Tabellen-Foster-Parenting-Luecke, statt auf andere Standards zu wechseln.
+- Belegt: Die lokale HTML-Quelle (`html`-Manifest, `checkedAt` 2026-11-07,
+  innerhalb von 30 Tagen) verarbeitet sonstige Start-/Endtags in Table-,
+  TableBody- und Row-Modi mit Foster-Parenting und In-Body-Regeln. Der Parser
+  warf `<span>` dort explizit als nicht unterstuetztes Tabellen-Token ab.
+- TDD/Umsetzung: Vier Regressionen fuer Table-, TableBody-, Row- und
+  ColumnGroup-Kontext scheiterten zuerst mit `UnsupportedHtmlException`.
+  `<span>`-Start und -End werden jetzt ueber die vorhandene In-Body-/
+  Foster-Parent-Verarbeitung behandelt; Tests decken Baumordnung und
+  Parse-Diagnostik ab. Template-Tabelleninhalt wird ebenfalls getestet.
+  Andere Formatting-Elemente, die Adoption benoetigen, bleiben explizit
+  unsupported und haben eine eigene Negativregression.
+- Belegt: Engine.Html.Tests bestehen mit 7.477 Tests; Solution-Build besteht
+  mit 0 Warnungen/Fehlern, Formatverifikation und serielle
+  `dotnet test VisualWeb.slnx --no-build -m:1` bestehen mit 17.473 Tests und
+  zwei bedingten Browser-Skips. Commit `95d78ac` ist nach `main` gepusht.
+- Belegt: Fuer `95d78ac` bestehen Windows (`44798753997`), Push-on-main
+  (`44798753915`) sowie Linux x64/arm64 (`44798753986`). Linux Trunk
+  (`44798753986`) meldet 28 Markdownlint-Befunde in unveraenderten
+  Plan-/Core-Dateien; derselbe Befund trat bereits fuer `bbe5c07` auf.
+  Prebuild `44798780949` ist erfolgreich.
+- Quelle: `specs/cache/html.html`, `specs/manifest.json`, `HtmlParser.cs`,
+  TreeTests, lokale focused/full-test/build/format-Ausgaben, `git diff`,
+  `gh run view 44792840727`, `gh run view 44798753986`, `gh run list` und
+  der aktuelle Chat.
+
+### KP-582 - Plaintext-Foster-Parenting in Tabellenmodi
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe/Ableitung: Die Fortsetzung bleibt im urspruenglichen
+  WHATWG-HTML/DOM-Auftrag, statt auf die allgemeine URL-Prioritaet des Trackers
+  umzuschwenken.
+- Belegt: Die frische lokale HTML-Quelle (`checkedAt` 2026-11-07) verlangt fuer
+  sonstige Tokens in Tabellenmodi Foster-Parenting und danach In-Body-Regeln.
+  Die In-Body-Regel fuer `plaintext` schaltet den Tokenizer auf PLAINTEXT um;
+  die restlichen Eingabezeichen werden Text. Der Parser warf diesen Start-
+  bzw. unpassenden Endtag in Table-, TableBody-, Row- und ColumnGroup-Kontexten
+  bislang als unsupported ab.
+- TDD/Umsetzung: Vier neue Starttag-Faelle scheiterten zuerst mit
+  `UnsupportedHtmlException`. Die In-Body-Foster-Route verarbeitet jetzt
+  `plaintext`-Tokens in den Tabellenmodi; Tests decken literal-text parsing,
+  Tabellenspalten-/Zeilenkontexte, Template-Content und unpassende Endtags ab.
+  Andere Tokens mit Foster-/Adoption-Komplexitaet bleiben unsupported.
+- Belegt: Sechs fokussierte Regressionen und alle 7.483 Engine.Html.Tests
+  bestehen. Solution-Build: 0 Warnungen/Fehler; serieller
+  Solution-Volltest: 17.479 bestanden und zwei bedingte Browser-Skips;
+  Formatverifikation besteht. Commit `72fcea7` wurde gepusht. Windows x64/arm64
+  (`44802345574`) und Push-on-main (`44802344966`) bestehen. Linux x64/arm64
+  (`44802345481`) bestehen; dessen Trunk-Job meldet dieselben 28 bestehenden
+  Markdownlint-Befunde in unbeteiligten Dateien. Prebuild `44802344668` ist
+  erfolgreich.
+- Quelle: `specs/cache/html.html#parsing-main-intable`,
+  `#parsing-main-inbody`, `specs/manifest.json`, `HtmlParser.cs`, TreeTests,
+  lokale Test-/Build-/Format-Ausgaben, `gh run list` und aktueller Chat.

@@ -199,7 +199,8 @@ after-after-body modes. Supported behavior includes:
   in the same modes. Adoption reparenting that itself requires table foster
   parenting remains unsupported. `select` starts and unmatched end tags in
   those modes also use bounded fostered in-body handling; an open select uses
-  the existing bounded select-token rules.
+  the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`
+  start/end tags also use this path; ruby annotation recovery remains bounded.
   `plaintext` starts and
   unmatched end tags in those modes use the fostered in-body path; a start
   switches to PLAINTEXT so the rest of the input is literal text. Character
