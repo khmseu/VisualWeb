@@ -852,6 +852,38 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("", "table")]
+    [InlineData("<tbody>", "tbody")]
+    [InlineData("<tbody><tr>", "tr")]
+    public void OutOfScopeFormEndsInTableModesClearTheFormPointer(string context, string expectedParent)
+    {
+        var result = Parse($"<!doctype html><body><table>{context}"
+            + "<form id=first></form><form id=second></form><td>cell</td></table>"
+            + "<form id=after>after</form>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var forms = Descendants(table).Where(element => element.LocalName == "form").ToArray();
+        Assert.Equal(new[] { "first", "second" }, forms.Select(form => form.GetAttribute("id")));
+        Assert.All(forms, form => Assert.Equal(expectedParent, Assert.IsType<DomElement>(form.ParentNode).LocalName));
+        Assert.Equal("cell", Assert.Single(Descendants(table), element => element.LocalName == "td").TextContent);
+        Assert.Equal("after", Assert.IsType<DomElement>(table.NextSibling).GetAttribute("id"));
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "unexpected-form-end-tag"));
+    }
+
+    [Fact]
+    public void OutOfScopeOuterFormEndClearsPointerWithoutPoppingTheForm()
+    {
+        var result = Parse("<!doctype html><body><form id=outer><table></form>"
+            + "<tr><td>cell</td></tr></table><form id=inner>inside</form>");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        Assert.Equal("outer", outer.GetAttribute("id"));
+        Assert.Equal("table", Assert.IsType<DomElement>(outer.FirstChild).LocalName);
+        var inner = Assert.IsType<DomElement>(outer.LastChild);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("inside", inner.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-form-end-tag");
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("<tbody>")]
     [InlineData("<tbody><tr>")]

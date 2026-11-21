@@ -247,6 +247,25 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragmentUnmatchedFormEndClearsTheAncestorFormPointer()
+    {
+        var document = new DomDocument();
+        var outer = document.CreateElement("form");
+        var context = document.CreateElement("div");
+        outer.AppendChild(context);
+
+        var result = HtmlParser.ParseFragment("</form><form id=inner>inside</form>",
+            context, cancellationToken: TestContext.Current.CancellationToken);
+
+        var inner = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("form", inner.LocalName);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("inside", inner.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-form-end-tag");
+        Assert.DoesNotContain(result.Errors, error => error.Code == "nested-form");
+    }
+
+    [Fact]
     public void ParseFragmentTemplateContextIgnoresAncestorFormPointer()
     {
         var document = new DomDocument();

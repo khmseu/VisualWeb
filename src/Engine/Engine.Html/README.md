@@ -79,6 +79,8 @@ Inside template contents, including template-context fragments, form starts
 ignore and preserve the outer form pointer; in-body form ends close the
 in-scope form, and in-table form starts are inserted and popped without
 changing the pointer. DOM form-owner APIs and scripting remain deferred.
+Outside template contents, a form end clears the form pointer even when the
+form is absent or out of scope; an out-of-scope form remains on the stack.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,

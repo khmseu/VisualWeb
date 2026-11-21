@@ -17322,3 +17322,30 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-594 - Formularzeiger vor Scope-Pruefung loeschen
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
+- Belegt: Der Stand aus KP-593 wurde als `2ec8853` lokal committed. Der
+  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips; der
+  Commit-Hook meldete keine Probleme. Kein Push angefordert. Dies ersetzt die
+  damalige Status- und Volltestangabe in KP-593.
+- Belegt: Ein In-body-Formularendtag ausserhalb von Template-Inhalt loescht
+  den Formularzeiger vor der Scope-Pruefung. Ist das referenzierte Formular
+  nicht in scope, wird es nicht vom Stack entfernt und die bestehende
+  Fehlerdiagnose bleibt erhalten. Nachfolgende Formularstarts werden nicht
+  mehr durch einen veralteten Zeiger ignoriert. In Template-Inhalt gilt weiter
+  der gesonderte Pfad aus KP-593.
+- Verifikation: Fuenf gezielte Faelle scheiterten vor der Aenderung und
+  bestehen danach; sie betreffen Table-, TableBody-, Row-, aeusseres Formular-
+  und Fragment-Kontext. Engine.Html.Tests besteht mit 7.586 Tests.
+  Solution-Build ohne Warnungen/Fehler und Formatverifikation bestehen; ein
+  Solution-Volltest fuer diesen neuen Stand wurde nicht ausgefuehrt. Der
+  neue Stand ist uncommitted.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`, laut
+  Manifest geprueft am 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.

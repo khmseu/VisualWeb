@@ -755,8 +755,8 @@ public static class HtmlParser
                         }
 
                         var node = formPointer;
-                        if (node is null || !InScope("form")) { Error("unexpected-form-end-tag"); return; }
                         formPointer = null;
+                        if (node is null || !InScope("form")) { Error("unexpected-form-end-tag"); return; }
                         FlushText();
                         while (open[^1] != node && open[^1].LocalName is "dd" or "dt" or "li" or "p") { open.RemoveAt(open.Count - 1); }
                         if (open[^1] != node)
