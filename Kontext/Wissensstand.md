@@ -361,6 +361,94 @@ meldet dieselben 28 bestehenden Markdownlint-Befunde in unbeteiligten Dateien;
 Prebuild `44802344668` ist erfolgreich. Siehe
 [KP-582](./Kontextprotokoll.md#kp-582---plaintext-foster-parenting-in-tabellenmodi).
 
+**Select in Template-Inhalt (2026-11-20; KP-583; validiert und gepusht):**
+Ein `select`-Start in Template-Inhalt nutzt nun den vorhandenen begrenzten
+In-Body-/Select-Parser gemaess `in template`. Der Regressionstest prueft
+Options, inert template-contents OwnerDocument, Moduswiederherstellung nach
+`</select>` und Body-Fortsetzung nach `</template>`; Template-Starts in Selects,
+verschachtelte Selects und Foreign Content bleiben unsupported. Der fokussierte
+Test und Engine.Html.Tests (7.483), Solution-Build (0 Warnungen/Fehler),
+Formatverifikation und serieller Volltest (17.479 Tests; zwei bedingte
+Browser-Skips) bestehen. Commit `db368e1` ist gepusht; Linux x64/arm64,
+Windows x64/arm64 und CodeQL bestehen. Linux Trunk meldet 28 Markdownlint-
+Befunde ausschliesslich in unveraenderten Plan-/Core-Testdateien. Prebuild
+`44827582469` ist inzwischen erfolgreich abgeschlossen.
+Die bereits gestaged Kontextdateien bleiben ausserhalb eines Source-Commits.
+Siehe
+[KP-583](./Kontextprotokoll.md#kp-583---select-verarbeitung-in-template-inhalt).
+
+**Select-Foster-Parenting in Tabellenmodi (2026-11-20; KP-587; committed und gepusht):**
+`select`-Starts und unmatched Endtags verwenden in Table-, TableBody-, Row-
+und ColumnGroup-Modi den begrenzten Foster-Parent-/In-Body-Pfad; offene
+Select-Elemente nutzen anschliessend die bestehenden Select-Token-Regeln.
+Fuenf Regressionstests waren vor Implementierung rot. Engine.Html.Tests
+besteht mit 7.500 Tests; Solution-Build ohne Warnungen/Fehler, Volltest
+(17.496 bestanden, zwei bedingte Browser-Skips), Formatverifikation und
+Diff-Check bestehen. Commit `7fd2224` ist gepusht. Windows confinement und
+CodeQL bestehen; Linux development meldet 28 Markdownlint-Befunde in
+unveraenderten Plan-/Core-Testdateien. Der Dev-Environment-Prebuild besteht.
+Siehe
+[KP-587](./Kontextprotokoll.md#kp-587---select-in-tabellenmodi).
+
+**Ruby-Foster-Parenting in Tabellenmodi (2026-11-21; KP-588; validiert und gepusht):**
+`ruby`, `rb`, `rtc`, `rp` und `rt` nutzen mit Start- und Endtags den
+vorhandenen begrenzten Foster-Parent-/In-Body-Pfad in Table-, ColumnGroup-,
+TableBody- und Row-Modi. Vier Modus-Regressionen pruefen die Annotationen und
+den bestehenden Ruby-Parserpfad; Ruby-spezifisches Styling/Layout bleibt
+unsupported. Engine.Html.Tests (7.504), Solution-Build, Volltest (17.500
+bestanden, zwei bedingte Browser-Skips), Formatverifikation und Diff-Check
+bestehen. Commit `bca3299` enthaelt unbeabsichtigt auch zuvor gestagte
+Kontextaenderungen und liegt auf `origin/main`. CodeQL besteht; Linux, Windows
+und Prebuild liefen bei der letzten Abfrage noch. Siehe
+[KP-588](./Kontextprotokoll.md#kp-588---ruby-annotationen-in-tabellenmodi).
+
+**Formatting-Elemente in Tabellenmodi (2026-11-20; KP-586; committed und gepusht):**
+Formatierungselemente aus der vorhandenen `FormattingTags`-Menge nutzen nun
+mit ihren Start- und Endtags in Table-, ColumnGroup-, TableBody- und Row-Modi
+den begrenzten In-Body-/Foster-Parent-Pfad. Fuenf neue Modus-/Recoveryfaelle
+waren vor der Umsetzung rot. Komplexes Adoption-Reparenting, das Table-Foster-
+Parenting benoetigt, bleibt explizit unsupported. Engine.Html.Tests besteht
+mit 7.495 Tests; Solution-Build (0 Warnungen/Fehler), Volltest (17.491
+bestanden, zwei bedingte Browser-Skips), Formatverifikation und Diff-Check
+bestehen. Commit `9620879` ist gepusht. Linux x64/arm64, Windows, CodeQL und
+Prebuild bestehen; Linux Trunk scheitert ausschliesslich an vorhandenen
+Markdownlint-Befunden in unveraenderten Plan-/Core-Testdateien. Siehe
+[KP-586](./Kontextprotokoll.md#kp-586---formatting-elemente-in-tabellenmodi).
+
+**Anchor-Foster-Parenting in Tabellenmodi (2026-11-20; KP-585; gepusht):**
+`a`-Start-/Endtags nutzen in Table-, ColumnGroup-, TableBody- und Row-Modi
+den begrenzten In-Body-/Foster-Parent-Pfad, einschliesslich der vorhandenen
+Nested-Anchor-Recovery. Vier Modusfaelle, ein Nested-Anchor-Fall und ein
+Negativfall fuer Adoption-Reparenting mit Table-Foster-Parenting pruefen den
+Umfang; letzteres bleibt explizit unsupported. Engine.Html.Tests besteht mit
+7.492 Tests, der Solution-Build mit 0 Warnungen/Fehlern und der serielle
+Solution-Volltest mit 17.488 Tests und zwei bedingten Browser-Skips.
+Formatverifikation und Diff-Check bestehen. Commit `38bbf1d` ist gepusht;
+Linux x64/arm64, Windows, CodeQL und Prebuild bestehen. Nur Linux Trunk
+scheitert an Markdownlint-Befunden in unveraenderten Plan-/Core-Testdateien;
+keine geaenderte Datei ist betroffen. Der HTML-Supportwert bleibt unveraendert.
+Siehe [KP-585](./Kontextprotokoll.md#kp-585---anchor-foster-parenting).
+
+**Option/Optgroup-Foster-Parenting in Tabellenmodi (2026-11-20; KP-584; gepusht):**
+`option`- und `optgroup`-Start-/Endtags nutzen in Table-, ColumnGroup-,
+TableBody- und Row-Modi den vorhandenen begrenzten In-Body-/
+Foster-Parent-Pfad. Vier Regressionstests decken diese Modi, verschachtelte
+Option-Struktur und Foster-Diagnostik ab; der erste Testlauf schlug mit
+`UnsupportedHtmlException` fehl. Die Engine.Html-Suite besteht mit 7.487
+Tests, der Solution-Build mit 0 Warnungen/Fehlern und der serielle
+Solution-Volltest mit 17.483 bestandenen Tests und zwei bedingten
+Browser-Skips. Formatverifikation und Diff-Check bestehen. Commit `99ae4ca`
+ist gepusht; Linux x64/arm64, Windows x64/arm64, CodeQL und Prebuild bestehen.
+Nur Linux Trunk scheitert an denselben 28 Markdownlint-Befunden in
+unveraenderten Plan-Dateien und `tests/Core.Tests/Data/README.md`; keine
+geaenderte Datei ist betroffen.
+Der grobe HTML-Wert bleibt ~20%; andere Foster-Parent-Algorithmen und
+formatting-element-Reparenting mit Table-Foster-Parenting bleiben unsupported.
+Der Dokumentations-Follow-up `3855f05` fuer KP-583 hat erfolgreiche Windows-,
+CodeQL- und Prebuild-CI; Linux Trunk meldet 28 Markdownlint-Befunde in
+unveraenderten Plan-/Core-Testdateien. Siehe
+[KP-584](./Kontextprotokoll.md#kp-584---optionoptgroup-foster-parenting).
+
 **URL-IDL-Legacy-Alias (2026-11-19; KP-509; Beschluss umgesetzt):** Der
 Nutzer stimmte der minimalen Window-Global-Integration fuer
 `[LegacyWindowAlias=webkitURL]` zu. Nur die explizit aktivierten

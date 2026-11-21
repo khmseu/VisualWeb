@@ -17012,3 +17012,201 @@ VisualWeb.slnx` ohne Warnungen/Fehler; Volltestlauf 17.370 bestanden mit
 - Quelle: `specs/cache/html.html#parsing-main-intable`,
   `#parsing-main-inbody`, `specs/manifest.json`, `HtmlParser.cs`, TreeTests,
   lokale Test-/Build-/Format-Ausgaben, `gh run list` und aktueller Chat.
+
+### KP-583 - Select-Verarbeitung in Template-Inhalt
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe/Ableitung: Der fortgesetzte Auftrag bleibt, WHATWG-HTML und DOM
+  inkrementell zu erweitern und korrespondierende Bereiche zusammenzufuehren,
+  wenn sie sich anbieten. Diese Parserluecke ist ein kleiner HTML-Schritt; die
+  vorhandene native Template-Content-/Owner-Document-Unterstuetzung wird dabei
+  wiederverwendet.
+- Belegt: Die frische lokale HTML-Quelle (`checkedAt` 2026-11-07) weist im
+  `in template`-Modus sonstige Starttags dem `in body`-Modus zu. Der Parser
+  lehnte `select` dennoch sowohl vor der Modusverarbeitung als auch im
+  `TemplateToken` explizit ab. `TemplateToken` laesst den Start jetzt in den
+  vorhandenen begrenzten In-Body-/Select-Pfad fallen; Template-Starts innerhalb
+  eines Selects sowie verschachtelte Selects bleiben unsupported.
+- TDD/Umsetzung: Der neue positive Regressionstest scheiterte zuerst mit
+  `UnsupportedHtmlException`. Er deckt Optionen, den inert template-contents
+  OwnerDocument, ein nachfolgendes In-Body-Element im Template sowie die
+  Fortsetzung des aeusseren Bodys ab. Die bestehenden negativen Faelle fuer
+  Foreign Content und Template-Starts in Selects bleiben erhalten.
+- Belegt: Der fokussierte Test und alle 7.483 Engine.Html.Tests bestehen.
+  Solution-Build besteht mit 0 Warnungen/Fehlern; der serielle
+  Solution-Volltest besteht mit 17.479 Tests und zwei bedingten Browser-Skips;
+  Formatverifikation besteht. Commit `db368e1` ist nach `main` gepusht.
+- Belegt: Linux x64/arm64 sowie Windows x64/arm64 bestehen; CodeQL besteht.
+  Linux Trunk scheitert mit 28 Markdownlint-Befunden in unveraenderten
+  Plan-/Core-Testdateien; keine der geaenderten Dateien erscheint in den
+  Findings. Prebuild `44827582469` steht am 2026-11-20T23:34+01:00 noch im
+  Upload-Template-Schritt und hat kein Ergebnis.
+- Quelle: `specs/cache/html.html#parsing-main-intemplate`,
+  `specs/manifest.json`, `HtmlParser.cs`, `TreeTests.cs`,
+  `docs/html-dom.md`, `docs/standards.md`, lokale Test-/Build-/Format-Ausgaben,
+  `gh run view 44827583108`, `44827582938`, `44827582669`, `44827582469` und
+  aktueller Chat.
+
+### KP-584 - Option/Optgroup-Foster-Parenting
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle HTML-/DOM-Erweiterung fort
+  und hatte zuvor wiederholt „commit, then continue“ angewiesen.
+- Belegt: Der lokale HTML-Cache hat laut `specs/manifest.json` weiterhin
+  `checkedAt: 2026-11-07`. In den Table-, ColumnGroup-, TableBody- und Row-
+  Modi fehlte die begrenzte In-Body-/Foster-Parent-Verarbeitung fuer
+  `option`/`optgroup`-Start- und Endtags; die betreffenden Tokens liefen in
+  den bestehenden allgemeinen Unsupported-Pfad.
+- TDD/Umsetzung: Eine Theory mit vier Tabellenmodi wurde zuerst rot mit
+  `UnsupportedHtmlException` bestaetigt. Die Start- und Endtags verwenden nun
+  den vorhandenen begrenzten Foster-Parent-Pfad in `HtmlParser.TableToken`.
+  Die Tests pruefen Foster-Struktur, enthaltene Option, Tabelleninhalt und
+  Diagnostik. Andere table-foster algorithms sowie
+  formatting-element-Reparenting mit Table-Foster-Parenting bleiben
+  unsupported; DOM-Code war nicht erforderlich.
+- Belegt: Engine.Html.Tests besteht mit 7.487 Tests; der Solution-Build
+  besteht mit 0 Warnungen/Fehlern; der serielle Volltest besteht mit 17.483
+  Tests und zwei bedingten Browser-Skips. Formatverifikation und
+  `git diff --check` bestehen. Commit `99ae4ca` ist nach `main` gepusht.
+- CI: Linux x64/arm64, Windows x64/arm64, CodeQL und Prebuild bestehen
+  (Runs `44834415956`, `44834415985`, `44834415275` und `44834432542`).
+  Linux Trunk allein scheitert mit
+  28 bestehenden Markdownlint-Befunden in unveraenderten Plan-Dateien und
+  `tests/Core.Tests/Data/README.md`; keine geaenderte Datei ist betroffen.
+  Fuer den Dokumentations-Follow-up `3855f05` bestehen Windows und CodeQL;
+  dessen Prebuild `44830486109` besteht ebenfalls. Linux Trunk scheitert mit
+  28 Markdownlint-Funden in unveraenderten Plan-Dateien und
+  `tests/Core.Tests/Data/README.md`; keine geaenderte Datei ist betroffen.
+  Der Template-Select-Prebuild `44827582469` ist inzwischen erfolgreich.
+- Quelle: `specs/cache/html.html`, `specs/manifest.json`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben, `git show 99ae4ca`,
+  `gh run list`, `gh run view 44830487039` und aktueller Chat.
+
+### KP-585 - Anchor-Foster-Parenting
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle HTML-/DOM-Erweiterung fort
+  und weist weiterhin an, jeden validierten Umfang zu committen und
+  anschliessend fortzufahren.
+- Belegt: Die lokale HTML-Quelle ist gemaess `specs/manifest.json`
+  (`checkedAt: 2026-11-07`) frisch. Table-Token, die nicht speziell behandelt
+  werden, verwenden den Foster-Parent-Pfad und werden im In-Body-Modus
+  verarbeitet. `a` fehlte in der begrenzten TableToken-Allowlist, obwohl die
+  vorhandene In-Body-Implementierung die beschraenkte Anchor-/Nested-Anchor-
+  Verarbeitung bereitstellt.
+- TDD/Umsetzung: Vier Table-/TableBody-/Row-/ColumnGroup-Faelle scheiterten
+  zuerst mit `UnsupportedHtmlException`. Nach Hinzunahme von `a` zu den
+  Start-/Endtag-Foster-Routen bestehen die Tabellenstruktur- und
+  Anchor-Regressionen. Der zuvor als unsupported getestete Fall
+  `<a><table><a>x` wird jetzt durch die begrenzte In-Body-Nested-Anchor-
+  Recovery behandelt; ein separater Fall, dessen Adoption-Reparenting
+  Table-Foster-Parenting benoetigt, scheitert weiterhin explizit. Die Parser-
+  Erweiterung benoetigt keine DOM-Codeaenderung.
+- Belegt: Engine.Html.Tests besteht mit 7.492 Tests; der Solution-Build
+  besteht mit 0 Warnungen/Fehlern; der serielle Solution-Volltest besteht mit
+  17.488 Tests und zwei bedingten Browser-Skips. Formatverifikation und
+  `git diff --check` bestehen. Commit `38bbf1d` ist nach `main` gepusht.
+- CI abgeschlossen: Linux x64/arm64, Windows, CodeQL und Prebuild bestehen;
+  nur der Linux-Trunk-Job scheitert an bestehenden Markdownlint-Befunden in
+  unveraenderten Plan-/Core-Testdateien. Keine geaenderte Datei ist betroffen.
+- Quelle: `specs/cache/html.html`, `specs/manifest.json`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben, `git show 38bbf1d`, `gh run list` und
+  aktueller Chat.
+
+### KP-586 - Formatting-Elemente in Tabellenmodi
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle Vervollstaendigung von
+  WHATWG HTML/DOM fort, moechte passende Features parallel behandeln und
+  weist weiterhin an, validierte Inkremente zu committen und danach
+  fortzufahren.
+- Belegt: Die lokale HTML-Quelle in `specs/cache/html.html` ist gemaess
+  `specs/manifest.json` am 2026-11-07 geprueft worden und innerhalb der
+  30-Tage-Frist. Die TableToken-Allowlist routete `a`, aber nicht die
+  vorhandene `FormattingTags`-Menge in Table-, ColumnGroup-, TableBody- und
+  Row-Modi durch den vorhandenen bounded Foster-Parent-/In-Body-Pfad.
+- TDD/Umsetzung: Vier Modustests fuer verschachtelte `b`/`i`-Elemente und ein
+  `nobr`-Recovery-Test scheiterten vor der Aenderung mit
+  `UnsupportedHtmlException`. Start- und Endtags der `FormattingTags`-Menge
+  verwenden nun den bestehenden Pfad; die Einzelbehandlung von `a` wurde damit
+  ueberfluessig. Eine veraltete Erwartung, `strong` muesse in diesem Modus
+  fehlschlagen, wurde entfernt. Adoption-Reparenting, das selbst Table-Foster-
+  Parenting benoetigt, bleibt durch den bestehenden Negativtest unsupported.
+- Belegt: Engine.Html.Tests besteht mit 7.495 Tests; `dotnet build
+VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
+  Testlauf besteht mit 17.491 Tests und zwei bedingten Browser-Skips.
+  Formatverifikation und `git diff --check` bestehen. Commit `9620879` ist
+  nach `origin/main` gepusht. Linux x64/arm64, Windows, CodeQL und Prebuild
+  bestehen; Linux Trunk allein scheitert an Markdownlint-Befunden in
+  unveraenderten Plan-/Core-Testdateien, keine geaenderte Datei ist betroffen.
+- Quelle: `specs/cache/html.html`, `specs/manifest.json`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben, `git show 9620879`, GitHub Actions
+  runs `44842036498`, `44842036437`, `44842036669`, `44842053115` und aktueller
+  Chat.
+
+### KP-587 - Select in Tabellenmodi
+
+- Dokumentiert am: 2026-11-20.
+- Nutzerangabe: Der Nutzer setzt die Vervollstaendigung von WHATWG HTML/DOM
+  fort, passende Features sollen gemeinsam umgesetzt und validierte
+  Inkremente committed/gepusht werden, bevor die Arbeit fortgesetzt wird.
+- Belegt: Die frische lokale HTML-Quelle (`html`, `checkedAt:
+2026-11-07`) definiert fuer sonstige Table-Mode-Tokens die foster-parented
+  In-Body-Verarbeitung (`#parsing-main-intable`). `select`-Starttags und
+  unmatched `select`-Endtags fehlten in der `TableToken`-Allowlist.
+- TDD/Umsetzung: Vier Faelle fuer Table-, TableBody-, Row- und ColumnGroup-
+  Kontexte scheiterten zuerst mit `UnsupportedHtmlException`. Die vorhandene
+  bounded Foster-Parent-In-Body-Funktion behandelt nun Select-Starttags und
+  unmatched Select-Endtags; bei einem offenen Select greifen die bestehenden
+  Select-Token-Regeln. Ein weiterer Regressionstest belegt end-tag-Recovery.
+- Belegt: Fuenf fokussierte Faelle bestehen; Engine.Html.Tests besteht mit
+  7.500 Tests; `dotnet build VisualWeb.slnx` besteht ohne Warnungen/Fehler.
+  Der gesamte Solution-Testlauf besteht mit 17.496 Tests und zwei bedingten
+  Browser-Skips. Formatverifikation und `git diff --check` bestehen. Commit
+  `7fd2224` ist nach `origin/main` gepusht. Windows confinement und CodeQL
+  bestehen; Linux development scheitert an 28 Markdownlint-Befunden in
+  unveraenderten Plan-/Core-Testdateien. Der Dev-Environment-Prebuild ist
+  inzwischen erfolgreich abgeschlossen.
+- Quelle: `specs/cache/html.html`, `specs/manifest.json`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben und aktueller Chat.
+
+### KP-588 - Ruby-Annotationen in Tabellenmodi
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Die Arbeit zur Vervollstaendigung von WHATWG HTML/DOM wird
+  fortgesetzt; passende Features sollen gemeinsam und validierte Inkremente
+  jeweils vor der Fortsetzung committed/gepusht werden.
+- Belegt: Der lokale HTML-Standardcache ist laut `specs/manifest.json`
+  (`html`, `checkedAt: 2026-11-07`) frisch. Die begrenzte In-Body-Verarbeitung
+  unterstuetzt Ruby-Annotationen bereits, Table-/ColumnGroup-/TableBody-/Row-
+  Modi liessen ihre Tags aber bisher nicht ueber den Foster-Pfad laufen.
+- TDD/Umsetzung: Vier regressionsfaelle (Table, TableBody, Row und
+  ColumnGroup) belegen Foster-Insertion fuer `ruby`, `rb`, `rtc`, `rp` und `rt`
+  samt bestehenden Implied-End-Tag-Regeln. Ruby-spezifisches Styling/Layout
+  bleibt unsupported.
+- Belegt: Engine.Html.Tests besteht mit 7.504 Tests; der Solution-Build
+  besteht ohne Warnungen/Fehler; der vollstaendige Solution-Testlauf besteht
+  mit 17.500 Tests und zwei bedingten Browser-Skips. Formatverifikation und
+  `git diff --check` bestehen. Commit `bca3299` enthaelt neben den sechs
+  Source-Dateien auch unbeabsichtigt zuvor gestagte Kontextaenderungen. Bei der
+  Folgeabfrage lag derselbe Commit bereits auf `origin/main`. CodeQL besteht;
+  Linux, Windows und Prebuild waren bei der Abfrage noch in Bearbeitung.
+- Nutzerangabe: Danach beauftragte der Nutzer, die gestagten Dateien zu
+  committen und fortzufahren; die beiden Kontextdateien waren gestagt.
+- Quelle: `specs/cache/html.html`, `specs/manifest.json`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben und aktueller Chat.
