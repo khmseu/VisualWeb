@@ -243,6 +243,9 @@ public static class HtmlParser
         }
         private bool IsWhitespace(HtmlToken token) => token is HtmlCharacters text && text.Data.All(HtmlTokenizer.Whitespace);
 
+        private bool ParsingTemplateContents => fragmentContext?.LocalName == "template"
+            || open.Any(element => element.LocalName == "template");
+
         private void Process(HtmlToken token)
         {
             while (true)
@@ -619,15 +622,10 @@ public static class HtmlParser
                         return;
                     case "form":
                         // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody (start tag "form").
-                        if (formPointer is not null) { Error("nested-form"); return; }
-                        if (open.Any(element => element.LocalName == "template"))
-                        {
-                            Insert(tag);
-                            return;
-                        }
-
+                        if (formPointer is not null && !ParsingTemplateContents) { Error("nested-form"); return; }
                         CloseParagraph();
-                        formPointer = Insert(tag);
+                        var form = Insert(tag);
+                        if (!ParsingTemplateContents) { formPointer = form; }
                         return;
                     case "button":
                         if (InScope("button")) { Error("nested-button"); Close("button"); }
@@ -748,6 +746,14 @@ public static class HtmlParser
                 case "form":
                     {
                         // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody (end tag "form").
+                        if (ParsingTemplateContents)
+                        {
+                            if (!InScope("form")) { Error("unexpected-form-end-tag"); return; }
+                            GenerateImpliedEndTags();
+                            Close("form");
+                            return;
+                        }
+
                         var node = formPointer;
                         if (node is null || !InScope("form")) { Error("unexpected-form-end-tag"); return; }
                         formPointer = null;
@@ -1143,8 +1149,9 @@ public static class HtmlParser
                         return;
                     case "form":
                         Error("form-start-in-table");
-                        if (formPointer is not null) { return; }
-                        formPointer = Insert(tag);
+                        if (formPointer is not null && !ParsingTemplateContents) { return; }
+                        var form = Insert(tag);
+                        if (!ParsingTemplateContents) { formPointer = form; }
                         open.RemoveAt(open.Count - 1);
                         return;
                     case "style":

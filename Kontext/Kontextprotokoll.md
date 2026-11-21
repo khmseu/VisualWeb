@@ -17295,3 +17295,30 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-593 - Template-Formulare und Formularzeiger
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
+- Belegt: Der Stand aus KP-592 wurde als `c41afaa` lokal committed. Der
+  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips; der
+  Commit-Hook meldete keine Probleme. Kein Push angefordert. Dies ersetzt die
+  damalige Status- und Volltestangabe in KP-592.
+- Belegt: Bei Template-Inhalt und Template-Kontextfragmenten ignorieren
+  Formularstarts den aeusseren Formularzeiger und veraendern ihn nicht. In-body
+  schliesst ein Start ein offenes `p`, und ein Endtag schliesst ein in-scope
+  Formular nach impliziten Endtags. In-table eingefuegte Formulare werden
+  direkt gepoppt, ohne den Zeiger zu setzen. DOM-Form-Owner- und Script-APIs
+  werden nicht hinzugefuegt.
+- Verifikation: Drei gezielte Faelle scheiterten vor der Aenderung und bestehen
+  danach. Der HTML-Testlauf besteht mit 7.581 Tests, einschliesslich
+  verschachtelter Formulare und unmatched Endtags. Solution-Build ohne
+  Warnungen/Fehler und Formatverifikation bestehen; fuer diesen neuen Stand
+  wurde kein Solution-Volltest ausgefuehrt. Die Aenderungen sind uncommitted.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`,
+  `#parsing-main-intable` und `#parsing-template-contents`, laut Manifest
+  geprueft am 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.

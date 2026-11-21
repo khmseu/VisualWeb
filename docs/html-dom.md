@@ -228,14 +228,19 @@ The existing block-start parsing of `<search>` closes an open `p` and retains
 ordinary nested content; its block rendering is a separate UA CSS default.
 
 Simple `form` elements use the form element pointer: `<form>` closes an open
-`p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
-without an in-scope pointer reports `unexpected-form-end-tag`. A matching
+`p`, and outside template contents a nested `<form>` reports `nested-form`
+and is ignored. Outside template contents, `</form>` without an in-scope
+pointer reports `unexpected-form-end-tag`. A matching
 `</form>` closes implied `dd`/`dt`/`li`/`p` ends; any other misnesting, or an
 implied closure (for example `</div>` or `</dl>`) that would pop an open form,
 throws instead of producing a form-owner/tree-ancestry split. `input` stays a
 void element and `button` an ordinary element, so control text never renders
 as raw markup. The parser therefore guarantees that a form owner is the
-nearest ancestor `form`.
+nearest ancestor `form`. Inside template contents, including template-context
+fragment parsing, form starts ignore and do not change the outer form pointer;
+in-body starts still close a `p`, and in-scope form ends close the innermost
+form after implied end tags. In-table starts are inserted and popped without
+changing the pointer. This adds no form-control ownership or script APIs.
 
 Other tokens that require table foster parenting throw explicitly, as do
 unsupported table tags outside the contexts covered above. Template content

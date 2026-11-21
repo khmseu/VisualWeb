@@ -75,6 +75,10 @@ nested tables use the existing table subset. EOF in these modes closes open
 templates with diagnostics. A `select` start uses the bounded in-body/select
 parser; nested selects, foreign content and other unsupported template
 algorithms remain explicit failures.
+Inside template contents, including template-context fragments, form starts
+ignore and preserve the outer form pointer; in-body form ends close the
+in-scope form, and in-table form starts are inserted and popped without
+changing the pointer. DOM form-owner APIs and scripting remain deferred.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,

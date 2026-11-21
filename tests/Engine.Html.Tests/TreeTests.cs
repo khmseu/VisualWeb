@@ -112,6 +112,79 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void TemplateFormsIgnoreAndPreserveTheOuterFormPointer()
+    {
+        var result = Parse("<!doctype html><body><form id=outer><template><p>before"
+            + "<form id=inner><input></form><p>after</p></template><input id=outer-input></form>"
+            + "<form id=next>next</form>");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var template = Assert.IsType<DomTemplateElement>(outer.FirstChild);
+        Assert.Collection(template.Content.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomElement>(node).TextContent),
+            node =>
+            {
+                var inner = Assert.IsType<DomElement>(node);
+                Assert.Equal("form", inner.LocalName);
+                Assert.Equal("inner", inner.GetAttribute("id"));
+                Assert.Equal("input", Assert.IsType<DomElement>(Assert.Single(inner.ChildNodes)).LocalName);
+            },
+            node => Assert.Equal("after", Assert.IsType<DomElement>(node).TextContent));
+        Assert.Equal("outer-input", Assert.IsType<DomElement>(outer.LastChild).GetAttribute("id"));
+        Assert.Equal("next", Assert.IsType<DomElement>(outer.NextSibling).GetAttribute("id"));
+        Assert.DoesNotContain(result.Errors, error => error.Code is "nested-form" or "unexpected-form-end-tag");
+    }
+
+    [Fact]
+    public void TableFormsInsideTemplateDoNotReplaceTheOuterFormPointer()
+    {
+        var result = Parse("<!doctype html><body><form id=outer><template><table>"
+            + "<form id=first><form id=second><tr><td>cell</td></tr></table>"
+            + "<form id=inner>inside</form></template><input id=outside></form><form id=next>next</form>");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var template = Assert.IsType<DomTemplateElement>(outer.FirstChild);
+        var table = Assert.IsType<DomElement>(template.Content.FirstChild);
+        Assert.Equal(new[] { "first", "second" },
+            table.ChildNodes.OfType<DomElement>().Where(element => element.LocalName == "form")
+                .Select(element => element.GetAttribute("id")));
+        var inner = Assert.IsType<DomElement>(template.Content.LastChild);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("inside", inner.TextContent);
+        Assert.Equal("outside", Assert.IsType<DomElement>(outer.LastChild).GetAttribute("id"));
+        Assert.Equal("next", Assert.IsType<DomElement>(outer.NextSibling).GetAttribute("id"));
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "form-start-in-table"));
+    }
+
+    [Fact]
+    public void NestedTemplateFormsCloseInScopeWithoutSettingAFormPointer()
+    {
+        var result = Parse("<!doctype html><body><template><form id=first><form id=second>"
+            + "<p>inner</form>outer</form><form id=last>last</form></template><form id=after>after</form>");
+        var template = Assert.IsType<DomTemplateElement>(result.Document.Body!.FirstChild);
+        var first = Assert.IsType<DomElement>(template.Content.FirstChild);
+        var second = Assert.IsType<DomElement>(first.FirstChild);
+        Assert.Equal("first", first.GetAttribute("id"));
+        Assert.Equal("second", second.GetAttribute("id"));
+        Assert.Equal("inner", second.TextContent);
+        Assert.Equal("outer", Assert.IsType<DomText>(first.LastChild).Data);
+        Assert.Equal("last", Assert.IsType<DomElement>(template.Content.LastChild).GetAttribute("id"));
+        Assert.Equal("after", Assert.IsType<DomElement>(template.NextSibling).GetAttribute("id"));
+        Assert.DoesNotContain(result.Errors, error => error.Code is "nested-form" or "unexpected-form-end-tag");
+    }
+
+    [Fact]
+    public void UnmatchedTemplateFormEndDoesNotCloseOuterForm()
+    {
+        var result = Parse("<!doctype html><body><form id=outer><template><p>content</p></form></template>"
+            + "<input id=inside></form><form id=after>after</form>");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var template = Assert.IsType<DomTemplateElement>(outer.FirstChild);
+        Assert.Equal("content", template.Content.TextContent);
+        Assert.Equal("inside", Assert.IsType<DomElement>(outer.LastChild).GetAttribute("id"));
+        Assert.Equal("after", Assert.IsType<DomElement>(outer.NextSibling).GetAttribute("id"));
+        Assert.Single(result.Errors, error => error.Code == "unexpected-form-end-tag");
+    }
+
+    [Fact]
     public void TemplateContentElementHonorsExactParserDepthLimit()
     {
         const string input = "<body><template><p id=inside>content</p></template>";

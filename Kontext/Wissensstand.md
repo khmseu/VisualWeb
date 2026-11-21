@@ -400,14 +400,24 @@ zwei bedingte Browser-Skips) bestehen. Commit `87b779b` ist lokal und nicht
 gepusht. Siehe
 [KP-591](./Kontextprotokoll.md#kp-591---gewoehnliche-phrasierungselemente-in-tabellenmodi).
 
-**Weitere gewoehnliche Tags in Tabellenmodi (2026-11-21; KP-592; lokal in Arbeit):**
+**Weitere gewoehnliche Tags in Tabellenmodi (2026-11-21; KP-592/593; lokal committed):**
 Andere nicht-spezielle Namen, darunter unbekannte und Custom-Element-Namen,
 nutzen denselben begrenzten Foster-Parent-/In-Body-Pfad in vier Tabellenmodi.
 Custom-Element-Reaktionen und SVG bleiben unsupported. 13 neue Faelle waren
-vorher rot; Engine.Html.Tests besteht mit 7.576 Tests, der Solution-Build und
-die Formatverifikation bestehen. Ein neuer Volltest wurde nicht ausgefuehrt;
-diese Aenderung ist nicht committed. Siehe
+vorher rot; Engine.Html.Tests besteht mit 7.576 Tests, der Solution-Build, die
+Formatverifikation und der spaetere Volltest bestehen. Commit `c41afaa` ist
+lokal und nicht gepusht. Siehe
 [KP-592](./Kontextprotokoll.md#kp-592---phrasierungselemente-committed-weitere-gewoehnliche-tags).
+
+**Template-Formulare (2026-11-21; KP-593; lokal in Arbeit):**
+Formularstarts in Template-Inhalt und Template-Kontextfragmenten ignorieren und
+erhalten den aeusseren Formularzeiger. In-body-Endtags schliessen ein in-scope
+Formular; in-table-Starts werden eingefuegt und gepoppt, ohne den Zeiger zu
+setzen. Drei fokussierte Faelle waren vorher rot; Engine.Html.Tests besteht mit
+7.581 Tests, Solution-Build und Formatverifikation bestehen. Ein neuer
+Solution-Volltest wurde nicht ausgefuehrt. DOM-Form-Owner- und Script-APIs
+bleiben offen; diese Aenderung ist nicht committed. Siehe
+[KP-593](./Kontextprotokoll.md#kp-593---template-formulare-und-formularzeiger).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad

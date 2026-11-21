@@ -441,6 +441,10 @@ these modes closes open templates with diagnostics. A `select` start within
 template content uses the bounded in-body/select parser; nested selects and
 other unsupported table algorithms and broader template behavior remain
 unsupported.
+Forms in template contents and template-context fragments ignore and preserve
+the outer form pointer; in-body form ends close in-scope forms and in-table
+form starts insert and pop without setting the pointer. Form-control ownership
+APIs in the DOM and script-facing form APIs remain missing.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and
 restore cell insertion mode when closed. In-table form starts follow the

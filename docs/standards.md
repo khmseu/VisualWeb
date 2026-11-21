@@ -168,7 +168,11 @@ restore the originating table insertion mode on close. Template contents select
 bounded table modes for supported caption/column/section, row and cell starts.
 A `select` start within template content uses the bounded in-body/select parser;
 nested selects and other unsupported table/template algorithms remain
-unsupported. Formatting-element start/end tags, including `a`, and `span`
+unsupported. Form starts inside template contents, including template-context
+fragments, ignore and preserve the outer form pointer; in-body form ends close
+an in-scope form, while in-table starts insert and pop without changing the
+pointer. DOM form-owner APIs and scripting remain deferred.
+Formatting-element start/end tags, including `a`, and `span`
 start/end tags use bounded in-body foster parenting in table, column-group,
 table-body and row modes, including existing bounded nested-anchor and
 nested-`nobr` recovery. `option`, `optgroup` and `label` starts and ends use the

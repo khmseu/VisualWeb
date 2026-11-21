@@ -246,6 +246,25 @@ public sealed class FragmentTests
         Assert.Contains(result.Errors, error => error.Code == "nested-form");
     }
 
+    [Fact]
+    public void ParseFragmentTemplateContextIgnoresAncestorFormPointer()
+    {
+        var document = new DomDocument();
+        var outer = document.CreateElement("form");
+        var context = document.CreateElement("template");
+        outer.AppendChild(context);
+
+        var result = HtmlParser.ParseFragment("<p>before<form id=inner><input></form><p>after</p>",
+            context, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(new[] { "p", "form", "p" },
+            result.Fragment.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var inner = Assert.IsType<DomElement>(result.Fragment.ChildNodes[1]);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("input", Assert.IsType<DomElement>(Assert.Single(inner.ChildNodes)).LocalName);
+        Assert.DoesNotContain(result.Errors, error => error.Code is "nested-form" or "unexpected-form-end-tag");
+    }
+
     [Theory]
     [InlineData("svg")]
     [InlineData("math")]
