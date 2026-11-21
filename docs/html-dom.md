@@ -197,7 +197,9 @@ after-after-body modes. Supported behavior includes:
   foster-parent path. This includes the existing bounded nested-anchor and
   nested-`nobr` recovery. `option` and `optgroup` starts and ends use that path
   in the same modes. Adoption reparenting that itself requires table foster
-  parenting remains unsupported.
+  parenting remains unsupported. `select` starts and unmatched end tags in
+  those modes also use bounded fostered in-body handling; an open select uses
+  the existing bounded select-token rules.
   `plaintext` starts and
   unmatched end tags in those modes use the fostered in-body path; a start
   switches to PLAINTEXT so the rest of the input is literal text. Character

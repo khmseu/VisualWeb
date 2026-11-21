@@ -418,7 +418,9 @@ element start/end tags, including `a`, and `span` start/end tags use bounded
 in-body foster parenting in table, column-group, table-body and row modes.
 This includes the existing bounded nested-anchor and nested-`nobr` recovery.
 `option` and `optgroup` starts and ends use the same path. Adoption reparenting
-that itself requires table foster parenting remains unsupported.
+that itself requires table foster parenting remains unsupported. `select`
+starts and unmatched end tags also use bounded fostered in-body handling; an
+open select uses the existing bounded select-token rules.
 `plaintext` starts and
 unmatched end tags in those modes use the same path; a start switches to the
 PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other table tokens requiring foster

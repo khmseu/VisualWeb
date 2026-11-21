@@ -174,6 +174,8 @@ table-body and row modes, including existing bounded nested-anchor and
 nested-`nobr` recovery. `option` and `optgroup` starts and ends use the same
 path. Adoption reparenting that itself requires table foster parenting remains
 unsupported.
+`select` starts and unmatched end tags in those modes also use bounded fostered
+in-body handling; an open select uses the existing bounded select-token rules.
 `plaintext`
 starts and unmatched end tags use in-body foster parenting in those modes; a
 start switches to PLAINTEXT and consumes the remainder of the input as literal

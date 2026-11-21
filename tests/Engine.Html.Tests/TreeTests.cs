@@ -983,6 +983,46 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "fostered-b-end-in-table");
     }
 
+    [Theory]
+    [InlineData("<table>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void SelectStartInTableModesUsesFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<select id=choice><option>selected</option></select>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var select = Assert.IsType<DomElement>(host.ChildNodes[1]);
+        var table = Assert.IsType<DomElement>(host.ChildNodes[2]);
+        var option = Assert.IsType<DomElement>(Assert.Single(select.ChildNodes));
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal("select", element.LocalName);
+                Assert.Equal("choice", element.GetAttribute("id"));
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Equal("option", option.LocalName);
+        Assert.Equal("selected", option.TextContent);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-select-start-in-table");
+    }
+
+    [Fact]
+    public void UnmatchedSelectEndInTableModeUsesFosteredInBodyRecovery()
+    {
+        var result = Parse("<!doctype html><table></select><tbody><tr><td>cell</td></tr></tbody></table>");
+
+        Assert.Equal("cell", Assert.Single(Descendants(result.Document), element => element.LocalName == "td").TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-select-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
     [Fact]
     public void NestedNobrInsideTableUsesBoundedInBodyRecovery()
     {

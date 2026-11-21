@@ -26,7 +26,9 @@ and unmatched end tags in those modes, root-attribute merging for in-table
 `html` starts, and template start/end processing in table, table-body and row
 modes. Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery; adoption reparenting that
-itself needs table foster parenting remains unsupported.
+itself needs table foster parenting remains unsupported. `select` starts and
+unmatched end tags use bounded fostered in-body handling; an open select uses
+the existing bounded select-token rules.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.
