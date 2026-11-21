@@ -1,3 +1,5 @@
+# WHATWG URL Support Phase 4 Completion Report
+
 ## Phase 4 Complete: Mutable URL and live searchParams
 
 Added a bounded mutable Core URL model with stable `URLSearchParams` identity and bidirectional query synchronization. `BrowserUrl` remains immutable; replacing `Href` or `Search` refreshes the same params instance, and params updates replace the URL snapshot while retaining other components.

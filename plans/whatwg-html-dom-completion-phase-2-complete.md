@@ -1,3 +1,5 @@
+# Bounded HTML Template Support Phase 2 Completion Report
+
 ## Phase 2 Complete: Bounded template tree construction
 
 The HTML parser now constructs document templates in head/body using the bounded ordinary in-body subset. Content, including nested templates, is kept in separate inert owner-document fragments; parser mode resets restore the surrounding head/body behavior. Unsupported insertion contexts still fail explicitly.

@@ -1,3 +1,5 @@
+# WHATWG URL Support Completion Report
+
 ## Plan Complete: WHATWG URL Support
 
 Completed the approved six-phase URL implementation scope, covering Core URL behavior, mutable URL and live `URLSearchParams` linkage, browser-facing JavaScript interfaces, and interface-specific Web IDL conversions. The work also pinned offline URLSearchParams vectors and aligned support documentation with the implemented subset and its exclusions.

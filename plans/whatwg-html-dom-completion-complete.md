@@ -1,3 +1,5 @@
+# Bounded HTML Template Support Completion Report
+
 ## Plan Complete: Bounded HTML Template Support
 
 The approved three-phase template increment is complete. It adds a native DOM template-content model, bounded document parsing, and regression coverage for inertness and limits; it does not claim full WHATWG HTML or DOM conformance.

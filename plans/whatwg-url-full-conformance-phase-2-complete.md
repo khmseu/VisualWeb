@@ -1,3 +1,5 @@
+# Web IDL URL Iterators Phase 2 Completion Report
+
 ## Phase 2 Complete: Implement Web IDL iterator objects
 
 Replaced generator-based URLSearchParams iterators with branded, index-based Web IDL pair iterator objects. Iterator instances share a Web IDL iterator prototype chained to the realm's `%Iterator.prototype%`, return native iterator result objects, and dynamically read the current tuple list so mutations are observed between `next()` calls.

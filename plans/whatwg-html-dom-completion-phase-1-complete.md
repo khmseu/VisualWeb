@@ -1,3 +1,5 @@
+# Bounded HTML Template Support Phase 1 Completion Report
+
 ## Phase 1 Complete: DOM template contents
 
 Implemented native HTML template elements with stable fragment-backed contents, inert template-contents owner-document behavior, and adoption/deep-clone handling. Nested templates reuse the correct inert owner document; cloning accounts for template fragments and descendants in its bounded preflight. HTML parser construction remains explicitly unsupported.

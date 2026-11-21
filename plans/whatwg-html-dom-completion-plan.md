@@ -1,3 +1,5 @@
+# Bounded HTML Template Support Plan
+
 ## Plan: Bounded HTML Template Support
 
 Extend the finite HTML and DOM subsets together, beginning with the
@@ -5,7 +7,7 @@ HTMLTemplateElement content model and a deliberately bounded parser subset.
 This plan does not claim complete WHATWG HTML or DOM conformance and does not
 add script-facing `innerHTML` or template bindings.
 
-**Phases**
+### Phases
 
 1. **Phase 1: DOM template contents**
    - **Objective:** Represent native HTML template elements with stable,
@@ -71,7 +73,7 @@ add script-facing `innerHTML` or template bindings.
      4. Update the standards inventory without changing rough percentages
         unless new measurable coverage evidence justifies a recalculation.
 
-**Open Questions**
+### Open Questions
 
 1. This bounded template increment does not define the complete HTML/DOM
    completion endpoint; subsequent increments must be selected and scoped

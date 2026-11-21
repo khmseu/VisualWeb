@@ -1,3 +1,5 @@
+# WHATWG URL Support Phase 1 Completion Report
+
 ## Phase 1 Complete: Correct URL interface reflection
 
 Aligned the URL and URLSearchParams scripting facades with the URL/Web IDL requirements for prototype descriptors, required-argument counts, and omitted optional arguments. Public prototypes remain standards-mutable while private bridge state and interface brands remain protected.

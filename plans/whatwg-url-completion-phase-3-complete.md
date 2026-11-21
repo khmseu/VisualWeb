@@ -1,3 +1,5 @@
+# WHATWG URL Support Phase 3 Completion Report
+
 ## Phase 3 Complete: Core URL operations
 
 Closed confirmed Core URL setter and origin gaps while preserving the immutable `BrowserUrl` snapshot contract. The corrections follow the cached URL Standard's scheme, host, port, and blob-origin algorithms; file origins remain opaque under the Core policy.

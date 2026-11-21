@@ -1,3 +1,5 @@
+# Bounded HTML Template Support Phase 3 Completion Report
+
 ## Phase 3 Complete: Cross-subsystem inertness and limits
 
 Phase 3 verifies that template contents remain inert across parsing, rendering, script scheduling, and bounded DOM cloning. No production code changes were needed.

@@ -1,8 +1,10 @@
+# Completing WHATWG URL Conformance
+
 ## Plan: Completing WHATWG URL Conformance
 
 Extend the completed bounded implementation to cover the remaining WHATWG URL behavior, including the URL-specific Web IDL surface and URL-required environment hooks. Use offline, pinned conformance data and test-first fixes; a general Web IDL generator and unrelated HTML/File API implementation remain out of scope.
 
-**Phases**
+### Phases
 
 1. **Phase 1: Correct URL interface reflection**
    - **Objective:** Match URL and URLSearchParams operation descriptors and function lengths to the URL/Web IDL definitions without weakening private bridge protections.
@@ -47,6 +49,6 @@ Extend the completed bounded implementation to cover the remaining WHATWG URL be
      2. Run the solution build, full solution tests, and format verification; address failures caused by this work.
      3. Update the support inventory only to claims demonstrated by the tests and implementation.
 
-**Open Questions**
+### Open Questions
 
 1. None blocking. Phase 4 is limited to URL Standard-required environment/display behavior; general Web IDL, general HTML integration, and File API implementation are excluded.

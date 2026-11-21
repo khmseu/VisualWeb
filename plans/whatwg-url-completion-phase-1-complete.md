@@ -1,3 +1,5 @@
+# WHATWG URL Support Phase 1 Completion Report
+
 ## Phase 1 Complete: URLSearchParams conformance baseline
 
 Added pinned, offline WPT-derived vectors for form-urlencoded parsing, URLSearchParams stringification, and sequence construction, with fixture-driven tests and documented provenance. All selected vectors matched existing behavior, so no production implementation changes were needed.

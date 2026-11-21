@@ -1,3 +1,5 @@
+# WHATWG URL Support Phase 2 Completion Report
+
 ## Phase 2 Complete: URL parser and serialization gaps
 
 Corrected a verified relative-resolution bug: `DomUrl.TryCreate(input, baseUrl)` selected the parser for the string base URL using the relative input. An ASCII relative reference could therefore cause supplementary Unicode characters in the base path to be percent-encoded as separate UTF-16 surrogate halves instead of UTF-8. The fix selects the base parser from `baseUrl`; regression cases cover both an empty reference and `"child"`.

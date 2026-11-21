@@ -1,3 +1,5 @@
+# WHATWG URL Support Phase 5 Completion Report
+
 ## Phase 5 Complete: Implement browser JavaScript URL interfaces
 
 Added branded `URL` and `URLSearchParams` facades to the bounded scripting host, backed by Core URL state and live `searchParams` linkage. The bridge remains primitive-only, and the implementation preserves existing script policy and execution limits.

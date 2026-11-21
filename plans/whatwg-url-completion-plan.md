@@ -1,8 +1,10 @@
+# WHATWG URL Support Plan
+
 ## Plan: Completing WHATWG URL Support
 
 Extend VisualWeb's current bounded URL support toward the WHATWG URL Standard with an evidence-led Core implementation and browser-facing `URL`/`URLSearchParams` behavior, including live linkage. The scope includes the Web IDL behavior needed by these interfaces, not a general Web IDL implementation. Preserve the existing immutable `BrowserUrl` contract and keep standards tests offline.
 
-**Phases**
+### Phases
 
 1. **Phase 1: URLSearchParams conformance baseline**
    - **Objective:** Add pinned offline conformance coverage for form-urlencoded parsing/serialization and the URLSearchParams operations that are not already established by existing tests; fix deviations found by the coverage.
@@ -35,7 +37,7 @@ Extend VisualWeb's current bounded URL support toward the WHATWG URL Standard wi
    - **Tests to Write:** Any regression tests needed for findings from the final offline conformance run; preserve the complete existing fixture families.
    - **Steps:** Run Core and scripting suites and the solution build/test/format checks; resolve failures attributable to this work; update the support inventory only to claims established by the evidence.
 
-**Open Questions**
+### Open Questions
 
 1. None for the approved scope: the user approved Core URL completion plus browser-facing `URL`/`URLSearchParams` behavior and interface-specific Web IDL semantics, excluding general Web IDL.
 
