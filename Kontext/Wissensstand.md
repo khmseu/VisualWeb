@@ -390,7 +390,7 @@ unveraenderten Plan-/Core-Testdateien. Der Dev-Environment-Prebuild besteht.
 Siehe
 [KP-587](./Kontextprotokoll.md#kp-587---select-in-tabellenmodi).
 
-**Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589; lokal validiert):**
+**Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; lokal committed):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags
 erhalten die bestehende Recovery-Diagnostik. Acht fokussierte Faelle waren
@@ -399,9 +399,10 @@ vorher rot und bestehen nach der Umsetzung; Engine.Html.Tests besteht mit
 Formatverifikation. Ein erster Volltest scheiterte mit zwei Browser-V8-
 Deadlinefehlern bei gleichzeitiger Formatverifikation; der isolierte Nachtest
 beider Methoden und der erneute Volltest (17.508 Tests, zwei bedingte Skips)
-bestehen. Die Ursache der ersten Deadlinefehler ist nicht nachgewiesen. Der
-Source-Commit steht aus. Keine Form-APIs werden neu bereitgestellt. Siehe
-[KP-589](./Kontextprotokoll.md#kp-589---label-in-tabellenmodi).
+bestehen. Die Ursache der ersten Deadlinefehler ist nicht nachgewiesen. Commit
+`9d64258` ist lokal und nicht gepusht. Keine Form-APIs werden neu bereitgestellt.
+Siehe [KP-589](./Kontextprotokoll.md#kp-589---label-in-tabellenmodi) und
+[KP-590](./Kontextprotokoll.md#kp-590---label-inkrement-committed).
 
 **Ruby-Foster-Parenting in Tabellenmodi (2026-11-21; KP-588; validiert und gepusht):**
 `ruby`, `rb`, `rtc`, `rp` und `rt` nutzen mit Start- und Endtags den

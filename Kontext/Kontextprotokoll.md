@@ -17237,3 +17237,13 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Test-/Build-Ausgaben, `git log`, GitHub Actions und aktueller Chat.
+
+### KP-590 - Label-Inkrement committed
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Die gestagten Dateien sollen committed werden.
+- Belegt: Die acht gestagten Parser-, Test-, Dokumentations- und Kontextdateien
+  wurden als `9d64258` (`feat(html): foster labels in table modes`) committed.
+  Der Commit ist lokal; Push wurde in diesem Auftrag nicht angefordert.
+  Diese Statusangabe ersetzt den ausstehenden Commit in KP-589.
+- Quelle: Git-Commit-Ausgabe, `git status` und aktueller Chat.
