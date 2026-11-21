@@ -179,6 +179,20 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragmentCaptionContextRestoresModeAfterNestedTable()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("before<table><tr><td>inner</td></tr></table></caption><b>after</b>",
+            document.CreateElement("caption"), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("before", Assert.IsType<DomText>(result.Fragment.ChildNodes[0]).Data);
+        Assert.Equal("inner", Assert.IsType<DomElement>(result.Fragment.ChildNodes[1]).TextContent);
+        Assert.Equal("after", Assert.IsType<DomElement>(result.Fragment.ChildNodes[2]).TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-caption-end-tag");
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+    }
+
+    [Fact]
     public void ParseFragment_selectContextProcessesOptionsAndIgnoresSelectOnlyTokens()
     {
         var document = new DomDocument();

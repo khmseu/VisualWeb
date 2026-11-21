@@ -144,9 +144,10 @@ after-after-body modes. Supported behavior includes:
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
   and caption contents use the existing in-body subset. Captions close and
   reprocess table tokens; a nested table start in table mode closes the current
-  in-scope table and reprocesses the token, while nested tables in cells remain
-  cell descendants and restore cell mode when closed. Nested tables inside
-  captions remain unsupported. In-table form starts follow the form-pointer
+  in-scope table and reprocesses the token, while nested tables in cells and
+  captions remain descendants and restore the enclosing insertion mode when
+  closed. This includes supported template and caption-fragment contexts.
+  In-table form starts follow the form-pointer
   exception: the form is inserted at the current table-mode location, then
   popped from the open-element stack; repeated starts are ignored while the
   pointer is set. In-table form end tags use in-body handling and cannot pop

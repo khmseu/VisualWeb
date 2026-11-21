@@ -431,17 +431,29 @@ Siehe
 [KP-594](./Kontextprotokoll.md#kp-594---formularzeiger-vor-scope-pruefung-loeschen)
 und [KP-595](./Kontextprotokoll.md#kp-595---formatierung-bei-tabellentext-rekonstruieren).
 
-**Tabellentext und Formatierung (2026-11-21; KP-595; lokal in Arbeit):**
+**Tabellentext und Formatierung (2026-11-21; KP-595/596; lokal committed):**
 Nicht-Whitespace-Tabellentext rekonstruiert bei Bedarf aktive Formatierung
 ueber den bestehenden Foster-Einfuegepfad und fuegt den Text im
 rekonstruierten aktuellen Knoten ein. Whitespace-only bleibt unveraendert.
 Dokument-, Template- und Fragmenttests sowie die Knotengrenze sind abgedeckt;
 Adoption-Reparenting mit Foster-Parenting bleibt unsupported. Vier neue
 gezielte Tests scheiterten vorher; fuenf fokussierte Tests und 7.590 HTML-Tests
+bestehen. Solution-Build und Formatpruefung bestehen; der anschliessende
+Solution-Volltest bestand mit zwei bedingten Browser-Skips. Commit `c5efe9c`
+ist lokal und nicht gepusht. Siehe
+[KP-595](./Kontextprotokoll.md#kp-595---formatierung-bei-tabellentext-rekonstruieren)
+und [KP-596](./Kontextprotokoll.md#kp-596---verschachtelte-tabellen-in-captions).
+
+**Verschachtelte Tabellen in Captions (2026-11-21; KP-596; lokal in Arbeit):**
+Tabellenstarts in Captions verwenden die bestehenden begrenzten In-body-Regeln;
+nach Schliessen der inneren Tabelle wird der Caption-Modus wiederhergestellt.
+Dies gilt auch fuer Template-Inhalt und Caption-Kontextfragmente. Drei gezielte
+Faelle scheiterten vorher; vier fokussierte Faelle und 7.592 HTML-Tests
 bestehen. Der Solution-Build besteht ohne Warnungen und Fehler; die
-Formatpruefung besteht. Ein neuer Solution-Volltest wurde nicht ausgefuehrt.
-Die Aenderungen sind uncommitted.
-Siehe [KP-595](./Kontextprotokoll.md#kp-595---formatierung-bei-tabellentext-rekonstruieren).
+Formatpruefung besteht. Der anschliessend verstaerkte Fragmenttest besteht
+separat; ein neuer Solution-Volltest wurde nicht ausgefuehrt. Die Aenderungen
+sind uncommitted.
+Siehe [KP-596](./Kontextprotokoll.md#kp-596---verschachtelte-tabellen-in-captions).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad

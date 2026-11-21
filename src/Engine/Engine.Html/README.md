@@ -37,6 +37,8 @@ token in table mode; unmatched `label` end tags receive in-body recovery.
 these modes; other non-special names, including unknown and custom element
 names, use the same path. Unmatched ends receive in-body recovery. This adds
 no custom-element reactions or scripting.
+Table starts inside captions use the bounded in-body table rules; closing the
+nested table restores caption mode in documents and caption fragments.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.

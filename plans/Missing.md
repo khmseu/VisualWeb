@@ -447,17 +447,17 @@ the outer form pointer; in-body form ends close in-scope forms and in-table
 form starts insert and pop without setting the pointer. Form-control ownership
 APIs in the DOM and script-facing form APIs remain missing.
 In table mode, a nested table start closes the current in-scope table and
-reprocesses the token; nested tables inside cells remain cell descendants and
-restore cell insertion mode when closed. In-table form starts follow the
+reprocesses the token; nested tables inside cells and captions remain
+descendants and restore the enclosing insertion mode when closed. This also
+applies in template contents and caption-context fragments. In-table form starts follow the
 form-pointer exception and pop the inserted form from the open-element stack;
 repeated starts are ignored while the pointer is set. In-table form end tags
 use in-body handling, clearing the pointer before the scope check; an
 out-of-scope form stays open and can contain a later form. This also applies
 to form pointers inherited from fragment contexts outside templates. Duplicate
 `html` start tokens in table, section and row
-modes merge missing root attributes without inserting a new element. Nested
-tables inside captions and other tokens that require table foster parenting
-remain explicitly unsupported; rendering supports only the
+modes merge missing root attributes without inserting a new element. Other
+tokens that require table foster parenting remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 

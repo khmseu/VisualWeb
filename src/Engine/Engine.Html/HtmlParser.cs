@@ -1227,11 +1227,6 @@ public static class HtmlParser
                 return;
             }
 
-            if (token is HtmlTag { IsEndTag: false, Name: "table" })
-            {
-                throw Unsupported("Nested tables inside captions are not implemented.");
-            }
-
             if (token is HtmlTag { IsEndTag: true, Name: "body" or "col" or "colgroup" or "html" or "tbody" or "td" or "tfoot" or "th" or "thead" or "tr" })
             {
                 Error("unexpected-caption-end-tag");

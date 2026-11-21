@@ -134,7 +134,9 @@ claims, and are not listed as supported standards here.
 HTML tree construction includes token-snapshot active formatting, the
 order-independent three-entry Noah's Ark rule, reconstruction and
 template/caption/cell markers, plus the no-furthest-block and bounded
-furthest-block adoption-agency branches. Furthest-block recovery includes
+furthest-block adoption-agency branches. Nested table starts inside captions use
+the bounded in-body table rules and restore caption mode on close, including
+template contents and caption fragments. Furthest-block recovery includes
 inner-loop clone/removal, bookmark/index shifts, reparenting and open-stack/list
 replacement. The outer loop is capped at eight iterations, inner-list removal
 follows the after-three-iterations rule, generated nodes count toward parser

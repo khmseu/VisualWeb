@@ -938,6 +938,34 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void NestedTableInsideCaptionReturnsToCaptionMode()
+    {
+        var result = Parse("<!doctype html><table><caption>before<table><tr><td>inner</td></tr></table>"
+            + "<b>after</b></caption><tr><td>outer</td></tr></table>");
+        var outer = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var caption = Assert.IsType<DomElement>(outer.ChildNodes[0]);
+        var inner = Assert.IsType<DomElement>(caption.ChildNodes[1]);
+        Assert.Equal("before", Assert.IsType<DomText>(caption.ChildNodes[0]).Data);
+        Assert.Equal("table", inner.LocalName);
+        Assert.Equal("inner", inner.TextContent);
+        Assert.Equal("after", Assert.IsType<DomElement>(caption.ChildNodes[2]).TextContent);
+        Assert.Equal("outer", outer.ChildNodes[1].TextContent);
+    }
+
+    [Fact]
+    public void NestedTableInsideTemplateCaptionStaysInTemplateContent()
+    {
+        var result = Parse("<!doctype html><body><template><table><caption>before"
+            + "<table><tr><td>inner</td></tr></table>after</caption></table></template>");
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        var outer = Assert.IsType<DomElement>(Assert.Single(template.Content.ChildNodes));
+        var caption = Assert.IsType<DomElement>(outer.FirstChild);
+        Assert.Equal("beforeinnerafter", caption.TextContent);
+        Assert.Equal("table", Assert.IsType<DomElement>(caption.ChildNodes[1]).LocalName);
+        Assert.All(template.Content.Descendants(), node => Assert.Same(template.Content.OwnerDocument, node.OwnerDocument));
+    }
+
+    [Fact]
     public void NonWhitespaceTableTextIsFosterParentedWithAdjacentTextMerging()
     {
         var result = Parse("<!doctype html><div id=host>before<table> \ntext \n<tbody><tr><td>cell</td></tr>"
@@ -2200,7 +2228,6 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]
     [InlineData("<table><svg></svg></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>

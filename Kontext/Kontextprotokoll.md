@@ -17374,3 +17374,30 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-596 - Verschachtelte Tabellen in Captions
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
+- Belegt: Der Stand aus KP-595 wurde als `c5efe9c` lokal committed. Der
+  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips. Der
+  Commit-Hook formatierte `docs/standards.md` und meldete keine Probleme.
+  Kein Push wurde angefordert. Dies ersetzt die dortige Status- und
+  Volltestangabe.
+- Belegt: Ein Tabellenstart in einer Caption verwendet die bestehenden
+  begrenzten In-body-Regeln; nach dem Schliessen stellt der bestehende
+  Reset den Caption-Modus wieder her. Dokument-, Template-Inhalt- und
+  Caption-Kontextfragmenttests pruefen Struktur, Fortsetzung und Ownership.
+  Dies erweitert nicht die bestehenden Tabellen- oder Layoutgrenzen.
+- Verifikation: Drei neue gezielte Faelle scheiterten vorher mit
+  `UnsupportedHtmlException`; vier fokussierte Faelle und alle 7.592
+  HTML-Tests bestehen. Solution-Build ohne Warnungen/Fehler und Formatpruefung
+  bestehen. Der anschliessend verstaerkte Fragmenttest besteht separat; ein
+  neuer Solution-Volltest wurde nicht ausgefuehrt. Die Aenderungen sind
+  uncommitted.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-incaption` und
+  `#parsing-main-inbody`, laut Manifest geprueft am 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`, `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.
