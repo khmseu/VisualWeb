@@ -17272,3 +17272,26 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Test-/Build-/Format-Ausgaben, Git-Status, GitHub Actions und aktueller
   Chat.
+
+### KP-592 - Phrasierungselemente committed, weitere gewoehnliche Tags
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
+- Belegt: Die gestagten Dateien aus KP-591 wurden als lokaler Commit `87b779b`
+  committed; der Commit-Hook meldete keine Probleme. Ein Push wurde nicht
+  angefordert. Dies ersetzt die damalige Statusangabe in KP-591.
+- Belegt: Weitere nicht-spezielle Elementnamen, darunter unbekannte und
+  Custom-Element-Namen, verwenden in Table-, TableBody-, Row- und
+  ColumnGroup-Kontexten den bestehenden begrenzten Foster-Parent-/In-Body-Pfad.
+  Custom-Element-Reaktionen und nicht unterstuetzte Spezialalgorithmen werden
+  nicht eingefuehrt; SVG bleibt explizit unsupported.
+- Verifikation: 13 neue Testfaelle scheiterten vor der Aenderung mit
+  `UnsupportedHtmlException`; der HTML-Testlauf besteht mit 7.576 Tests,
+  einschliesslich Verschachtelung und SVG-Ablehnung. Solution-Build ohne
+  Warnungen/Fehler und Formatverifikation bestehen; ein neuer Volltest wurde
+  nicht ausgefuehrt. Der neue Stand ist uncommitted.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-intable`,
+  geprueft laut Manifest am 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.

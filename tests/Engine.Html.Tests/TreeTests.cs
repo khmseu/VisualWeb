@@ -865,6 +865,79 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
     }
 
+    public static IEnumerable<object[]> OrdinaryElementsInTableModes()
+    {
+        string[] names = ["widget", "custom-widget", "meter"];
+        (string Start, string End)[] tables =
+        [
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>"),
+            ("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")
+        ];
+        foreach (var name in names)
+        {
+            foreach (var table in tables)
+            {
+                yield return [name, table.Start, table.End];
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(OrdinaryElementsInTableModes))]
+    public void OtherOrdinaryElementsInTableModesUseFosterParenting(string name, string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + $"<{name} data-value=x>content</{name}>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal(name, element.LocalName);
+                Assert.Equal("x", element.GetAttribute("data-value"));
+                Assert.Equal("content", element.TextContent);
+            },
+            node =>
+            {
+                var table = Assert.IsType<DomElement>(node);
+                Assert.Equal("table", table.LocalName);
+                Assert.Equal("cell", table.TextContent);
+            },
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{name}-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{name}-end-in-table");
+    }
+
+    [Fact]
+    public void UnmatchedCustomElementEndInTableUsesInBodyRecovery()
+    {
+        var result = Parse("<!doctype html><table></custom-widget><tr><td>cell</td></tr></table>");
+        Assert.Equal("cell", Assert.Single(Descendants(result.Document), element => element.LocalName == "td").TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-custom-widget-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
+    [Fact]
+    public void NestedCustomElementsInTableRemainNestedAtFosterParent()
+    {
+        var result = Parse("<!doctype html><div id=host><table><outer-widget><inner-widget>x</inner-widget></outer-widget>"
+            + "<tr><td>cell</td></tr></table></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        Assert.Collection(host.ChildNodes,
+            node =>
+            {
+                var outer = Assert.IsType<DomElement>(node);
+                Assert.Equal("outer-widget", outer.LocalName);
+                var inner = Assert.IsType<DomElement>(Assert.Single(outer.ChildNodes));
+                Assert.Equal("inner-widget", inner.LocalName);
+                Assert.Equal("x", inner.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName));
+    }
+
     public static IEnumerable<object[]> PhrasingElementsInTableModes()
     {
         string[] names = ["abbr", "cite", "data", "dfn", "kbd", "mark", "q", "samp", "sub", "sup", "time", "var"];
@@ -1968,6 +2041,7 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]
+    [InlineData("<table><svg></svg></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 

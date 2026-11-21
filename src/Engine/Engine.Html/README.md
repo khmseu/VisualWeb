@@ -34,7 +34,9 @@ Column-group fallback closes the open `colgroup` before reprocessing a `label`
 token in table mode; unmatched `label` end tags receive in-body recovery.
 `abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`, `q`, `samp`, `sub`, `sup`,
 `time` and `var` start/end tags also use bounded fostered in-body handling in
-these modes; unmatched ends receive in-body recovery.
+these modes; other non-special names, including unknown and custom element
+names, use the same path. Unmatched ends receive in-body recovery. This adds
+no custom-element reactions or scripting.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.

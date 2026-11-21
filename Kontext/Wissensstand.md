@@ -390,14 +390,24 @@ unveraenderten Plan-/Core-Testdateien. Der Dev-Environment-Prebuild besteht.
 Siehe
 [KP-587](./Kontextprotokoll.md#kp-587---select-in-tabellenmodi).
 
-**Phrasierungselemente in Tabellenmodi (2026-11-21; KP-591; lokal in Arbeit):**
+**Phrasierungselemente in Tabellenmodi (2026-11-21; KP-591/592; lokal committed):**
 Zwoelf gewoehnliche Elemente (`abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`,
 `q`, `samp`, `sub`, `sup`, `time` und `var`) nutzen den bestehenden begrenzten
 Foster-Parent-/In-Body-Pfad fuer Start- und Endtags in vier Tabellenkontexten.
 49 neue Faelle waren vor der Umsetzung rot; Engine.Html.Tests besteht mit
 7.561 Tests, Solution-Build, Formatverifikation und Volltest (17.557 Tests,
-zwei bedingte Browser-Skips) bestehen. Die Source-Aenderung ist nicht committed. Siehe
+zwei bedingte Browser-Skips) bestehen. Commit `87b779b` ist lokal und nicht
+gepusht. Siehe
 [KP-591](./Kontextprotokoll.md#kp-591---gewoehnliche-phrasierungselemente-in-tabellenmodi).
+
+**Weitere gewoehnliche Tags in Tabellenmodi (2026-11-21; KP-592; lokal in Arbeit):**
+Andere nicht-spezielle Namen, darunter unbekannte und Custom-Element-Namen,
+nutzen denselben begrenzten Foster-Parent-/In-Body-Pfad in vier Tabellenmodi.
+Custom-Element-Reaktionen und SVG bleiben unsupported. 13 neue Faelle waren
+vorher rot; Engine.Html.Tests besteht mit 7.576 Tests, der Solution-Build und
+die Formatverifikation bestehen. Ein neuer Volltest wurde nicht ausgefuehrt;
+diese Aenderung ist nicht committed. Siehe
+[KP-592](./Kontextprotokoll.md#kp-592---phrasierungselemente-committed-weitere-gewoehnliche-tags).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad

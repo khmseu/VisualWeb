@@ -178,7 +178,9 @@ reparenting that itself requires table foster parenting remains
 unsupported.
 `abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`, `q`, `samp`, `sub`, `sup`,
 `time` and `var` start and end tags also use bounded fostered in-body handling
-in these modes; unmatched ends retain in-body recovery.
+in these modes; other non-special names, including unknown and custom element
+names, use the same path. Unmatched ends retain in-body recovery; no
+custom-element reactions are implemented.
 `select` starts and unmatched end tags in those modes also use bounded fostered
 in-body handling; an open select uses the existing bounded select-token rules.
 `ruby`, `rb`, `rtc`, `rp` and `rt` start/end tags use the same path, retaining
