@@ -200,6 +200,9 @@ after-after-body modes. Supported behavior includes:
   before reprocessing `label` in table mode; an unmatched `label` end tag
   reports the fostered-table and in-body unexpected-end diagnostics. Adoption
   reparenting that itself requires table foster parenting remains unsupported.
+  `abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`, `q`, `samp`, `sub`, `sup`,
+  `time` and `var` starts and ends also use the bounded fostered in-body path;
+  unmatched ends retain the in-body unexpected-end diagnostic.
   `select` starts and unmatched end tags in
   those modes also use bounded fostered in-body handling; an open select uses
   the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`

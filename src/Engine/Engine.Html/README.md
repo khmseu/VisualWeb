@@ -32,6 +32,9 @@ the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`
 start/end tags use the same path with existing bounded ruby recovery.
 Column-group fallback closes the open `colgroup` before reprocessing a `label`
 token in table mode; unmatched `label` end tags receive in-body recovery.
+`abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`, `q`, `samp`, `sub`, `sup`,
+`time` and `var` start/end tags also use bounded fostered in-body handling in
+these modes; unmatched ends receive in-body recovery.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
 of the input. Adoption reparenting requiring table foster parenting and other
 tokens requiring table foster parenting remain unsupported.

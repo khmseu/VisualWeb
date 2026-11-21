@@ -390,7 +390,16 @@ unveraenderten Plan-/Core-Testdateien. Der Dev-Environment-Prebuild besteht.
 Siehe
 [KP-587](./Kontextprotokoll.md#kp-587---select-in-tabellenmodi).
 
-**Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; lokal committed):**
+**Phrasierungselemente in Tabellenmodi (2026-11-21; KP-591; lokal in Arbeit):**
+Zwoelf gewoehnliche Elemente (`abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`,
+`q`, `samp`, `sub`, `sup`, `time` und `var`) nutzen den bestehenden begrenzten
+Foster-Parent-/In-Body-Pfad fuer Start- und Endtags in vier Tabellenkontexten.
+49 neue Faelle waren vor der Umsetzung rot; Engine.Html.Tests besteht mit
+7.561 Tests, Solution-Build, Formatverifikation und Volltest (17.557 Tests,
+zwei bedingte Browser-Skips) bestehen. Die Source-Aenderung ist nicht committed. Siehe
+[KP-591](./Kontextprotokoll.md#kp-591---gewoehnliche-phrasierungselemente-in-tabellenmodi).
+
+**Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags
 erhalten die bestehende Recovery-Diagnostik. Acht fokussierte Faelle waren
@@ -400,7 +409,7 @@ Formatverifikation. Ein erster Volltest scheiterte mit zwei Browser-V8-
 Deadlinefehlern bei gleichzeitiger Formatverifikation; der isolierte Nachtest
 beider Methoden und der erneute Volltest (17.508 Tests, zwei bedingte Skips)
 bestehen. Die Ursache der ersten Deadlinefehler ist nicht nachgewiesen. Commit
-`9d64258` ist lokal und nicht gepusht. Keine Form-APIs werden neu bereitgestellt.
+`9d64258` liegt inzwischen auf `origin/main`. Keine Form-APIs werden neu bereitgestellt.
 Siehe [KP-589](./Kontextprotokoll.md#kp-589---label-in-tabellenmodi) und
 [KP-590](./Kontextprotokoll.md#kp-590---label-inkrement-committed).
 

@@ -20,7 +20,8 @@ namespace VisualWeb.Engine.Html;
 /// <c>br</c>/<c>hr</c> starts, the <c>image</c> alias, supported void-element start/end tokens, and
 /// supported block/list-item start/end tags in table, table-body, and row modes with
 /// bounded foster-parent insertion are supported. Formatting-element, ruby-annotation, and <c>span</c>
-/// start/end tags, <c>option</c>, <c>optgroup</c>, and <c>label</c> start/end tags and <c>plaintext</c> tokens also
+/// start/end tags, selected ordinary phrasing elements, <c>option</c>, <c>optgroup</c>, and <c>label</c>
+/// start/end tags and <c>plaintext</c> tokens also
 /// use bounded foster-parent insertion in table, column-group, table-body, and row modes. <c>plaintext</c>
 /// starts consume the remaining input as text; adoption reparenting that itself requires table foster
 /// parenting remains unsupported;
@@ -1074,7 +1075,8 @@ public static class HtmlParser
                     || FormattingTags.Contains(tag.Name)
                     || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
                         or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label"
-                    || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt")
+                    || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
+                        or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1160,7 +1162,8 @@ public static class HtmlParser
                 || FormattingTags.Contains(tag.Name)
                 || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
                     or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label"
-                || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt")
+                || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
+                    or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;

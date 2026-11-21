@@ -865,6 +865,56 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
     }
 
+    public static IEnumerable<object[]> PhrasingElementsInTableModes()
+    {
+        string[] names = ["abbr", "cite", "data", "dfn", "kbd", "mark", "q", "samp", "sub", "sup", "time", "var"];
+        (string Start, string End)[] tables =
+        [
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>"),
+            ("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")
+        ];
+        foreach (var name in names)
+        {
+            foreach (var table in tables)
+            {
+                yield return [name, table.Start, table.End];
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PhrasingElementsInTableModes))]
+    public void OrdinaryPhrasingElementsInTableModesUseFosterParenting(string name, string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + $"<{name} id=item data-value=x>content</{name}>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal(name, element.LocalName);
+                Assert.Equal("x", element.GetAttribute("data-value"));
+                Assert.Equal("content", element.TextContent);
+            },
+            node => Assert.Equal("cell", Assert.IsType<DomElement>(node).TextContent),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{name}-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{name}-end-in-table");
+    }
+
+    [Fact]
+    public void UnmatchedPhrasingEndInTableUsesInBodyRecovery()
+    {
+        var result = Parse("<!doctype html><table></mark><tr><td>cell</td></tr></table>");
+        Assert.Equal("cell", Assert.Single(Descendants(result.Document), element => element.LocalName == "td").TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-mark-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
     [Theory]
     [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
     [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]

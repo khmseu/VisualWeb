@@ -17247,3 +17247,28 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   Der Commit ist lokal; Push wurde in diesem Auftrag nicht angefordert.
   Diese Statusangabe ersetzt den ausstehenden Commit in KP-589.
 - Quelle: Git-Commit-Ausgabe, `git status` und aktueller Chat.
+
+### KP-591 - Gewoehnliche Phrasierungselemente in Tabellenmodi
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Die HTML/DOM-Arbeit soll fortgesetzt werden.
+- Belegt: `abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`, `q`, `samp`, `sub`,
+  `sup`, `time` und `var` Start-/Endtags verwenden in Table-, TableBody-, Row-
+  und ColumnGroup-Kontexten den bestehenden begrenzten Foster-Parent-/In-Body-
+  Pfad. Spezialalgorithmen und andere Foster-Faelle bleiben unsupported.
+- Verifikation: 49 fokussierte Faelle scheiterten vor der Aenderung mit
+  `UnsupportedHtmlException`; Engine.Html.Tests besteht nachher mit 7.561
+  Tests. Der Solution-Build besteht ohne Warnungen/Fehler und die
+  Formatverifikation besteht. Der gesamte Solution-Testlauf besteht mit
+  17.557 Tests und zwei bedingten Browser-Skips. Diese Aenderung ist noch nicht
+  committed.
+- Belegt: `9d64258`, `7724507` und `c57a2cb` liegen inzwischen auf
+  `origin/main`. Die Linux- und Windows-Workflows sowie CodeQL fuer `c57a2cb`
+  bestehen; der Prebuild war bei der Abfrage noch in Bearbeitung.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-intable`,
+  geprueft laut Manifest am 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben, Git-Status, GitHub Actions und aktueller
+  Chat.
