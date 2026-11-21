@@ -25,8 +25,8 @@ and `label` start/end foster parenting in table/column-group/table-body/row
 modes, `plaintext` starts and unmatched end tags in those modes, root-attribute merging for in-table
 `html` starts, and template start/end processing in table, table-body and row
 modes. Formatting-element start/end tags use the bounded in-body path, including
-existing nested-anchor and nested-`nobr` recovery; adoption reparenting that
-itself needs table foster parenting remains unsupported. `select` starts and
+existing nested-anchor and nested-`nobr` recovery and fostered adoption
+reparenting. `select` starts and
 unmatched end tags use bounded fostered in-body handling; an open select uses
 the existing bounded select-token rules. `ruby`, `rb`, `rtc`, `rp` and `rt`
 start/end tags use the same path with existing bounded ruby recovery.
@@ -40,8 +40,7 @@ no custom-element reactions or scripting.
 Table starts inside captions use the bounded in-body table rules; closing the
 nested table restores caption mode in documents and caption fragments.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
-of the input. Adoption reparenting requiring table foster parenting and other
-tokens requiring table foster parenting remain unsupported.
+of the input. Other tokens requiring table foster parenting remain unsupported.
 Legacy doctypes preserve public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and
@@ -61,8 +60,9 @@ Scope checks include the `caption` boundary; supported captions are created
 through table insertion and add a formatting marker.
 Non-whitespace table text reconstructs active formatting at the foster insertion
 location when needed; whitespace-only table text does not reconstruct it.
-Adoption reparenting that requires table foster parenting throws explicitly. This
-is not the full adoption-agency algorithm or full anchor semantics.
+Adoption selects the first special element below the formatting element and uses
+the foster insertion location for reparenting when required. This is not the
+full adoption-agency algorithm or full anchor semantics.
 `listing` parses normal markup and strips its first LF; `xmp` is RAWTEXT until
 its closing tag, and `plaintext` consumes the rest as literal text. Apparent
 links, scripts and styles in those literal modes are not DOM elements.

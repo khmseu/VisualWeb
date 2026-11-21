@@ -17401,3 +17401,37 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-597 - Adoption mit Table-Foster-Parenting
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen. Da der Index
+  leer war, bestaetigte der Nutzer explizit, die vorhandenen Aenderungen zu
+  stagen und zu committen.
+- Belegt: Der Stand aus KP-596 wurde als `2fa79a1` lokal committed. Der
+  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips; der
+  Commit-Hook meldete keine Probleme. Kein Push angefordert. Dies ersetzt die
+  dortige Status- und Volltestangabe.
+- Belegt: Bei aktivem Foster-Parenting und tabellenbezogenem gemeinsamen
+  Vorfahren verwendet die begrenzte Adoption-Recovery den vorhandenen
+  Foster-Einfuegepfad fuer den umgehaengten Knoten. Tests betreffen Table-,
+  TableBody- und Row-Modi, innere Formatierung, Anchor, Template-Inhalt,
+  Fragment-Ownership und Knotengrenzen. Vergleich einzelner erwarteter Baeume
+  mit lokalem `html5lib` 1.1; vollstaendige Konformitaet wird nicht behauptet.
+  Ein zusaetzlicher Fall mit mehreren speziellen Blockelementen zeigte eine
+  bestehende Fehlwahl des furthest block; die Suche beginnt nun unmittelbar
+  unter dem Formatierungselement statt beim aktuellen Knoten.
+- Verifikation: Fuenf neue gezielte Faelle scheiterten vorher mit
+  `UnsupportedHtmlException`. Ein alter Test erwartete dieselbe Ausnahme und
+  wurde durch eine positive Baumpruefung ersetzt. Der verschachtelte Blockfall
+  scheiterte vor Korrektur der Blockauswahl. Alle 7.598 HTML-Tests
+  bestehen. Solution-Build ohne Warnungen/Fehler und Formatpruefung bestehen;
+  fuer den neuen Stand wurde kein Solution-Volltest ausgefuehrt. Die
+  Aenderungen sind uncommitted.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody` und
+  `#appropriate-place-for-inserting-a-node`, laut Manifest geprueft am
+  2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.

@@ -199,8 +199,9 @@ after-after-body modes. Supported behavior includes:
   nested-`nobr` recovery. `option`, `optgroup` and `label` starts and ends use
   that path in the same modes. Column-group fallback closes the open `colgroup`
   before reprocessing `label` in table mode; an unmatched `label` end tag
-  reports the fostered-table and in-body unexpected-end diagnostics. Adoption
-  reparenting that itself requires table foster parenting remains unsupported.
+  reports the fostered-table and in-body unexpected-end diagnostics. Bounded
+  adoption selects the first special element below the formatting element and
+  uses the foster insertion location for reparenting when required.
   `abbr`, `cite`, `data`, `dfn`, `kbd`, `mark`, `q`, `samp`, `sub`, `sup`,
   `time` and `var` starts and ends also use the bounded fostered in-body path;
   unmatched ends retain the in-body unexpected-end diagnostic.
@@ -257,9 +258,7 @@ unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling; foreign content; framesets/frames; noscript and applet/marquee/object
 specific algorithms. Fragment contexts outside the supported parser subset are
-rejected. Adoption-agency reparenting whose common ancestor requires table
-foster parenting throws instead of returning an incorrect tree.
-The adoption agency remains a bounded subset, not full HTML tree-construction
+rejected. The adoption agency remains a bounded subset, not full HTML tree-construction
 conformance; this recovery does not implement full anchor semantics.
 
 Doctype classification follows the cached

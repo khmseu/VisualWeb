@@ -444,16 +444,29 @@ ist lokal und nicht gepusht. Siehe
 [KP-595](./Kontextprotokoll.md#kp-595---formatierung-bei-tabellentext-rekonstruieren)
 und [KP-596](./Kontextprotokoll.md#kp-596---verschachtelte-tabellen-in-captions).
 
-**Verschachtelte Tabellen in Captions (2026-11-21; KP-596; lokal in Arbeit):**
+**Verschachtelte Tabellen in Captions (2026-11-21; KP-596/597; lokal committed):**
 Tabellenstarts in Captions verwenden die bestehenden begrenzten In-body-Regeln;
 nach Schliessen der inneren Tabelle wird der Caption-Modus wiederhergestellt.
 Dies gilt auch fuer Template-Inhalt und Caption-Kontextfragmente. Drei gezielte
 Faelle scheiterten vorher; vier fokussierte Faelle und 7.592 HTML-Tests
 bestehen. Der Solution-Build besteht ohne Warnungen und Fehler; die
 Formatpruefung besteht. Der anschliessend verstaerkte Fragmenttest besteht
-separat; ein neuer Solution-Volltest wurde nicht ausgefuehrt. Die Aenderungen
-sind uncommitted.
-Siehe [KP-596](./Kontextprotokoll.md#kp-596---verschachtelte-tabellen-in-captions).
+separat; der Solution-Volltest bestand mit zwei bedingten Browser-Skips.
+Commit `2fa79a1` ist lokal und nicht gepusht. Siehe
+[KP-596](./Kontextprotokoll.md#kp-596---verschachtelte-tabellen-in-captions)
+und [KP-597](./Kontextprotokoll.md#kp-597---adoption-mit-table-foster-parenting).
+
+**Adoption mit Table-Foster-Parenting (2026-11-21; KP-597; lokal in Arbeit):**
+Die begrenzte Adoption-Recovery fuegt ihre umgehaengten Knoten bei aktivem
+Foster-Parenting ueber den bestehenden Foster-Einfuegepfad ein, wenn der
+gemeinsame Vorfahr tabellenbezogen ist. Bei mehreren Blockelementen waehlt die
+Recovery das erste spezielle Element unterhalb der Formatierung auf dem Stack.
+Dokument-, Template- und Fragmentfaelle sowie innere Formatierung und Knotengrenzen sind abgedeckt; vollstaendige
+HTML-Konformitaet bleibt offen. Fuenf neue Faelle scheiterten vorher; der
+HTML-Testlauf besteht mit 7.598 Tests. Solution-Build ohne Warnungen/Fehler
+und Formatpruefung bestehen; ein neuer Solution-Volltest wurde nicht
+ausgefuehrt. Der Stand ist uncommitted.
+Siehe [KP-597](./Kontextprotokoll.md#kp-597---adoption-mit-table-foster-parenting).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad

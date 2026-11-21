@@ -420,8 +420,8 @@ in-body foster parenting in table, column-group, table-body and row modes.
 This includes the existing bounded nested-anchor and nested-`nobr` recovery.
 `option`, `optgroup` and `label` starts and ends use the same path. Column-group
 fallback closes the open `colgroup` before table-mode reprocessing, and
-unmatched `label` ends receive in-body recovery. Adoption reparenting
-that itself requires table foster parenting remains unsupported. `select`
+unmatched `label` ends receive in-body recovery. Bounded adoption reparenting
+uses the foster insertion location when needed. `select`
 starts and unmatched end tags also use bounded fostered in-body handling; an
 open select uses the existing bounded select-token rules. `ruby`, `rb`, `rtc`,
 `rp` and `rt` start/end tags use the same path with existing bounded ruby
@@ -504,8 +504,9 @@ parser work includes:
   present before reconstruction. Nested `nobr` starts reconstruct before
   checking scope and, when in scope, report a parse error, run adoption and
   reconstruct again. Non-whitespace table text reconstructs formatting at the
-  foster insertion location when necessary. Adoption reparenting that needs
-  table foster parenting still fails explicitly. The adoption algorithm and overall tree construction remain
+  foster insertion location when necessary; adoption reparenting also uses that
+  location when needed. The furthest block is the first special element below
+  the formatting element on the open stack. The adoption algorithm and overall tree construction remain
   bounded subsets, not full HTML conformance or full anchor semantics.
   Focused tree/fragment tests cover recovery, markers, attributes, diagnostics,
   limits and cancellation; all 7,362 Engine.Html tests pass.

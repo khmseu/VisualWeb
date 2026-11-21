@@ -943,7 +943,7 @@ public static class HtmlParser
 
                 if (stackIndex != open.Count - 1) { Error("misnested-formatting-end-tag"); }
                 var furthestBlockIndex = -1;
-                for (var index = open.Count - 1; index > stackIndex; index--)
+                for (var index = stackIndex + 1; index < open.Count; index++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     if (SpecialTags.Contains(open[index].LocalName))
@@ -968,11 +968,6 @@ public static class HtmlParser
 
                 if (stackIndex == 0) { throw new InvalidOperationException("A formatting element has no common ancestor."); }
                 var commonAncestor = open[stackIndex - 1];
-                if (commonAncestor.LocalName is "table" or "tbody" or "tfoot" or "thead" or "tr")
-                {
-                    throw Unsupported("Adoption-agency reparenting would require table foster parenting.");
-                }
-
                 FlushText();
                 var bookmark = entryIndex;
                 var nodeIndex = furthestBlockIndex;
@@ -1021,7 +1016,14 @@ public static class HtmlParser
                     lastNode = newNode;
                 }
 
-                AdjustedInsertionParent(commonAncestor).AppendChild(lastNode);
+                if (fosterParenting && commonAncestor.LocalName is "table" or "tbody" or "tfoot" or "thead" or "tr")
+                {
+                    InsertAtFosterParent(lastNode);
+                }
+                else
+                {
+                    AdjustedInsertionParent(commonAncestor).AppendChild(lastNode);
+                }
                 var newFormattingElement = CreateElementFromToken(formattingEntry.Token);
                 while (furthestBlock.FirstChild is { } child)
                 {

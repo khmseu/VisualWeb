@@ -1292,10 +1292,14 @@ public sealed class TreeTests
     }
 
     [Fact]
-    public void AnchorAdoptionRequiringTableFosterParentingRemainsUnsupported()
+    public void AnchorAdoptionUsesTableFosterParenting()
     {
-        Assert.Throws<UnsupportedHtmlException>(() =>
-            Parse("<!doctype html><div><table><a><div>content</a></div></table></div>"));
+        var result = Parse("<!doctype html><div><table><a><div>content</a></div></table></div>");
+        var host = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        Assert.Equal(new[] { "a", "div", "table" }, host.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var adoptedAnchor = Assert.IsType<DomElement>(host.ChildNodes[1].FirstChild);
+        Assert.Equal("a", adoptedAnchor.LocalName);
+        Assert.Equal("content", adoptedAnchor.TextContent);
     }
 
     [Fact]
@@ -2228,10 +2232,68 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<table><b><p>x</b></table>")]
     [InlineData("<table><svg></svg></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Theory]
+    [InlineData("<table>", "</table>")]
+    [InlineData("<table><tbody>", "</tbody></table>")]
+    [InlineData("<table><tbody><tr>", "</tr></tbody></table>")]
+    public void AdoptionReparentsFormattingThroughTableFosterLocation(string prefix, string suffix)
+    {
+        var result = Parse($"<!doctype html>{prefix}<b id=old><p>x</b>y</p>{suffix}");
+        var body = result.Document.Body!;
+        Assert.Equal(new[] { "b", "p", "table" }, body.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var original = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var paragraph = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        var clone = Assert.IsType<DomElement>(paragraph.FirstChild);
+        Assert.Equal("old", original.GetAttribute("id"));
+        Assert.Empty(original.ChildNodes);
+        Assert.Equal("old", clone.GetAttribute("id"));
+        Assert.NotSame(original, clone);
+        Assert.Equal("x", clone.TextContent);
+        Assert.Equal("y", Assert.IsType<DomText>(paragraph.LastChild).Data);
+        Assert.Contains(result.Errors, error => error.Code == "misnested-formatting-end-tag");
+    }
+
+    [Fact]
+    public void AdoptionFosterReparentingUsesTemplateContent()
+    {
+        var result = Parse("<!doctype html><body><template><table><b><p>x</b>y</p></table></template>");
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        Assert.Equal(new[] { "b", "p", "table" }, template.Content.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("xy", template.Content.ChildNodes[1].TextContent);
+        Assert.All(template.Content.Descendants(), node => Assert.Same(template.Content.OwnerDocument, node.OwnerDocument));
+    }
+
+    [Fact]
+    public void AdoptionFosterReparentingPreservesInnerFormattingRecoveryAndLimits()
+    {
+        const string input = "<!doctype html><table><b><i><p>x</b>y</i></p></table>";
+        var result = Parse(input);
+        var body = result.Document.Body!;
+        Assert.Equal(new[] { "b", "i", "p", "table" }, body.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var paragraph = Assert.IsType<DomElement>(body.ChildNodes[2]);
+        var italic = Assert.IsType<DomElement>(paragraph.FirstChild);
+        Assert.Equal("i", italic.LocalName);
+        Assert.Equal("x", Assert.IsType<DomElement>(italic.FirstChild).TextContent);
+        Assert.Equal("y", Assert.IsType<DomText>(italic.LastChild).Data);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 8 }));
+    }
+
+    [Fact]
+    public void AdoptionFosterReparentingPreservesNestedBlockOrder()
+    {
+        var result = Parse("<!doctype html><table><b><div><p>x</b>y</p></div></table>");
+        var body = result.Document.Body!;
+        Assert.Equal(new[] { "b", "div", "table" }, body.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var div = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal(new[] { "b", "p" }, div.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var paragraph = Assert.IsType<DomElement>(div.LastChild);
+        Assert.Equal("x", Assert.IsType<DomElement>(paragraph.FirstChild).TextContent);
+        Assert.Equal("y", Assert.IsType<DomText>(paragraph.LastChild).Data);
+    }
 
     [Fact]
     public void UnclosedSelectReportsASelectSpecificParseError()

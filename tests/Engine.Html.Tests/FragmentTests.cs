@@ -193,6 +193,18 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragmentAdoptionFosterReparentingStaysInFragment()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<table><b><p>x</b>y</p></table>", document.CreateElement("div"),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(new[] { "b", "p", "table" }, result.Fragment.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("xy", result.Fragment.ChildNodes[1].TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+    }
+
+    [Fact]
     public void ParseFragment_selectContextProcessesOptionsAndIgnoresSelectOnlyTokens()
     {
         var document = new DomDocument();
