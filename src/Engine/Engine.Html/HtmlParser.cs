@@ -1296,7 +1296,15 @@ public static class HtmlParser
         {
             if (formatting.LastOrDefault() is { } entry && !open.Contains(entry.Element))
             {
-                throw Unsupported("Foster parenting requiring active-formatting reconstruction is not implemented.");
+                var previousFosterParenting = fosterParenting;
+                fosterParenting = true;
+                try
+                {
+                    ReconstructFormatting();
+                    Text(data);
+                }
+                finally { fosterParenting = previousFosterParenting; }
+                return;
             }
 
             var tableIndex = open.FindLastIndex(element => element.LocalName == "table");

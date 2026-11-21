@@ -136,6 +136,20 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragmentFosteredTableTextReconstructsFormattingInTheFragment()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<p><b>x</p><table>y<tr><td>cell</td></tr></table>",
+            document.CreateElement("div"), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(new[] { "p", "b", "table" },
+            result.Fragment.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("y", result.Fragment.ChildNodes[1].TextContent);
+        Assert.Equal("cell", result.Fragment.LastChild!.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+    }
+
+    [Fact]
     public void ParseFragment_tableFosterTextMergesWithBufferedWhitespace()
     {
         var document = new DomDocument();

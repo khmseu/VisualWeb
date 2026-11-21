@@ -17349,3 +17349,28 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-595 - Formatierung bei Tabellentext rekonstruieren
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
+- Belegt: Der Stand aus KP-594 wurde als `e6eb8b6` lokal committed. Der
+  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips; kein
+  Push wurde angefordert. Dies ersetzt die dortige Status- und Volltestangabe.
+- Belegt: Nicht-Whitespace-Tabellentext rekonstruiert erforderliche aktive
+  Formatierung unter voruebergehend aktiviertem Foster-Parenting; der Text
+  wird im rekonstruierten aktuellen Knoten eingefuegt. Whitespace-only
+  rekonstruiert nicht. Der bestehende Pfad behaelt Knoten- und Tiefengrenzen,
+  Abbruch und angepasste Template-/Fragment-Einfuegeorte bei. Adoption-
+  Reparenting, das Foster-Parenting erfordert, bleibt unsupported.
+- Verifikation: Vier gezielte neue Tests scheiterten vorher und bestehen danach;
+  ein Whitespace-Kontrolltest bestand bereits vorher. Alle 7.590 HTML-Tests
+  bestehen. Solution-Build ohne Warnungen/Fehler und Formatpruefung bestehen;
+  fuer diesen Stand wurde kein neuer Solution-Volltest ausgefuehrt. Die
+  Aenderungen sind uncommitted.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-intabletext`,
+  `#parsing-main-intable`, laut Manifest geprueft am 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`, `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.

@@ -219,8 +219,10 @@ after-after-body modes. Supported behavior includes:
   does not implement foster parenting for other table tokens.
   Contiguous non-whitespace table-character runs (including their adjacent
   whitespace) are foster-parented before the nearest table when the current
-  node is table-related; whitespace-only runs stay in the table. Rendering is
-  separate:
+  node is table-related. When active formatting needs reconstruction, its
+  bounded clones are inserted at the foster location and the text is inserted
+  into the reconstructed current node. Whitespace-only runs stay in the table
+  without reconstruction. Rendering is separate:
   `Engine.Layout` supports a [bounded automatic table subset](text-layout.md#basic-automatic-tables);
   parser support for captions/columns does not imply layout support.
 
@@ -255,8 +257,7 @@ unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling; foreign content; framesets/frames; noscript and applet/marquee/object
 specific algorithms. Fragment contexts outside the supported parser subset are
 rejected. Adoption-agency reparenting whose common ancestor requires table
-foster parenting, and table text requiring both foster parenting
-and formatting reconstruction throw instead of returning an incorrect tree.
+foster parenting throws instead of returning an incorrect tree.
 The adoption agency remains a bounded subset, not full HTML tree-construction
 conformance; this recovery does not implement full anchor semantics.
 

@@ -950,6 +950,62 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void FosteredTableTextReconstructsNestedFormattingBeforeTheTable()
+    {
+        var result = Parse("<!doctype html><p><b id=bold><i class=kept>x</p>"
+            + "<table>  y \n<tr><td>cell</td></tr></table>");
+        var body = result.Document.Body!;
+        Assert.Equal(3, body.ChildNodes.Count);
+        var paragraph = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var originalBold = Assert.IsType<DomElement>(paragraph.FirstChild);
+        var originalItalic = Assert.IsType<DomElement>(originalBold.FirstChild);
+        var rebuiltBold = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        var rebuiltItalic = Assert.IsType<DomElement>(Assert.Single(rebuiltBold.ChildNodes));
+        var table = Assert.IsType<DomElement>(body.ChildNodes[2]);
+
+        Assert.Equal("x", originalItalic.TextContent);
+        Assert.Equal("bold", rebuiltBold.GetAttribute("id"));
+        Assert.Equal("kept", rebuiltItalic.GetAttribute("class"));
+        Assert.NotSame(originalBold, rebuiltBold);
+        Assert.NotSame(originalItalic, rebuiltItalic);
+        Assert.Equal("  y \n", rebuiltItalic.TextContent);
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
+    }
+
+    [Fact]
+    public void WhitespaceOnlyTableTextDoesNotReconstructFormatting()
+    {
+        var result = Parse("<!doctype html><p><b>x</p><table> \n<tr><td>cell</td></tr></table>");
+        var body = result.Document.Body!;
+        Assert.Equal(new[] { "p", "table" }, body.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        var table = Assert.IsType<DomElement>(body.LastChild);
+        Assert.Equal(" \n", Assert.IsType<DomText>(table.FirstChild).Data);
+    }
+
+    [Fact]
+    public void FosteredTableTextReconstructionHonorsNodeLimit()
+    {
+        const string input = "<p><b>x</p><table>y</table>";
+        var result = Parse(input, new() { MaxNodes = 10 });
+        Assert.Equal("y", Assert.IsType<DomElement>(result.Document.Body!.ChildNodes[1]).TextContent);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 9 }));
+    }
+
+    [Fact]
+    public void FosteredTableTextReconstructsWithinTemplateContent()
+    {
+        var result = Parse("<!doctype html><body><template><p><b>x</p>"
+            + "<table>y<tr><td>cell</td></tr></table></template>");
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        Assert.Equal(new[] { "p", "b", "table" },
+            template.Content.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("y", template.Content.ChildNodes[1].TextContent);
+        Assert.All(template.Content.Descendants(), node => Assert.Same(template.Content.OwnerDocument, node.OwnerDocument));
+    }
+
+    [Fact]
     public void FosteredTableTextRunsSeparatedByTagsMergeBeforeTable()
     {
         var result = Parse("<!doctype html><div id=host>A<table>B<tr>C</tr>D</table></div>");
@@ -2164,7 +2220,6 @@ public sealed class TreeTests
     [InlineData("<div><form></div><input>")]
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
-    [InlineData("<p><b>x</p><table>y</table>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 

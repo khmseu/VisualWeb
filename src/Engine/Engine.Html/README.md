@@ -57,9 +57,10 @@ still present before reconstruction. Nested `nobr` starts reconstruct before
 the scope check and again after reporting an error and running adoption.
 Scope checks include the `caption` boundary; supported captions are created
 through table insertion and add a formatting marker.
-Reparenting that requires table foster parenting and table-text foster parenting
-requiring reconstruction throw explicitly. This is not the full adoption-agency
-algorithm or full anchor semantics.
+Non-whitespace table text reconstructs active formatting at the foster insertion
+location when needed; whitespace-only table text does not reconstruct it.
+Adoption reparenting that requires table foster parenting throws explicitly. This
+is not the full adoption-agency algorithm or full anchor semantics.
 `listing` parses normal markup and strips its first LF; `xmp` is RAWTEXT until
 its closing tag, and `plaintext` consumes the rest as literal text. Apparent
 links, scripts and styles in those literal modes are not DOM elements.

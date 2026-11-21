@@ -419,15 +419,29 @@ Solution-Volltest bestehen. DOM-Form-Owner- und Script-APIs bleiben offen;
 Commit `2ec8853` ist lokal und nicht gepusht. Siehe
 [KP-593](./Kontextprotokoll.md#kp-593---template-formulare-und-formularzeiger).
 
-**Formularzeiger bei Endtags (2026-11-21; KP-594; lokal in Arbeit):**
+**Formularzeiger bei Endtags (2026-11-21; KP-594/595; lokal committed):**
 Ausserhalb von Template-Inhalt loescht ein Formularendtag den Zeiger vor der
 Scope-Pruefung. Nicht in-scope befindliche Formulare bleiben auf dem Stack;
 spaetere Starts werden nicht mehr durch den veralteten Zeiger ignoriert.
 Fuenf fokussierte Faelle waren vorher rot; Engine.Html.Tests besteht mit 7.586
-Tests, Solution-Build und Formatverifikation bestehen. Ein neuer
-Solution-Volltest wurde nicht ausgefuehrt; die Aenderung ist nicht committed.
+Tests, Solution-Build und Formatverifikation bestehen. Der anschliessende
+Solution-Volltest bestand mit zwei bedingten Browser-Skips; Commit `e6eb8b6`
+ist lokal und nicht gepusht.
 Siehe
-[KP-594](./Kontextprotokoll.md#kp-594---formularzeiger-vor-scope-pruefung-loeschen).
+[KP-594](./Kontextprotokoll.md#kp-594---formularzeiger-vor-scope-pruefung-loeschen)
+und [KP-595](./Kontextprotokoll.md#kp-595---formatierung-bei-tabellentext-rekonstruieren).
+
+**Tabellentext und Formatierung (2026-11-21; KP-595; lokal in Arbeit):**
+Nicht-Whitespace-Tabellentext rekonstruiert bei Bedarf aktive Formatierung
+ueber den bestehenden Foster-Einfuegepfad und fuegt den Text im
+rekonstruierten aktuellen Knoten ein. Whitespace-only bleibt unveraendert.
+Dokument-, Template- und Fragmenttests sowie die Knotengrenze sind abgedeckt;
+Adoption-Reparenting mit Foster-Parenting bleibt unsupported. Vier neue
+gezielte Tests scheiterten vorher; fuenf fokussierte Tests und 7.590 HTML-Tests
+bestehen. Der Solution-Build besteht ohne Warnungen und Fehler; die
+Formatpruefung besteht. Ein neuer Solution-Volltest wurde nicht ausgefuehrt.
+Die Aenderungen sind uncommitted.
+Siehe [KP-595](./Kontextprotokoll.md#kp-595---formatierung-bei-tabellentext-rekonstruieren).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad

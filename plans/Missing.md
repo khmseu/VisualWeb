@@ -382,7 +382,8 @@ including implied `colgroup`/`tbody`/`tr` wrappers and scoped closure. Captions
 use the existing in-body content subset and reprocess table tokens that close
 them. Non-whitespace table-character runs, including adjacent whitespace, are
 foster-parented before the nearest table when the current node is
-table-related; whitespace-only runs remain in place. Character tokens use
+table-related, reconstructing active formatting at the foster insertion location
+when needed; whitespace-only runs remain in place without reconstruction. Character tokens use
 in-body handling when the current node is not `table`, `tbody`, `template`,
 `tfoot`, `thead` or `tr`, so text following a fostered element start stays
 inside that element.
@@ -502,9 +503,9 @@ parser work includes:
   original anchor from the active-formatting list and open stack if still
   present before reconstruction. Nested `nobr` starts reconstruct before
   checking scope and, when in scope, report a parse error, run adoption and
-  reconstruct again. Adoption reparenting that needs table foster parenting and
-  table-text foster parenting requiring formatting reconstruction still fail
-  explicitly. The adoption algorithm and overall tree construction remain
+  reconstruct again. Non-whitespace table text reconstructs formatting at the
+  foster insertion location when necessary. Adoption reparenting that needs
+  table foster parenting still fails explicitly. The adoption algorithm and overall tree construction remain
   bounded subsets, not full HTML conformance or full anchor semantics.
   Focused tree/fragment tests cover recovery, markers, attributes, diagnostics,
   limits and cancellation; all 7,362 Engine.Html tests pass.
