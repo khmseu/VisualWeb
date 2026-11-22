@@ -454,7 +454,10 @@ form-pointer exception and pop the inserted form from the open-element stack;
 repeated starts are ignored while the pointer is set. In-table form end tags
 use in-body handling, clearing the pointer before the scope check; an
 out-of-scope form stays open and can contain a later form. This also applies
-to form pointers inherited from fragment contexts outside templates. Duplicate
+to form pointers inherited from fragment contexts outside templates. In-scope
+form ends generate implied end tags and remove only the pointed-to form from
+the open stack, reporting misnesting without closing remaining descendants.
+Other implicit closures that would pop a pointed-to form remain unsupported. Duplicate
 `html` start tokens in table, section and row
 modes merge missing root attributes without inserting a new element. Other
 tokens that require table foster parenting remain explicitly unsupported; rendering supports only the

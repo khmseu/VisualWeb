@@ -2305,7 +2305,6 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
-    [InlineData("<form><div></form>x")]
     [InlineData("<div><form></div><input>")]
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
@@ -2741,6 +2740,33 @@ public sealed class TreeTests
         var result = Parse("<!doctype html><form id=a></form><form id=b><input></form>");
         Assert.Equal(new[] { "a", "b" }, Descendants(result.Document).Where(e => e.LocalName == "form").Select(e => e.GetAttribute("id")));
         Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void MisnestedFormEndRemovesOnlyTheFormFromTheOpenStack()
+    {
+        var result = Parse("<!doctype html><form id=first><div>one</form>two</div>"
+            + "<form id=second>three</form>");
+        var body = result.Document.Body!;
+        Assert.Equal(new[] { "first", "second" },
+            body.ChildNodes.Cast<DomElement>().Select(element => element.GetAttribute("id")));
+        var first = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var div = Assert.IsType<DomElement>(first.FirstChild);
+        Assert.Equal("onetwo", div.TextContent);
+        Assert.Equal("three", body.ChildNodes[1].TextContent);
+        Assert.Single(result.Errors, error => error.Code == "misnested-form-end-tag");
+        Assert.DoesNotContain(result.Errors, error => error.Code == "nested-form");
+    }
+
+    [Fact]
+    public void MisnestedFormEndGeneratesRubyImpliedEndTags()
+    {
+        var result = Parse("<!doctype html><form><ruby><rt>x</form>y</ruby>");
+        var form = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var ruby = Assert.IsType<DomElement>(form.FirstChild);
+        Assert.Equal("x", Assert.IsType<DomElement>(ruby.FirstChild).TextContent);
+        Assert.Equal("y", Assert.IsType<DomText>(ruby.LastChild).Data);
+        Assert.Contains(result.Errors, error => error.Code == "misnested-form-end-tag");
     }
 
     private static IEnumerable<DomElement> Descendants(DomNode node)

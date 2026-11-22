@@ -17435,3 +17435,31 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-598 - Fehlverschachtelte Form-Endtags
+
+- Dokumentiert am: 2026-11-21.
+- Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
+- Belegt: Der Stand aus KP-597 wurde als `2ab446b` lokal committed. Der
+  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips; der
+  Commit-Hook formatierte `docs/standards.md` und meldete keine Probleme.
+  Kein Push angefordert. Dies ersetzt die dortige Status- und Volltestangabe.
+- Belegt: Ein In-body-Formularendtag ausserhalb von Template-Inhalt prueft den
+  referenzierten Knoten auf Scope, erzeugt implizite Endtags und entfernt nur
+  den referenzierten Formular-Knoten vom offenen Stack. Ist ein anderer Knoten
+  danach aktuell, wird `misnested-form-end-tag` gemeldet; verbleibende
+  Nachfahren bleiben offen. Der Formularzeiger wird weiterhin vor der
+  Scope-Pruefung geloescht. Andere implizite Schliessungen eines referenzierten
+  Formulars und DOM-Form-Owner-APIs bleiben unsupported.
+- Verifikation: Drei neue Dokument-/Fragmentfaelle scheiterten vorher mit
+  `UnsupportedHtmlException`; neun gezielte Faelle und alle 7.600 HTML-Tests
+  bestehen. Erwartete Dokumentbaeume wurden mit lokalem `html5lib` 1.1
+  verglichen. Solution-Build ohne Warnungen/Fehler und Formatpruefung bestehen.
+  Der Solution-Volltest besteht mit 17.596 erfolgreichen Tests und zwei
+  bedingten Browser-Skips. Der Commit ist angefordert; kein Push angefordert.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`, laut
+  Manifest geprueft am 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  Git- und lokale Testausgaben sowie aktueller Chat.

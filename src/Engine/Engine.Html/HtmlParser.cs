@@ -756,15 +756,11 @@ public static class HtmlParser
 
                         var node = formPointer;
                         formPointer = null;
-                        if (node is null || !InScope("form")) { Error("unexpected-form-end-tag"); return; }
+                        if (node is null || !InScope(node)) { Error("unexpected-form-end-tag"); return; }
                         FlushText();
-                        while (open[^1] != node && open[^1].LocalName is "dd" or "dt" or "li" or "p") { open.RemoveAt(open.Count - 1); }
-                        if (open[^1] != node)
-                        {
-                            throw Unsupported("Misnested form end tags would split form ownership from tree ancestry.");
-                        }
-
-                        open.RemoveAt(open.Count - 1);
+                        GenerateImpliedEndTags();
+                        if (open[^1] != node) { Error("misnested-form-end-tag"); }
+                        open.Remove(node);
                         return;
                     }
                 case "br":
@@ -1998,12 +1994,26 @@ public static class HtmlParser
             {
                 var current = open[index].LocalName;
                 if (current == name) { return true; }
-                if (current is "html" or "caption" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template"
+                if (IsScopeBoundary(current)
                     || buttonScope && current == "button" || listScope && current is "ol" or "ul") { return false; }
             }
 
             return false;
         }
+
+        private bool InScope(DomElement target)
+        {
+            for (var index = open.Count - 1; index >= 0; index--)
+            {
+                if (open[index] == target) { return true; }
+                if (IsScopeBoundary(open[index].LocalName)) { return false; }
+            }
+
+            return false;
+        }
+
+        private static bool IsScopeBoundary(string name) =>
+            name is "html" or "caption" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template";
 
         private void Close(string name) => CloseAt(open.FindLastIndex(e => e.LocalName == name));
         private void CloseAt(int index)

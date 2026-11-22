@@ -236,10 +236,11 @@ Simple `form` elements use the form element pointer: `<form>` closes an open
 ignored while the pointer is set. Outside template contents, `</form>` clears
 the pointer before the scope check, reporting `unexpected-form-end-tag` if the
 pointed-to form is absent or out of scope. An out-of-scope form is not popped,
-so a later form start can produce nested forms. A matching
-`</form>` closes implied `dd`/`dt`/`li`/`p` ends; any other misnesting, or an
-implied closure (for example `</div>` or `</dl>`) that would pop an open form,
-throws instead of applying that recovery. `input` stays a
+so a later form start can produce nested forms. A matching `</form>` generates
+implied end tags, reports misnesting if the form is not current, and removes
+only that form from the open stack. Its still-open descendants remain in the
+tree. Other implied closures (for example `</div>` or `</dl>`) that would pop
+an open form still throw instead of applying that recovery. `input` stays a
 void element and `button` an ordinary element, so control text never renders
 as raw markup. The parser does not expose a form-owner API; the browser's
 bounded form ownership is described in the [shell guide](browser-shell.md).

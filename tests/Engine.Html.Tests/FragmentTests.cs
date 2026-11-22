@@ -306,6 +306,21 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragmentMisnestedFormEndKeepsDescendantOpen()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<form><div>one</form>two</div><form>three</form>",
+            document.CreateElement("div"), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(new[] { "form", "form" },
+            result.Fragment.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("onetwo", result.Fragment.FirstChild!.TextContent);
+        Assert.Equal("three", result.Fragment.LastChild!.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "misnested-form-end-tag");
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+    }
+
+    [Fact]
     public void ParseFragmentTemplateContextIgnoresAncestorFormPointer()
     {
         var document = new DomDocument();

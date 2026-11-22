@@ -456,17 +456,30 @@ Commit `2fa79a1` ist lokal und nicht gepusht. Siehe
 [KP-596](./Kontextprotokoll.md#kp-596---verschachtelte-tabellen-in-captions)
 und [KP-597](./Kontextprotokoll.md#kp-597---adoption-mit-table-foster-parenting).
 
-**Adoption mit Table-Foster-Parenting (2026-11-21; KP-597; lokal in Arbeit):**
+**Adoption mit Table-Foster-Parenting (2026-11-21; KP-597/598; lokal committed):**
 Die begrenzte Adoption-Recovery fuegt ihre umgehaengten Knoten bei aktivem
 Foster-Parenting ueber den bestehenden Foster-Einfuegepfad ein, wenn der
 gemeinsame Vorfahr tabellenbezogen ist. Bei mehreren Blockelementen waehlt die
 Recovery das erste spezielle Element unterhalb der Formatierung auf dem Stack.
 Dokument-, Template- und Fragmentfaelle sowie innere Formatierung und Knotengrenzen sind abgedeckt; vollstaendige
 HTML-Konformitaet bleibt offen. Fuenf neue Faelle scheiterten vorher; der
-HTML-Testlauf besteht mit 7.598 Tests. Solution-Build ohne Warnungen/Fehler
-und Formatpruefung bestehen; ein neuer Solution-Volltest wurde nicht
-ausgefuehrt. Der Stand ist uncommitted.
-Siehe [KP-597](./Kontextprotokoll.md#kp-597---adoption-mit-table-foster-parenting).
+HTML-Testlauf besteht mit 7.598 Tests. Solution-Build und Formatpruefung
+bestehen; der anschliessende Solution-Volltest bestand mit zwei bedingten
+Browser-Skips. Commit `2ab446b` ist lokal und nicht gepusht. Siehe
+[KP-597](./Kontextprotokoll.md#kp-597---adoption-mit-table-foster-parenting)
+und [KP-598](./Kontextprotokoll.md#kp-598---fehlverschachtelte-form-endtags).
+
+**Fehlverschachtelte Form-Endtags (2026-11-21; KP-598; lokal in Arbeit):**
+Ausserhalb von Template-Inhalt prueft das Endtag den konkreten Formularzeiger
+auf Scope, erzeugt implizite Endtags und entfernt nur dieses Formular aus dem
+Stack. Weitere offene Nachfahren bleiben bestehen; Fehlverschachtelung
+erzeugt eine Diagnose. Dokument- und Fragmenttests sowie Ruby-Endtags sind
+abgedeckt. Andere implizite Schliessungen eines referenzierten Formulars und
+DOM-Form-Owner-APIs bleiben offen. Drei neue Faelle scheiterten vorher; 7.600
+HTML-Tests bestehen. Solution-Build ohne Warnungen/Fehler und Formatpruefung
+bestehen; der Solution-Volltest besteht mit 17.596 erfolgreichen Tests und
+zwei bedingten Browser-Skips. Die Aenderung wird jetzt committed.
+Siehe [KP-598](./Kontextprotokoll.md#kp-598---fehlverschachtelte-form-endtags).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
