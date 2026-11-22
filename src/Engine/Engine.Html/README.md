@@ -77,8 +77,12 @@ insertion mode. Within template content, supported table starts select the
 bounded in-table, in-column-group, in-table-body and in-row algorithms, and
 nested tables use the existing table subset. EOF in these modes closes open
 templates with diagnostics. A `select` start uses the bounded in-body/select
-parser; nested selects, foreign content and other unsupported template
-algorithms remain explicit failures.
+parser; templates started inside select content use in-body/template
+processing, keep their contents out of the enclosing select's token handling,
+and resume the enclosing select's token handling on close, including in
+select-context fragments.
+Nested selects, foreign content and other unsupported template algorithms
+remain explicit failures.
 Inside template contents, including template-context fragments, form starts
 ignore and preserve the outer form pointer; in-body form ends close the
 in-scope form, and in-table form starts are inserted and popped without

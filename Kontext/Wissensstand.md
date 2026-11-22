@@ -505,6 +505,22 @@ Formatverifikation und `git diff --check` bestehen. Der Supportwert bleibt
 unveraendert; kein Push angefordert. Siehe
 [KP-600](./Kontextprotokoll.md#kp-600---head-und-body-tags-in-tabellenmodi).
 
+**Template-Inhalt innerhalb Selects (2026-11-22; KP-601; lokal validiert):**
+Template-Starts werden nun auch verarbeitet, wenn ein Select offen ist.
+Waehrend ein Template im Stack liegt, leitet der Parser Tokens nicht mehr in
+die Select-spezifische Verarbeitung des darunterliegenden Select-Elements;
+Template-Inhalt folgt dem begrenzten In-Body-/Template-Verhalten. Beim
+Schliessen des Templates leitet die Tokenverarbeitung wieder an das umgebende
+Select-Element weiter. Das gilt auch fuer Select-Kontext-Fragmente. Dokument-
+und Fragmentregressionen pruefen
+einen Template-Inhalt mit `input`/`option` und eine nachfolgende Option im
+Select. Die HTML-Schaetzung bleibt unveraendert. Engine.Html.Tests besteht mit
+7.604 Tests; Solution-Build ohne Warnungen/Fehler und Volltest mit 17.600
+Erfolgen und zwei bedingten Browser-Skips bestehen; Formatverifikation und
+`git diff --check` bestehen. Andere Select-/Template-Algorithmen bleiben
+unsupported; kein Push angefordert. Siehe
+[KP-601](./Kontextprotokoll.md#kp-601---template-inhalt-innerhalb-selects).
+
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags

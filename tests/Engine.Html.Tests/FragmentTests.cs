@@ -222,6 +222,25 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragment_selectTemplateContentUsesInBodyRulesAndResumesSelectContext()
+    {
+        var document = new DomDocument();
+
+        var result = HtmlParser.ParseFragment(
+            "<template><input><option>inside</option></template><option>after</option>",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
+
+        var template = Assert.IsType<DomTemplateElement>(result.Fragment.FirstChild);
+        Assert.Equal(new[] { "input", "option" },
+            template.Content.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal(new[] { "template", "option" },
+            result.Fragment.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void ParseFragment_templateContextKeepsNestedTemplateContentSeparate()
     {
         var document = new DomDocument();

@@ -172,7 +172,11 @@ ends in table, table-body and row modes use in-head/template processing and
 restore the originating table insertion mode on close. Template contents select
 bounded table modes for supported caption/column/section, row and cell starts.
 A `select` start within template content uses the bounded in-body/select parser;
-nested selects and other unsupported table/template algorithms remain
+templates started while processing a select use bounded in-body/template
+processing, do not route their contents through the enclosing select's token
+rules, and resume the enclosing select's token handling on close, including
+for select-context fragments.
+Nested selects and other unsupported table/template algorithms remain
 unsupported. Form starts inside template contents, including template-context
 fragments, ignore and preserve the outer form pointer; in-body form ends close
 an in-scope form, while in-table starts insert and pop without changing the

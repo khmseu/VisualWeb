@@ -17515,3 +17515,37 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`,
   `docs/project-map.md`, `plans/Missing.md`, lokale Validierungsausgaben und
   aktueller Chat.
+
+### KP-601 - Template-Inhalt innerhalb Selects
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle WHATWG-HTML/DOM-
+  Vervollstaendigung fort. Die Auswahl dieses eng begrenzten Verhaltens folgt
+  der vorhandenen expliziten Unsupported-Grenze; eine eigene Nutzerentscheidung
+  zu diesem Teilalgorithmus wurde nicht erfragt.
+- Belegt: `Process` lehnte `<template>` bei offenem `<select>` zuvor explizit
+  ab. Das bestehende Select-Dispatching behandelte ausserdem ein Select unter
+  einem offenen Template weiterhin als aktiven Kontext, auch wenn In-Body-
+  Template-Verarbeitung noetig war. Der Parser ignoriert nun Selects unterhalb
+  des letzten offenen Templates fuer dieses Dispatching und fuer die
+  Fragment-Select-Kontextbehandlung. Nach Template-Schluss leitet die normale
+  Tokenverarbeitung wieder an das umgebende Select-Element weiter. Die bisherigen
+  Grenzen fuer andere Select-/Template-Algorithmen bleiben bestehen.
+- Verifikation: Der neue Dokumentfall scheiterte vor der Aenderung mit
+  `UnsupportedHtmlException`; der alte Unsupported-Test wurde entfernt und
+  durch positive Abdeckung in Dokument- und Select-Fragmenttests ersetzt.
+  Diese bestaetigen die separate Template-Content-Fragmentstruktur, In-Body-
+  Einsetzung von `input`/`option` und anschliessende Select-Option. Alle 7.604
+  Engine.Html-Tests, der Solution-Build (0 Warnungen/Fehler), der
+  Solution-Volltest (17.600 bestanden, zwei bedingte Browser-Skips),
+  Formatverifikation und `git diff --check` bestehen. HTML- und DOM-
+  Schaetzungen bleiben unveraendert; der Commit ist lokal und wird nicht
+  gepusht.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`,
+  `#parsing-main-intemplate`; Manifest `checkedAt` 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`,
+  `docs/project-map.md`, `plans/Missing.md`, lokale Validierungsausgaben und
+  aktueller Chat.

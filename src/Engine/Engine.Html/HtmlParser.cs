@@ -246,6 +246,17 @@ public static class HtmlParser
         private bool ParsingTemplateContents => fragmentContext?.LocalName == "template"
             || open.Any(element => element.LocalName == "template");
 
+        private int SelectIndexAfterLastTemplate()
+        {
+            var selectIndex = open.FindLastIndex(element => element.LocalName == "select");
+            var templateIndex = open.FindLastIndex(element => element.LocalName == "template");
+            return selectIndex > templateIndex ? selectIndex : -1;
+        }
+
+        private bool IsSelectContextActive => SelectIndexAfterLastTemplate() >= 0
+            || (fragmentContext?.LocalName == "select"
+                && !open.Any(element => element.LocalName == "template"));
+
         private void Process(HtmlToken token)
         {
             while (true)
@@ -254,14 +265,6 @@ public static class HtmlParser
                 if (token is HtmlTag tag && UnsupportedTags.Contains(tag.Name))
                 {
                     throw Unsupported($"Tree construction for <{tag.Name}> is not implemented.");
-                }
-
-                if (token is HtmlTag contextTag)
-                {
-                    if (contextTag.Name == "template" && open.Any(element => element.LocalName == "select"))
-                    {
-                        throw Unsupported("Template insertion inside select content is not implemented.");
-                    }
                 }
 
                 if (token is HtmlTag tableTag && TableTags.Contains(tableTag.Name)
@@ -527,8 +530,7 @@ public static class HtmlParser
             {
                 if (text.Data.Contains('\0')) { Error("null-in-body"); }
                 var data = text.Data.Replace("\0", "", StringComparison.Ordinal);
-                if (data.Length > 0 && !fromSelectContext && fragmentContext?.LocalName != "select"
-                    && !open.Any(element => element.LocalName == "select"))
+                if (data.Length > 0 && !fromSelectContext && !IsSelectContextActive)
                 {
                     ReconstructFormatting();
                 }
@@ -541,9 +543,9 @@ public static class HtmlParser
             if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
             if (token is HtmlEndOfFile)
             {
-                var selectIndexAtEof = open.FindLastIndex(element => element.LocalName == "select");
+                var selectIndexAtEof = SelectIndexAfterLastTemplate();
                 if (!fromSelectContext && selectIndexAtEof >= 0) { SelectToken(token, selectIndexAtEof); return; }
-                if (!fromSelectContext && fragmentContext?.LocalName == "select")
+                if (!fromSelectContext && IsSelectContextActive)
                 {
                     SelectToken(token, -1);
                     return;
@@ -558,13 +560,13 @@ public static class HtmlParser
             }
 
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token."); }
-            var selectIndex = open.FindLastIndex(element => element.LocalName == "select");
+            var selectIndex = SelectIndexAfterLastTemplate();
             if (!fromSelectContext && selectIndex >= 0)
             {
                 SelectToken(token, selectIndex);
                 return;
             }
-            if (!fromSelectContext && fragmentContext?.LocalName == "select")
+            if (!fromSelectContext && IsSelectContextActive)
             {
                 SelectToken(token, -1);
                 return;

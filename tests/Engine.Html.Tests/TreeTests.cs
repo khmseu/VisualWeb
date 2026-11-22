@@ -466,14 +466,6 @@ public sealed class TreeTests
         Assert.Equal("cell", cell.TextContent);
     }
 
-    [Theory]
-    [InlineData("<select><template></template></select>", "Template insertion inside select content is not implemented.")]
-    public void TemplateStartsInUnsupportedContextsFailExplicitly(string input, string message)
-    {
-        var exception = Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
-        Assert.StartsWith(message, exception.Message);
-    }
-
     [Fact]
     public void TemplateContentFragmentCountsTowardParserNodeBudget()
     {
@@ -719,6 +711,27 @@ public sealed class TreeTests
         Assert.Single(Descendants(result.Document), element => element.LocalName == "select");
         Assert.Equal("after", body.LastChild!.TextContent);
         Assert.Contains(result.Errors, error => error.Code == "nested-select-start-tag");
+    }
+
+    [Fact]
+    public void TemplateInSelectContentUsesSeparateFragmentAndResumesSelectParsing()
+    {
+        var result = Parse("<!doctype html><select><template id=content>"
+            + "<input id=template-input><option id=template-option>inside</option></template>"
+            + "<option id=after>after</option></select>");
+        var select = Assert.Single(Descendants(result.Document), element => element.LocalName == "select");
+        var children = select.ChildNodes.ToArray();
+        var template = Assert.IsType<DomTemplateElement>(children[0]);
+
+        Assert.Equal("content", template.GetAttribute("id"));
+        Assert.Equal(new[] { "input", "option" },
+            template.Content.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("template-input", Assert.IsType<DomElement>(template.Content.FirstChild).GetAttribute("id"));
+        Assert.Equal("template-option",
+            Assert.IsType<DomElement>(template.Content.LastChild).GetAttribute("id"));
+        Assert.Equal("after", Assert.IsType<DomElement>(children[1]).GetAttribute("id"));
+        Assert.Equal("after", select.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
     }
 
     [Fact]
