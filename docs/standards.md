@@ -145,6 +145,9 @@ anchor and `nobr` starts use bounded adoption recovery, with original-anchor
 removal and `nobr` post-adoption reconstruction respectively. Non-hidden input
 starts in table, table-body and row modes use in-body handling with bounded
 foster-parent insertion; inputs in cells use ordinary in-body insertion.
+Body/head starts and unmatched head ends in table, table-body and row modes use
+the corresponding fostered in-body recovery; body attributes merge into the
+existing body, and head tags are not inserted.
 `br` and `hr` starts in those table modes also follow in-body handling with
 bounded foster-parent insertion. Block-element starts and end tags in those
 modes also follow in-body handling with bounded foster-parent insertion. This

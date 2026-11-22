@@ -17490,3 +17490,28 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Build-/Test-/Format-/Diff-Ausgaben und aktueller Chat.
+
+### KP-600 - Head und Body Tags in Tabellenmodi
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzte die inkrementelle HTML-/DOM-Fortsetzung fort
+  und lieferte einen fokussierten Regressionstest fuer Body-/Head-Tags in
+  Table-, TableBody- und Row-Modi.
+- Belegt: Die drei Testvarianten scheiterten vor der Aenderung am expliziten
+  `UnsupportedHtmlException`-Pfad in `TableToken`. Der Parser leitet jetzt
+  Body- und Head-Starts sowie Head-Endtags an den bestehenden fostered
+  In-Body-Handler weiter. Body-Attribute werden in das existierende Body-
+  Element gemerged; Head-Starts werden nicht eingefuegt und Head-Endtags
+  behalten die allgemeine unmatched-Endtag-Recovery. Nicht verwandte
+  Table-Recovery bleibt explizit unsupported.
+- Verifikation: Drei fokussierte Faelle, alle 7.603 Engine.Html-Tests,
+  Solution-Build ohne Warnungen/Fehler, Solution-Volltest mit 17.599 Erfolgen
+  und zwei bedingten Browser-Skips, Formatverifikation sowie
+  `git diff --check` bestehen. Die HTML-Schaetzung bleibt unveraendert. Das
+  Inkrement ist lokal committed; kein Push angefordert.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-intable`,
+  `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`,
+  `docs/project-map.md`, `plans/Missing.md`, lokale Validierungsausgaben und
+  aktueller Chat.

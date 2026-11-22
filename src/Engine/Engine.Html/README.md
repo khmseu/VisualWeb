@@ -23,8 +23,9 @@ and button start/end tags, nested-table recovery, the in-table form-pointer
 exception, formatting-element and `span` foster parenting, `option`/`optgroup`
 and `label` start/end foster parenting in table/column-group/table-body/row
 modes, `plaintext` starts and unmatched end tags in those modes, root-attribute merging for in-table
-`html` starts, and template start/end processing in table, table-body and row
-modes. Formatting-element start/end tags use the bounded in-body path, including
+`html` starts, body/head starts and unmatched head ends in table, table-body
+and row modes, and template start/end processing in those modes.
+Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and
 unmatched end tags use bounded fostered in-body handling; an open select uses

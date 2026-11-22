@@ -1078,7 +1078,7 @@ public static class HtmlParser
                 if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
                     || FormattingTags.Contains(tag.Name) || !SpecialTags.Contains(tag.Name)
                     || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
-                        or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label"
+                        or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label" or "body" or "head"
                     || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
                         or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
                 {
@@ -1166,7 +1166,7 @@ public static class HtmlParser
             if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
                 || FormattingTags.Contains(tag.Name) || !SpecialTags.Contains(tag.Name)
                 || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
-                    or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label"
+                    or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label" or "head"
                 || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
                     or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
             {

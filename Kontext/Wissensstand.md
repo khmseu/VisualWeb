@@ -492,6 +492,19 @@ Erfolgen und zwei bedingten Browser-Skips, Formatpruefung und `git diff --check`
 bestehen. Kein Push angefordert. Siehe
 [KP-599](./Kontextprotokoll.md#kp-599---formularzeiger-nach-implizitem-stack-pop).
 
+**Head-/Body-Tags in Tabellenmodi (2026-11-22; KP-600; lokal committed):**
+Body- und Head-Starts sowie unmatched Head-Endtags in Table-, TableBody- und
+Row-Modi werden ueber den fostered In-Body-Pfad verarbeitet. So werden
+Body-Attribute in das vorhandene Body-Element uebernommen; Head-Starts bleiben
+ignoriert und Head-Endtags erhalten die In-Body-Unmatched-Endtag-Diagnostik.
+Andere nicht implementierte Table-Recovery bleibt explizit unsupported.
+Drei Regressionen scheiterten zuvor mit `UnsupportedHtmlException`; sie und
+alle 7.603 Engine.Html-Tests bestehen. Solution-Build (null Warnungen/Fehler),
+Volltest (17.599 Erfolge, zwei bedingte Browser-Skips),
+Formatverifikation und `git diff --check` bestehen. Der Supportwert bleibt
+unveraendert; kein Push angefordert. Siehe
+[KP-600](./Kontextprotokoll.md#kp-600---head-und-body-tags-in-tabellenmodi).
+
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags

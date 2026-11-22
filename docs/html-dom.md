@@ -154,6 +154,10 @@ after-after-body modes. Supported behavior includes:
   the already-popped form from the stack. An `html` start token in table,
   section or row mode uses the in-body root-attribute merge without inserting
   another element.
+  Body/head starts and unmatched head ends in table, table-body and row modes
+  also use fostered in-body handling: body attributes merge into the existing
+  body, head starts retain the in-body ignore behavior, and head ends use
+  ordinary unmatched-end recovery.
   In-table `script`/`style` start tags use the existing script-data/raw-text
   modes and return to the originating table insertion mode; script content
   remains inert. A `type=hidden` input is inserted as a void table child with

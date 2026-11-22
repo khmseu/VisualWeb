@@ -461,7 +461,11 @@ Other in-body end-tag closures may pop a pointed-to form from the open stack
 without clearing its pointer; new forms remain ignored until a form end tag
 clears the pointer. Adoption-agency removal of the pointed-to form remains
 unsupported. Duplicate `html` start tokens in table, section and row
-modes merge missing root attributes without inserting a new element. Other
+modes merge missing root attributes without inserting a new element. Body/head
+starts and unmatched head ends in table, table-body and row modes also use
+fostered in-body handling: body attributes merge into the existing body, head
+starts retain the in-body ignore behavior, and head ends use ordinary
+unmatched-end recovery. Other
 tokens that require table foster parenting remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:

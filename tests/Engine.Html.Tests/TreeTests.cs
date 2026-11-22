@@ -2240,6 +2240,35 @@ public sealed class TreeTests
     [InlineData("<table>", "</table>")]
     [InlineData("<table><tbody>", "</tbody></table>")]
     [InlineData("<table><tbody><tr>", "</tr></tbody></table>")]
+    public void HeadAndBodyTagsInTableModesUseFosteredInBodyRules(string tableStart, string tableEnd)
+    {
+        var result = Parse($"<!doctype html><body id=original>{tableStart}<body class=merged>"
+            + "<head><p id=fostered>before</p></head>" + tableEnd);
+        var body = result.Document.Body!;
+
+        Assert.Equal("original", body.GetAttribute("id"));
+        Assert.Equal("merged", body.GetAttribute("class"));
+        Assert.Collection(body.ChildNodes,
+            node =>
+            {
+                var paragraph = Assert.IsType<DomElement>(node);
+                Assert.Equal("p", paragraph.LocalName);
+                Assert.Equal("fostered", paragraph.GetAttribute("id"));
+                Assert.Equal("before", paragraph.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-body-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "body-start-in-body");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-head-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-head-start-tag");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-head-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
+    [Theory]
+    [InlineData("<table>", "</table>")]
+    [InlineData("<table><tbody>", "</tbody></table>")]
+    [InlineData("<table><tbody><tr>", "</tr></tbody></table>")]
     public void AdoptionReparentsFormattingThroughTableFosterLocation(string prefix, string suffix)
     {
         var result = Parse($"<!doctype html>{prefix}<b id=old><p>x</b>y</p>{suffix}");
