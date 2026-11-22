@@ -262,7 +262,7 @@ public static class HtmlParser
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (token is HtmlTag tag && UnsupportedTags.Contains(tag.Name))
+                if (token is HtmlTag { IsEndTag: false } tag && UnsupportedTags.Contains(tag.Name))
                 {
                     throw Unsupported($"Tree construction for <{tag.Name}> is not implemented.");
                 }
@@ -1211,7 +1211,7 @@ public static class HtmlParser
                 return;
             }
 
-            throw Unsupported("Foster parenting for table content is not implemented.");
+            ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
         }
 
         private void ProcessFosterParentedBodyToken(HtmlToken token, string errorCode)

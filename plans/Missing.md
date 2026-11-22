@@ -434,12 +434,16 @@ also use that path, and unmatched ends retain in-body recovery. Custom-element
 reactions are not implemented.
 `plaintext` starts and
 unmatched end tags in those modes use the same path; a start switches to the
-PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other
-table tokens requiring foster parenting remain unsupported. `applet`,
+PLAINTEXT tokenizer state, so the rest of the input remains literal text.
+Unimplemented table start tokens requiring foster parenting remain
+unsupported. `applet`,
 `marquee` and `object` start/end tags use their in-body
 active-formatting-marker rules in documents, including fostered handling in
 table, table-body and row modes. This creates static DOM elements only; plugin
 behavior, external resources and their fragment contexts remain unsupported.
+Other end tags not covered by table-specific rules use the generic fostered
+in-body fallback in table, table-body and row modes. Unimplemented table start
+algorithms remain explicit failures.
 Template starts
 and matching ends in table, table-body and row modes use in-head/template
 processing and restore the table insertion mode on close. Template content uses

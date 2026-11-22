@@ -17600,3 +17600,34 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `docs/project-map.md`,
   `plans/Missing.md`, lokale Testausgaben und aktueller Chat.
+
+### KP-604 - Generischer Tabellen-Endtag-Fallback
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle HTML/DOM-Arbeit mit
+  „continue“ fort.
+- Belegt: Die lokale HTML-Spezifikation ordnet nicht anderweitig behandelte
+  Tokens im Tabellenmodus der „anything else“-Regel zu: Foster-Parenting wird
+  aktiviert und das Token wird mit den In-Body-Regeln verarbeitet.
+  `TableToken` warf stattdessen fuer einige spezielle Endtags
+  `UnsupportedHtmlException`; zudem blockierte der globale Unsupported-Tag-
+  Guard Endtags fuer `svg`. Das Parsen wirft jetzt nur fuer die nicht
+  implementierten Starttags; generische Endtags werden im Tabellenmodus
+  fostered verarbeitet. Tests fuer `head`, `script`, `style` und `svg` in
+  Table-, TableBody- und Row-Modi pruefen Baumstabilitaet und beide
+  erwarteten Diagnosen. Neun der zwoelf neuen Faelle scheiterten vor der
+  Aenderung; alle zwoelf bestehen danach. Unimplementierte Starttag-
+  Algorithmen bleiben explizit unsupported.
+- Verifikation: Engine.Html.Tests besteht mit 7.640 Tests; der
+  Solution-Build besteht ohne Warnungen/Fehler; der Solution-Volltest besteht
+  mit 17.636 Erfolgen und zwei bedingten Browser-Skips. Formatverifikation
+  und `git diff --check` bestehen.
+- Vereinbarung: Begrenzter Tabellen-Endtag-Fallback gemaess Standard; keine
+  Erweiterung der nicht implementierten Starttag- oder Fremdinhaltsalgorithmen.
+  Der Pass wird als einzelner lokaler Commit festgehalten.
+- Quellen: `specs/cache/html.html` (ID `html`,
+  `#parsing-main-intable`, Manifest `checkedAt` 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Testausgaben und aktueller Chat.

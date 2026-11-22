@@ -546,6 +546,18 @@ Pluginverhalten und externe Ressourcen bleiben unsupported. Dieser begrenzte
 statische DOM-Pass ist als `616a950f` lokal committed und nicht gepusht. Siehe
 [KP-603](./Kontextprotokoll.md#kp-603---inerte-embedded-tag-recovery).
 
+**Generischer Tabellen-Endtag-Fallback (2026-11-22; KP-604; validiert):**
+Nicht anderweitig behandelte Endtags in Table-, TableBody- und Row-Modi folgen
+jetzt der generischen Foster-Parent-/In-Body-Regel des HTML-Standards, anstatt
+fuer einige spezielle Namen mit `UnsupportedHtmlException` abzubrechen.
+Unimplementierte Starttag-Algorithmen und Fremdinhalte bleiben unsupported.
+Zwölf Regressionen fuer `head`, `script`, `style` und `svg` ueber alle drei
+Modi bestehen; neun scheiterten vor der Korrektur. Engine.Html.Tests besteht
+mit 7.640 Tests, Solution-Build ohne Warnungen/Fehler, Volltest mit 17.636
+Erfolgen und zwei bedingten Browser-Skips; Formatverifikation und
+`git diff --check` bestehen. Siehe
+[KP-604](./Kontextprotokoll.md#kp-604---generischer-tabellen-endtag-fallback).
+
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags

@@ -236,6 +236,9 @@ after-after-body modes. Supported behavior includes:
   table-body and row modes. This constructs static DOM elements only; plugin
   behavior, external resource loading and fragment contexts for these names
   remain unsupported.
+  Other end tags not covered by table-specific rules use the generic fostered
+  in-body fallback in table, table-body and row modes; unsupported table starts
+  still fail explicitly.
   Contiguous non-whitespace table-character runs (including their adjacent
   whitespace) are foster-parented before the nearest table when the current
   node is table-related. When active formatting needs reconstruction, its
@@ -269,8 +272,9 @@ in-body starts still close a `p`, and in-scope form ends close the innermost
 form after implied end tags. In-table starts are inserted and popped without
 changing the pointer. This adds no form-control ownership or script APIs.
 
-Other tokens that require table foster parenting throw explicitly, as do
-unsupported table tags outside the contexts covered above. Template content
+Unimplemented start tags that require table foster parenting throw explicitly,
+as do unsupported table tags outside the contexts covered above. Other end tags
+follow the table-mode fostered in-body fallback. Template content
 supports the bounded table and in-body/select paths described above; additional
 table/select algorithms remain explicitly unsupported. The
 following additionally throw explicitly: SVG/MathML,

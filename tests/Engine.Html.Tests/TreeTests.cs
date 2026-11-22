@@ -1680,6 +1680,33 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("head", "<table>", "</table>")]
+    [InlineData("head", "<table><tbody>", "</tbody></table>")]
+    [InlineData("head", "<table><tbody><tr>", "</tr></tbody></table>")]
+    [InlineData("script", "<table>", "</table>")]
+    [InlineData("script", "<table><tbody>", "</tbody></table>")]
+    [InlineData("script", "<table><tbody><tr>", "</tr></tbody></table>")]
+    [InlineData("style", "<table>", "</table>")]
+    [InlineData("style", "<table><tbody>", "</tbody></table>")]
+    [InlineData("style", "<table><tbody><tr>", "</tr></tbody></table>")]
+    [InlineData("svg", "<table>", "</table>")]
+    [InlineData("svg", "<table><tbody>", "</tbody></table>")]
+    [InlineData("svg", "<table><tbody><tr>", "</tr></tbody></table>")]
+    public void OtherEndTagsInTableModesUseFosteredInBodyRecovery(
+        string tagName, string tableStart, string tableEnd)
+    {
+        var result = Parse($"<!doctype html><div id=host>before{tableStart}</{tagName}>{tableEnd}after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
+    [Theory]
     [InlineData("applet")]
     [InlineData("marquee")]
     [InlineData("object")]
