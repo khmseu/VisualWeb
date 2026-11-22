@@ -434,8 +434,13 @@ also use that path, and unmatched ends retain in-body recovery. Custom-element
 reactions are not implemented.
 `plaintext` starts and
 unmatched end tags in those modes use the same path; a start switches to the
-PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other table tokens requiring foster
-parenting remain unsupported. Template starts
+PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other
+table tokens requiring foster parenting remain unsupported. `applet`,
+`marquee` and `object` start/end tags use their in-body
+active-formatting-marker rules in documents, including fostered handling in
+table, table-body and row modes. This creates static DOM elements only; plugin
+behavior, external resources and their fragment contexts remain unsupported.
+Template starts
 and matching ends in table, table-body and row modes use in-head/template
 processing and restore the table insertion mode on close. Template content uses
 the bounded table algorithms for supported `table`, caption/column/section,
@@ -546,7 +551,8 @@ The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
 Parser template construction remains a narrow static subset: table/select
-algorithms beyond the documented bounded combinations, foreign content, script
+algorithms beyond the documented bounded combinations, foreign content,
+applet/marquee/object fragment contexts, plugin/resource behavior, script
 bindings and `innerHTML` are deferred.
 The bounded static fragment API does not change the overall HTML/DOM support
 assessment or rough percentages.

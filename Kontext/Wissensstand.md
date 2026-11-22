@@ -533,6 +533,19 @@ Formatverifikation und `git diff --check` bestehen. Andere Table-Tokens bleiben
 unsupported; das Inkrement ist lokal und wird nicht gepusht. Siehe
 [KP-602](./Kontextprotokoll.md#kp-602---brhr-endtags-in-tabellenmodi).
 
+**Inerte Embedded-Tag-Recovery (2026-11-22; KP-603; validiert, Commit ausstehend):**
+`applet`, `marquee` und `object` nutzen jetzt begrenzte In-Body-Start-/Endtag-
+Recovery einschliesslich Rekonstruktion aktiver Formatierung und Marker-
+bereinigung. Table-, TableBody- und Row-Modi leiten beide Tag-Arten an den
+fostered In-Body-Pfad. 18 Regressionen decken die Dokumentverarbeitung,
+unmatched Endtags, Markerbereinigung und alle drei Tabellenmodi ab.
+Engine.Html.Tests besteht mit 7.628 Tests; Solution-Build ohne Warnungen/Fehler,
+Volltest mit 17.624 Erfolgen und zwei bedingten Browser-Skips,
+Formatverifikation und `git diff --check` bestehen. Fragmentkontexte,
+Pluginverhalten und externe Ressourcen bleiben unsupported. Dieser begrenzte
+statische DOM-Pass wird lokal committet und nicht gepusht. Siehe
+[KP-603](./Kontextprotokoll.md#kp-603---inerte-embedded-tag-recovery).
+
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags

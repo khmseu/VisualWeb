@@ -204,6 +204,10 @@ uses the foster insertion location for reparenting when needed.
 in these modes; other non-special names, including unknown and custom element
 names, use the same path. Unmatched ends retain in-body recovery; no
 custom-element reactions are implemented.
+`applet`, `marquee` and `object` start/end tags use bounded in-body
+active-formatting-marker handling, including fostered processing in table,
+table-body and row modes. This creates static DOM elements only; plugin,
+external-resource behavior and these fragment contexts remain unsupported.
 `select` starts and unmatched end tags in those modes also use bounded fostered
 in-body handling; an open select uses the existing bounded select-token rules.
 `ruby`, `rb`, `rtc`, `rp` and `rt` start/end tags use the same path, retaining

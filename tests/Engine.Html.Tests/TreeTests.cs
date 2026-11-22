@@ -1680,6 +1680,89 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void AppletMarqueeAndObjectUseInBodyFormattingMarkers(string tagName)
+    {
+        var result = Parse($"<!doctype html><div id=host><b>before<{tagName} id=embedded><i>inside</i></{tagName}>after</b></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var bold = Assert.IsType<DomElement>(host.FirstChild);
+
+        Assert.Collection(bold.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var embedded = Assert.IsType<DomElement>(node);
+                Assert.Equal(tagName, embedded.LocalName);
+                Assert.Equal("inside", embedded.TextContent);
+            },
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void AppletMarqueeAndObjectEndTagsWithoutAnOpenElementAreIgnored(string tagName)
+    {
+        var result = Parse($"<!doctype html><p>before</{tagName}>after");
+
+        Assert.Equal("beforeafter", result.Document.Body!.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.DoesNotContain(Descendants(result.Document), element => element.LocalName == tagName);
+    }
+
+    [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void AppletMarqueeAndObjectEndTagsClearFormattingMarkers(string tagName)
+    {
+        var result = Parse($"<!doctype html><{tagName}><b>inside</{tagName}></b>after");
+        var embedded = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+
+        Assert.Equal(tagName, embedded.LocalName);
+        Assert.Equal("inside", embedded.TextContent);
+        Assert.Equal("after", Assert.IsType<DomText>(embedded.NextSibling).Data);
+        Assert.Contains(result.Errors, error => error.Code == "implicitly-closed-descendants");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.DoesNotContain(result.Errors, error => error.Code == "formatting-element-not-open");
+    }
+
+    [Theory]
+    [InlineData("applet", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("applet", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("applet", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("marquee", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("marquee", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("marquee", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("object", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("object", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("object", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    public void AppletMarqueeAndObjectUseFosteredInBodyRecovery(
+        string tagName, string tableStart, string tableEnd)
+    {
+        var result = Parse($"<!doctype html><div id=host>before{tableStart}<{tagName} id=fostered>inside</{tagName}>{tableEnd}after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal(tagName, element.LocalName);
+                Assert.Equal("fostered", element.GetAttribute("id"));
+                Assert.Equal("inside", element.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-end-in-table");
+    }
+
+    [Theory]
     [InlineData("div", "<table>", "<tr><td>cell</td></tr></table>")]
     [InlineData("div", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("div", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]

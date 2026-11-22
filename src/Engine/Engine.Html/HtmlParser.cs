@@ -639,6 +639,11 @@ public static class HtmlParser
                         ReconstructFormatting();
                         Insert(tag);
                         return;
+                    case "applet" or "marquee" or "object":
+                        ReconstructFormatting();
+                        Insert(tag);
+                        formatting.Add(null);
+                        return;
                     case "rb":
                     case "rtc":
                         if (InScope("ruby")) { GenerateImpliedEndTags(); }
@@ -769,6 +774,13 @@ public static class HtmlParser
                     Error("br-end-tag");
                     ReconstructFormatting();
                     Insert(Synthetic("br"), push: false);
+                    return;
+                case "applet" or "marquee" or "object":
+                    var elementIndex = open.FindLastIndex(element => element.LocalName == tag.Name);
+                    if (elementIndex < 0 || !InScope(tag.Name)) { Error("unexpected-end-tag"); return; }
+                    GenerateImpliedEndTags();
+                    CloseAt(elementIndex);
+                    ClearFormattingToMarker();
                     return;
             }
 
@@ -1081,6 +1093,7 @@ public static class HtmlParser
                     || FormattingTags.Contains(tag.Name) || !SpecialTags.Contains(tag.Name)
                     || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
                         or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label" or "body" or "head"
+                        or "applet" or "marquee" or "object"
                     || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
                         or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
                 {
@@ -1169,6 +1182,7 @@ public static class HtmlParser
                 || FormattingTags.Contains(tag.Name) || !SpecialTags.Contains(tag.Name)
                 || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "br" or "hr" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
                     or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label" or "head"
+                    or "applet" or "marquee" or "object"
                 || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
                     or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
             {
@@ -2153,8 +2167,7 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "svg", "math", "frameset", "frame", "noscript",
-        "applet", "marquee", "object"
+        "svg", "math", "frameset", "frame", "noscript"
     };
     private static readonly HashSet<string> UnsupportedFragmentContexts = new(StringComparer.Ordinal)
     {
@@ -2196,7 +2209,7 @@ public static class HtmlParser
         "fieldset", "figcaption", "figure", "footer", "header", "hgroup", "main", "menu", "nav", "ol",
         "search", "section", "summary", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "listing"
     };
-    private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(TableTags)
+    private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(["applet", "marquee", "object"]).Concat(TableTags)
         .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script",
             "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "template"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)

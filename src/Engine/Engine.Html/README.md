@@ -25,6 +25,10 @@ and `label` start/end foster parenting in table/column-group/table-body/row
 modes, `plaintext` starts and unmatched end tags in those modes, root-attribute merging for in-table
 `html` starts, body/head starts and unmatched head ends in table, table-body
 and row modes, and template start/end processing in those modes.
+`applet`/`marquee`/`object` start/end tags use bounded in-body handling with
+active-formatting markers, including fostered processing in table,
+table-body and row modes; plugin behavior, external resources and their
+fragment contexts remain unsupported.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

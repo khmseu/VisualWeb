@@ -17572,3 +17572,31 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Testausgaben und aktueller Chat.
+
+### KP-603 - Inerte Embedded-Tag-Recovery
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle WHATWG-HTML/DOM-
+  Vervollstaendigung mit „continue“ fort. Der Auftrag bleibt in kleinen,
+  einzeln validierten und committeten Inkrementen.
+- Belegt: `applet`, `marquee` und `object` waren fuer Dokument-
+  Baumkonstruktion explizit unsupported. In-Body-Start-/Endtags verarbeiten
+  diese Namen jetzt mit aktiver Formatierungsrekonstruktion,
+  Formatting-Markern, Scope-/Endtag-Recovery und Markerbereinigung. Table-,
+  TableBody- und Row-Modi leiten Start- und Endtags an denselben begrenzten
+  Fostered-In-Body-Pfad. 18 Regressionen decken normale Verarbeitung,
+  unmatched Endtags, Markerbereinigung und Foster-Parenting in allen drei
+  Modi ab. Fragmentkontexte dieser Namen, Pluginverhalten und externe
+  Ressourcen bleiben unsupported.
+- Verifikation: Engine.Html.Tests besteht mit 7.628 Tests; der
+  Solution-Build besteht ohne Warnungen/Fehler; der Solution-Volltest besteht
+  mit 17.624 Erfolgen und zwei bedingten Browser-Skips. Formatverifikation
+  und `git diff --check` bestehen.
+- Vereinbarung: Begrenzter statischer DOM-Umfang; kein Plugin- oder
+  Ressourcenausfuehrungsverhalten. Dieser Pass wird lokal committet und nicht
+  gepusht.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`,
+  Manifest `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `docs/project-map.md`,
+  `plans/Missing.md`, lokale Testausgaben und aktueller Chat.
