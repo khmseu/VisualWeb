@@ -2019,11 +2019,6 @@ public static class HtmlParser
         private void CloseAt(int index)
         {
             FlushText();
-            if (formPointer is not null && open.Skip(index).Contains(formPointer))
-            {
-                throw Unsupported("Implicitly closing an open form would split form ownership from tree ancestry.");
-            }
-
             if (index != open.Count - 1) { Error("implicitly-closed-descendants"); }
             open.RemoveRange(index, open.Count - index);
         }

@@ -2305,8 +2305,6 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
-    [InlineData("<div><form></div><input>")]
-    [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
@@ -2767,6 +2765,27 @@ public sealed class TreeTests
         Assert.Equal("x", Assert.IsType<DomElement>(ruby.FirstChild).TextContent);
         Assert.Equal("y", Assert.IsType<DomText>(ruby.LastChild).Data);
         Assert.Contains(result.Errors, error => error.Code == "misnested-form-end-tag");
+    }
+
+    [Fact]
+    public void ImplicitAncestorClosureKeepsFormPointerUntilFormEndTag()
+    {
+        var result = Parse("<!doctype html><div><form id=first>one</div>"
+            + "<form id=ignored>two</form><form id=second>three</form>");
+        var body = result.Document.Body!;
+        var div = Assert.IsType<DomElement>(body.FirstChild);
+        var firstForm = Assert.IsType<DomElement>(div.FirstChild);
+        var secondForm = Assert.IsType<DomElement>(body.LastChild);
+
+        Assert.Equal("form", firstForm.LocalName);
+        Assert.Equal("first", firstForm.GetAttribute("id"));
+        Assert.Equal("one", firstForm.TextContent);
+        Assert.Equal("two", Assert.IsType<DomText>(body.ChildNodes[1]).Data);
+        Assert.Equal("second", secondForm.GetAttribute("id"));
+        Assert.Equal("three", secondForm.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "implicitly-closed-descendants");
+        Assert.Contains(result.Errors, error => error.Code == "nested-form");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-form-end-tag");
     }
 
     private static IEnumerable<DomElement> Descendants(DomNode node)

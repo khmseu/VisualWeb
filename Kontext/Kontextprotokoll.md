@@ -17440,10 +17440,10 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
 
 - Dokumentiert am: 2026-11-21.
 - Nutzerangabe: Gestagte Dateien committen und danach fortsetzen.
-- Belegt: Der Stand aus KP-597 wurde als `2ab446b` lokal committed. Der
-  vorherige Solution-Volltest bestand mit zwei bedingten Browser-Skips; der
-  Commit-Hook formatierte `docs/standards.md` und meldete keine Probleme.
-  Kein Push angefordert. Dies ersetzt die dortige Status- und Volltestangabe.
+- Belegt: Der Stand aus KP-597 wurde als `2ab446b` lokal committed; der
+  Formularendtag-Inkrement wurde anschliessend als `d4c2c1c5` lokal committed.
+  Der Solution-Volltest bestand mit 17.596 erfolgreichen Tests und zwei
+  bedingten Browser-Skips. Kein Push angefordert.
 - Belegt: Ein In-body-Formularendtag ausserhalb von Template-Inhalt prueft den
   referenzierten Knoten auf Scope, erzeugt implizite Endtags und entfernt nur
   den referenzierten Formular-Knoten vom offenen Stack. Ist ein anderer Knoten
@@ -17456,10 +17456,37 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   bestehen. Erwartete Dokumentbaeume wurden mit lokalem `html5lib` 1.1
   verglichen. Solution-Build ohne Warnungen/Fehler und Formatpruefung bestehen.
   Der Solution-Volltest besteht mit 17.596 erfolgreichen Tests und zwei
-  bedingten Browser-Skips. Der Commit ist angefordert; kein Push angefordert.
+  bedingten Browser-Skips. Commit `d4c2c1c5` ist lokal; kein Push angefordert.
 - Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`, laut
   Manifest geprueft am 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
   `tests/Engine.Html.Tests/TreeTests.cs`,
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   Git- und lokale Testausgaben sowie aktueller Chat.
+
+### KP-599 - Formularzeiger nach implizitem Stack-Pop
+
+- Dokumentiert am: 2026-11-22.
+- Ableitung: Der fortbestehende Nutzerauftrag ist die inkrementelle
+  WHATWG-HTML/DOM-Vervollstaendigung. `plans/Missing.md` nennt als direkte
+  Parserluecke, dass normale Endtags, die eine offene Form aus dem Stack
+  entfernen, bisher unsupported sind. Die vorhandene HTML-Algorithmik
+  definiert diese Stack-Schliessung; dafuer war keine offene Designentscheidung
+  noetig.
+- Belegt: `CloseAt` wendet jetzt normale Stack-Entfernung an, ohne den
+  unabhaengigen Formularzeiger zu loeschen. Ein weiteres Form-Starttag bleibt
+  dadurch ignoriert, bis ein Form-Endtag den Zeiger leert. Adoption-Agency-
+  Faelle, die den referenzierten Formknoten entfernen wuerden, bleiben
+  unsupported.
+- Verifikation: Zwei neue Dokument-/Fragmentregressionen scheiterten vorher
+  mit `UnsupportedHtmlException` und bestehen jetzt. Alle 7.600
+  HTML-Tests bestehen; der Solution-Build hat null Warnungen/Fehler, der
+  Solution-Volltest 17.596 erfolgreiche Tests und zwei bedingte Browser-Skips,
+  Formatverifikation und `git diff --check` bestehen. Der Commit wird als
+  Teil dieses Inkrements erstellt; kein Push angefordert.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`,
+  `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Build-/Test-/Format-/Diff-Ausgaben und aktueller Chat.

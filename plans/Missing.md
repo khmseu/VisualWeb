@@ -457,8 +457,10 @@ out-of-scope form stays open and can contain a later form. This also applies
 to form pointers inherited from fragment contexts outside templates. In-scope
 form ends generate implied end tags and remove only the pointed-to form from
 the open stack, reporting misnesting without closing remaining descendants.
-Other implicit closures that would pop a pointed-to form remain unsupported. Duplicate
-`html` start tokens in table, section and row
+Other in-body end-tag closures may pop a pointed-to form from the open stack
+without clearing its pointer; new forms remain ignored until a form end tag
+clears the pointer. Adoption-agency removal of the pointed-to form remains
+unsupported. Duplicate `html` start tokens in table, section and row
 modes merge missing root attributes without inserting a new element. Other
 tokens that require table foster parenting remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining

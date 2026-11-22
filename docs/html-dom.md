@@ -239,10 +239,12 @@ pointed-to form is absent or out of scope. An out-of-scope form is not popped,
 so a later form start can produce nested forms. A matching `</form>` generates
 implied end tags, reports misnesting if the form is not current, and removes
 only that form from the open stack. Its still-open descendants remain in the
-tree. Other implied closures (for example `</div>` or `</dl>`) that would pop
-an open form still throw instead of applying that recovery. `input` stays a
-void element and `button` an ordinary element, so control text never renders
-as raw markup. The parser does not expose a form-owner API; the browser's
+tree. Other in-body end-tag closures (for example `</div>` or `</dl>`) may pop
+an open form from the stack while leaving the form pointer set; new form starts
+remain ignored until a later form end clears the pointer. Adoption-agency cases
+that would remove the pointed-to form remain unsupported. `input` stays a void
+element and `button` an ordinary element, so control text never renders as raw
+markup. The parser does not expose a form-owner API; the browser's
 bounded form ownership is described in the [shell guide](browser-shell.md).
 Inside template contents, including template-context
 fragment parsing, form starts ignore and do not change the outer form pointer;

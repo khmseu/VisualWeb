@@ -474,12 +474,23 @@ Ausserhalb von Template-Inhalt prueft das Endtag den konkreten Formularzeiger
 auf Scope, erzeugt implizite Endtags und entfernt nur dieses Formular aus dem
 Stack. Weitere offene Nachfahren bleiben bestehen; Fehlverschachtelung
 erzeugt eine Diagnose. Dokument- und Fragmenttests sowie Ruby-Endtags sind
-abgedeckt. Andere implizite Schliessungen eines referenzierten Formulars und
-DOM-Form-Owner-APIs bleiben offen. Drei neue Faelle scheiterten vorher; 7.600
+abgedeckt. Adoption-Agency-Entfernung des Formularzeigers und DOM-Form-Owner-
+APIs bleiben offen. Drei neue Faelle scheiterten vorher; 7.600
 HTML-Tests bestehen. Solution-Build ohne Warnungen/Fehler und Formatpruefung
 bestehen; der Solution-Volltest besteht mit 17.596 erfolgreichen Tests und
-zwei bedingten Browser-Skips. Die Aenderung wird jetzt committed.
+zwei bedingten Browser-Skips. Commit `d4c2c1c5` ist lokal und nicht gepusht.
 Siehe [KP-598](./Kontextprotokoll.md#kp-598---fehlverschachtelte-form-endtags).
+
+**Form-Zeiger nach implizitem Stack-Pop (2026-11-22; KP-599; lokal committed):**
+Normale In-Body-Endtags koennen eine offene Form aus dem Stack entfernen,
+ohne den getrennten Form-Zeiger zu loeschen. Weitere Form-Starts bleiben bis
+zum naechsten Form-Endtag ignoriert. Dokument- und Fragmenttests decken Baum,
+Diagnostik und Dokumentzugehoerigkeit ab. Adoption-Agency-Entfernung des
+Form-Zeigers bleibt unsupported. Zwei neue Tests scheiterten vorher; 7.600
+HTML-Tests bestehen. Solution-Build ohne Warnungen/Fehler, Volltest mit 17.596
+Erfolgen und zwei bedingten Browser-Skips, Formatpruefung und `git diff --check`
+bestehen. Kein Push angefordert. Siehe
+[KP-599](./Kontextprotokoll.md#kp-599---formularzeiger-nach-implizitem-stack-pop).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad

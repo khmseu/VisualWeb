@@ -178,6 +178,10 @@ Outside template contents, a form end clears the form pointer before its scope
 check, including when a table or fragment puts the pointed-to form out of scope.
 An in-scope form end generates implied end tags and removes the pointed-to form
 from the open stack, leaving misnested descendants open with a diagnostic.
+Other in-body end-tag closures may pop the pointed-to form from the open stack
+while leaving the form pointer set; later form starts remain ignored until a
+form end clears it. Adoption-agency removal of the pointed-to form remains
+unsupported.
 Formatting-element start/end tags, including `a`, and `span`
 start/end tags use bounded in-body foster parenting in table, column-group,
 table-body and row modes, including existing bounded nested-anchor and

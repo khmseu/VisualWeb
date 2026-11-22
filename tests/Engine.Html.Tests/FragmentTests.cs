@@ -321,6 +321,28 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragmentImplicitAncestorClosureKeepsFormPointerUntilFormEndTag()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment(
+            "<div><form id=first>one</div><form id=ignored>two</form><form id=second>three</form>",
+            document.CreateElement("section"), cancellationToken: TestContext.Current.CancellationToken);
+        var div = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+        var firstForm = Assert.IsType<DomElement>(div.FirstChild);
+        var secondForm = Assert.IsType<DomElement>(result.Fragment.LastChild);
+
+        Assert.Equal("first", firstForm.GetAttribute("id"));
+        Assert.Equal("one", firstForm.TextContent);
+        Assert.Equal("two", Assert.IsType<DomText>(result.Fragment.ChildNodes[1]).Data);
+        Assert.Equal("second", secondForm.GetAttribute("id"));
+        Assert.Equal("three", secondForm.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "implicitly-closed-descendants");
+        Assert.Contains(result.Errors, error => error.Code == "nested-form");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-form-end-tag");
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+    }
+
+    [Fact]
     public void ParseFragmentTemplateContextIgnoresAncestorFormPointer()
     {
         var document = new DomDocument();

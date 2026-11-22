@@ -86,7 +86,10 @@ Outside template contents, a form end clears the form pointer even when the
 form is absent or out of scope; an out-of-scope form remains on the stack.
 In-scope form ends generate implied end tags and remove only the pointed-to
 form, reporting misnesting while leaving remaining descendants open. Other
-implicit closures that would pop a pointed-to form remain unsupported.
+in-body end-tag closures may pop a pointed-to form from the open stack while
+leaving the form pointer set, so additional form starts remain ignored until a
+later form end clears it. Adoption-agency removal of the pointed-to form remains
+unsupported.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,
