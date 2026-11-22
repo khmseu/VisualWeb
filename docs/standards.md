@@ -207,7 +207,8 @@ custom-element reactions are implemented.
 `applet`, `marquee` and `object` start/end tags use bounded in-body
 active-formatting-marker handling, including fostered processing in table,
 table-body and row modes. This creates static DOM elements only; plugin,
-external-resource behavior and these fragment contexts remain unsupported.
+external-resource behavior remain unsupported. Fragment parsing with these
+contexts uses the same bounded in-body handling.
 Other end tags not covered by table-specific rules use the generic fostered
 in-body fallback in table, table-body and row modes; unsupported table starts
 remain explicit failures.

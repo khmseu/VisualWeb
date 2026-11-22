@@ -27,8 +27,9 @@ modes, `plaintext` starts and unmatched end tags in those modes, root-attribute 
 and row modes, and template start/end processing in those modes.
 `applet`/`marquee`/`object` start/end tags use bounded in-body handling with
 active-formatting markers, including fostered processing in table,
-table-body and row modes; plugin behavior, external resources and their
-fragment contexts remain unsupported.
+table-body and row modes. Plugin behavior and external resources remain
+unsupported. Fragment parsing with these contexts uses the same bounded
+in-body handling.
 Other end tags not handled by table-specific rules use the generic fostered
 in-body fallback in table, table-body and row modes; unsupported table starts
 remain explicit failures.
@@ -48,7 +49,8 @@ no custom-element reactions or scripting.
 Table starts inside captions use the bounded in-body table rules; closing the
 nested table restores caption mode in documents and caption fragments.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
-of the input. Other tokens requiring table foster parenting remain unsupported.
+of the input. Other unimplemented table start tags requiring foster parenting
+remain unsupported.
 Legacy doctypes preserve public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and

@@ -2171,7 +2171,7 @@ public static class HtmlParser
     };
     private static readonly HashSet<string> UnsupportedFragmentContexts = new(StringComparer.Ordinal)
     {
-        "svg", "math", "frameset", "frame", "noscript", "applet", "marquee", "object"
+        "svg", "math", "frameset", "frame", "noscript"
     };
     private static readonly HashSet<string> TableTags = new(StringComparer.Ordinal)
     {

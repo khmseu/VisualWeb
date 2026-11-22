@@ -17631,3 +17631,36 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Testausgaben und aktueller Chat.
+
+### KP-605 - Embedded-Fragmentkontexte
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle HTML/DOM-Vervollstaendigung
+  mit „continue“ fort. Der konkrete Pass folgt dem priorisierten Missing-
+  Tracker und der bestaetigten Begrenzung auf kleine, getrennte Inkremente.
+- Belegt: Die HTML-Fragment-Parsing-Regel verwendet den Kontext als adjusted
+  current node, ohne ihn auf den Open-Elements-Stack zu setzen. `applet`,
+  `marquee` und `object` wurden dennoch vom Fragment-Guard abgewiesen, obwohl
+  ihre begrenzte In-Body-Verarbeitung bereits implementiert war. Der Guard
+  laesst diese drei Kontextnamen jetzt zu. Sechs Regressionen pruefen
+  Verschachtelung, OwnerDocument, Kontext-Inertheit und unmatched Endtags;
+  alle sechs scheiterten vor der Aenderung am Guard und bestehen danach.
+  Statische DOM-Erzeugung erweitert weder Pluginverhalten noch
+  externe Ressourcen.
+- Verifikation bisher: Engine.Html.Tests besteht mit 7.646 Tests; Debug-
+  Solution-Build besteht ohne Warnungen/Fehler; der Debug-Volltest besteht
+  mit 17.642 Erfolgen und zwei bedingten Browser-Skips. Release-Solution-
+  Build und Formatverifikation bestehen ohne Fehler; der Release-Volltest
+  besteht ebenfalls mit 17.642 Erfolgen und zwei bedingten Browser-Skips.
+  Commit/Push und CI-Status sind noch offen und muessen vor Abschluss
+  ergaenzt werden.
+- Vereinbarung: Begrenzte statische Fragmentverarbeitung fuer die drei
+  Kontextnamen; weitere unsupported Algorithmen und Ressourcenverhalten
+  bleiben unveraendert. Kein Conformance- oder Support-Prozentanstieg wird
+  behauptet.
+- Quellen: `specs/cache/html.html` (ID `html`,
+  `#parsing-html-fragments`, Manifest `checkedAt` 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Testausgaben und aktueller Chat.

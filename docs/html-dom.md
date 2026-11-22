@@ -229,13 +229,14 @@ after-after-body modes. Supported behavior includes:
   tokens are buffered as table text only when the current
   node is `table`, `tbody`, `template`, `tfoot`, `thead` or `tr`; otherwise
   they use in-body handling, preserving text inside a fostered element.
-  `pre` and `listing` retain the in-body initial-line-feed suppression. This
-  does not implement foster parenting for other table tokens.
+  `pre` and `listing` retain the in-body initial-line-feed suppression.
+  Other unimplemented table start tags requiring foster parenting fail
+  explicitly.
   `applet`, `marquee` and `object` start/end tags use their in-body
   active-formatting-marker rules and the same fostered path in table,
   table-body and row modes. This constructs static DOM elements only; plugin
-  behavior, external resource loading and fragment contexts for these names
-  remain unsupported.
+  behavior and external resource loading are not added. Fragment parsing with
+  these contexts uses the same bounded in-body handling.
   Other end tags not covered by table-specific rules use the generic fostered
   in-body fallback in table, table-body and row modes; unsupported table starts
   still fail explicitly.
@@ -281,9 +282,8 @@ following additionally throw explicitly: SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling; foreign content; framesets/frames; noscript; plugin and embedded
-resource behavior; and applet/marquee/object fragment contexts. Fragment
-contexts outside the supported parser subset are rejected. The adoption agency
-remains a bounded subset, not full HTML tree-construction
+resource behavior. Fragment contexts outside the supported parser subset are
+rejected. The adoption agency remains a bounded subset, not full HTML tree-construction
 conformance; this recovery does not implement full anchor semantics.
 
 Doctype classification follows the cached

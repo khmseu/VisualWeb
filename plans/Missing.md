@@ -440,7 +440,8 @@ unsupported. `applet`,
 `marquee` and `object` start/end tags use their in-body
 active-formatting-marker rules in documents, including fostered handling in
 table, table-body and row modes. This creates static DOM elements only; plugin
-behavior, external resources and their fragment contexts remain unsupported.
+behavior and external resources remain unsupported. Fragment contexts for
+these names use the same bounded in-body behavior.
 Other end tags not covered by table-specific rules use the generic fostered
 in-body fallback in table, table-body and row modes. Unimplemented table start
 algorithms remain explicit failures.
@@ -476,8 +477,8 @@ modes merge missing root attributes without inserting a new element. Body/head
 starts and unmatched head ends in table, table-body and row modes also use
 fostered in-body handling: body attributes merge into the existing body, head
 starts retain the in-body ignore behavior, and head ends use ordinary
-unmatched-end recovery. Other
-tokens that require table foster parenting remain explicitly unsupported; rendering supports only the
+unmatched-end recovery. Other unimplemented table start tags that require
+foster parenting remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 
@@ -556,8 +557,7 @@ script-visible form state and APIs, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
 Parser template construction remains a narrow static subset: table/select
 algorithms beyond the documented bounded combinations, foreign content,
-applet/marquee/object fragment contexts, plugin/resource behavior, script
-bindings and `innerHTML` are deferred.
+plugin/resource behavior, script bindings and `innerHTML` are deferred.
 The bounded static fragment API does not change the overall HTML/DOM support
 assessment or rough percentages.
 

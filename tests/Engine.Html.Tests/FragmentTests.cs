@@ -394,6 +394,49 @@ public sealed class FragmentTests
                 cancellationToken: TestContext.Current.CancellationToken));
     }
 
+    [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void ParseFragmentEmbeddedContextUsesBoundedInBodyRules(string contextName)
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement(contextName);
+        var result = HtmlParser.ParseFragment(
+            $"<b>before<{contextName}>inside</{contextName}>after</b>", context,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var bold = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+
+        Assert.Collection(bold.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var embedded = Assert.IsType<DomElement>(node);
+                Assert.Equal(contextName, embedded.LocalName);
+                Assert.Equal("inside", embedded.TextContent);
+            },
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Empty(context.ChildNodes);
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void ParseFragmentEmbeddedContextDoesNotPutContextOnOpenElements(string contextName)
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement(contextName);
+        var result = HtmlParser.ParseFragment($"</{contextName}>after", context,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("after", Assert.IsType<DomText>(Assert.Single(result.Fragment.ChildNodes)).Data);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.Empty(context.ChildNodes);
+    }
+
     [Fact]
     public void ParseFragmentHonorsNodeLimitsAndCancellation()
     {
