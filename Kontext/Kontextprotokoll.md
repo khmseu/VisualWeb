@@ -17664,3 +17664,20 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Testausgaben und aktueller Chat.
+
+### KP-606 - Commit, Push und CI
+
+- Dokumentiert am: 2026-11-22.
+- Belegt: Der Inkrement-Commit `38fbc16f2a361e145d21174437126c1a3342e879`
+  (`fix(html): allow embedded fragment contexts`) wurde auf `origin/main`
+  gepusht. Linux development, Windows confinement und CodeQL sind fuer diesen
+  Commit erfolgreich: [Linux](https://github.com/khmseu/VisualWeb/actions/runs/45074964486),
+  [Windows](https://github.com/khmseu/VisualWeb/actions/runs/45074964497),
+  [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/45074964001).
+  Der separate Dev Environment Prebuild `45074964131` laeuft bei der
+  Dokumentation noch im Schritt `Create Template`; dies ist kein Testergebnis
+  fuer den HTML-Code.
+- Status: Code ist gepusht; Build, fokussierte/full Tests, Formatverifikation
+  und die drei CI-Workflows bestehen. Kein Folgeinkrement wurde begonnen.
+- Quellen: lokaler Git-Commit/Push, GitHub Actions fuer den genannten Commit,
+  lokale Test- und Formatterausgaben sowie aktueller Chat.

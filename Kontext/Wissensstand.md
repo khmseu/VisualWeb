@@ -566,8 +566,11 @@ Kontextelement nicht auf dem Open-Elements-Stack liegt; alle sechs scheiterten
 vorher am Unsupported-Kontext-Guard. Engine.Html.Tests besteht mit 7.646 Tests,
 Debug-Volltest mit 17.642 Erfolgen und zwei bedingten Browser-Skips,
 Release-Volltest mit denselben Ergebnissen, Debug-/Release-Builds und
-Formatverifikation bestehen. Plugin-/Ressourcenverhalten bleibt unsupported. Siehe
+Formatverifikation bestehen. Commit `38fbc16f` ist auf `origin/main`;
+Linux, Windows und CodeQL CI sind erfolgreich. Der separate Dev-Environment-
+Prebuild laeuft noch. Plugin-/Ressourcenverhalten bleibt unsupported. Siehe
 [KP-605](./Kontextprotokoll.md#kp-605---embedded-fragmentkontexte).
+CI-Details: [KP-606](./Kontextprotokoll.md#kp-606---commit-push-und-ci).
 
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
