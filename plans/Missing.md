@@ -392,11 +392,13 @@ to their original table insertion mode; script content remains inert.
 `type=hidden` inputs are inserted as void table children with a parse-error
 diagnostic. Non-hidden input start tags in table, table-body and row modes use
 in-body handling with bounded foster-parent insertion; inputs in cells use
-ordinary in-body insertion. `br` and `hr` start tags in those table modes
-also use in-body handling with bounded foster-parent insertion. Block-element
-starts and end tags in those modes also use in-body handling with bounded
-foster-parent insertion. `img` and `wbr` starts and end tags in those modes also use in-body handling
-with bounded foster-parent insertion. `image` start and end tokens use the
+ordinary in-body insertion. `br` and `hr` start and end tags in those table
+modes also use in-body handling with bounded foster-parent insertion. `</br>`
+is handled as a `br` start tag, while an unmatched `</hr>` is ignored by
+in-body recovery. Block-element starts and end tags in those modes also use
+in-body handling with bounded foster-parent insertion. `img` and `wbr` starts
+and end tags in those modes also use in-body handling with bounded
+foster-parent insertion. `image` start and end tokens use the
 same path; the start-tag alias is recovered as `img`. `textarea` starts and
 unmatched end tags in those modes also use fostered in-body handling; starts
 enter RCDATA with initial-line-feed suppression, and the matching end tag

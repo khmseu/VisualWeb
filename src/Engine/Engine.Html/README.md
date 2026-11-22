@@ -11,10 +11,10 @@ select/optgroup parsing with ordinary in-body handling for the supported
 content subset, bounded textarea RCDATA handling, and `hr`/`input`/nested
 `select` recovery, bounded ruby annotation start-tag recovery, a simple table
 caption/column-group/section/row/cell subset, inert in-table `script`/`style`
-text, table `type=hidden` inputs, non-hidden input and `br`/`hr` starts in
-table/table-body/row modes with bounded foster-parent insertion, `img` and
-`wbr` start/end tags, the `image` start-tag alias, and other supported
-void-element tokens in those modes, `textarea`/`title` RCDATA and
+text, table `type=hidden` inputs, non-hidden input and `br`/`hr` starts and
+ends in table/table-body/row modes with bounded foster-parent insertion,
+`img` and `wbr` start/end tags, the `image` start-tag alias, and other
+supported void-element tokens in those modes, `textarea`/`title` RCDATA and
 `iframe`/`noembed`/`noframes`/`xmp` RAWTEXT starts with unmatched end-tag
 recovery;
 only `textarea` suppresses an initial LF. Text-only table

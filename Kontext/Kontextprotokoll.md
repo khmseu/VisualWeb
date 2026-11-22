@@ -17549,3 +17549,26 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`,
   `docs/project-map.md`, `plans/Missing.md`, lokale Validierungsausgaben und
   aktueller Chat.
+
+### KP-602 - `br`/`hr`-Endtags in Tabellenmodi
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle WHATWG-HTML/DOM-
+  Vervollstaendigung mit „continue“ fort.
+- Belegt: Die vorhandenen Tabellenmodi leiteten `br`- und `hr`-Starttags,
+  aber nicht deren Endtags an fostered In-Body-Recovery. Sechs neue
+  Regressionen fuer Table-, TableBody- und Row-Modi scheiterten vorher mit
+  `UnsupportedHtmlException`. Das Endtag-Routing umfasst jetzt `br` und
+  `hr`: `</br>` folgt der In-Body-Regel und erzeugt ein fostered `br`;
+  unmatched `</hr>` bleibt ignoriert und erzeugt kein Element. Der Umfang
+  anderer Table-Tokens wurde nicht erweitert.
+- Verifikation: Die sechs gezielten Regressionen und alle 7.610 Engine.Html-
+  Tests bestehen. Der Solution-Build besteht ohne Warnungen/Fehler; der
+  Solution-Volltest besteht mit 17.606 Tests und zwei bedingten Browser-Skips.
+  Formatverifikation und `git diff --check` bestehen.
+- Vereinbarung: Inkrementell und begrenzt; lokal committet, nicht gepusht.
+- Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-intable`,
+  Manifest `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Testausgaben und aktueller Chat.

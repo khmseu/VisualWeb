@@ -168,10 +168,12 @@ after-after-body modes. Supported behavior includes:
   a parse-error diagnostic. Non-hidden input start tags in table, table-body and
   row modes follow in-body handling with bounded foster-parent insertion at the
   table's adjusted insertion location and report a parse error. Inputs inside
-  cells use ordinary in-body insertion. `br` and `hr` start tags in table,
-  table-body and row modes also use in-body handling with bounded foster-parent
-  insertion and a parse-error diagnostic. `img` and `wbr` starts and end tags
-  in those modes also use in-body handling with bounded foster-parent insertion.
+  cells use ordinary in-body insertion. `br` and `hr` start and end tags in
+  table, table-body and row modes also use in-body handling with bounded
+  foster-parent insertion and a parse-error diagnostic. A `</br>` end tag is
+  processed as a `br` start tag; an unmatched `</hr>` is ignored by in-body
+  end-tag recovery. `img` and `wbr` starts and end tags in those modes also use
+  in-body handling with bounded foster-parent insertion.
   `image` start and end tokens use the same path; the start-tag alias is
   recovered as `img`.
   Template starts and matching ends in table, table-body and row modes use

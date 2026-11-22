@@ -1645,6 +1645,41 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    public void BrEndTagsInTableModesUseFosteredInBodyRecovery(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart + "</br>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("br", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-br-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "br-end-tag");
+    }
+
+    [Theory]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    public void HrEndTagsInTableModesUseFosteredInBodyRecovery(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart + "</hr>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-hr-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
+    [Theory]
     [InlineData("div", "<table>", "<tr><td>cell</td></tr></table>")]
     [InlineData("div", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("div", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]

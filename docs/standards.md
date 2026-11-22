@@ -148,10 +148,12 @@ foster-parent insertion; inputs in cells use ordinary in-body insertion.
 Body/head starts and unmatched head ends in table, table-body and row modes use
 the corresponding fostered in-body recovery; body attributes merge into the
 existing body, and head tags are not inserted.
-`br` and `hr` starts in those table modes also follow in-body handling with
-bounded foster-parent insertion. Block-element starts and end tags in those
-modes also follow in-body handling with bounded foster-parent insertion. This
-covers the `image` alias, `img` and `wbr` start and end tokens, `div`, `p`,
+`br` and `hr` starts and end tags in those table modes also follow in-body
+handling with bounded foster-parent insertion. `</br>` is handled as a `br`
+start tag; an unmatched `</hr>` is ignored by in-body recovery. Block-element
+starts and end tags in those modes also follow in-body handling with bounded
+foster-parent insertion. This covers the `image` alias, `img` and `wbr` start
+and end tokens, `div`, `p`,
 `pre`, `listing`, `h1`-`h6`, `li`, `dd`, `dt`, `button`,
 `address`, `article`, `aside`, `blockquote`, `center`, `details`, `dialog`,
 `dir`, `dl`,

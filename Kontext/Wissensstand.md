@@ -521,6 +521,18 @@ Erfolgen und zwei bedingten Browser-Skips bestehen; Formatverifikation und
 unsupported; kein Push angefordert. Siehe
 [KP-601](./Kontextprotokoll.md#kp-601---template-inhalt-innerhalb-selects).
 
+**HTML-Tabellen-`br`/`hr`-Endtags (2026-11-22; KP-602; lokal umgesetzt):**
+Endtags fuer `br` und `hr` in Table-, TableBody- und Row-Modi laufen jetzt
+ueber fostered In-Body-Recovery. `</br>` wird wie ein `br`-Starttag verarbeitet
+und vor der naechsten Tabelle eingefuegt; ein unmatched `</hr>` erzeugt kein
+Element. Sechs Regressionen scheiterten vorher am expliziten unsupported
+Foster-Parenting-Pfad und bestehen nach der Aenderung; alle 7.610
+Engine.Html-Tests bestehen. Der Solution-Build besteht ohne Warnungen/Fehler;
+der Volltest besteht mit 17.606 Tests und zwei bedingten Browser-Skips.
+Formatverifikation und `git diff --check` bestehen. Andere Table-Tokens bleiben
+unsupported; das Inkrement ist lokal und wird nicht gepusht. Siehe
+[KP-602](./Kontextprotokoll.md#kp-602---brhr-endtags-in-tabellenmodi).
+
 **Label-Foster-Parenting in Tabellenmodi (2026-11-21; KP-589/590; gepusht):**
 `label`-Starts und Endtags nutzen den begrenzten Foster-Parent-/In-Body-Pfad
 in Table-, TableBody-, Row- und ColumnGroup-Kontexten; unmatched Endtags
