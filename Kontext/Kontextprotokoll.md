@@ -17593,8 +17593,8 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   mit 17.624 Erfolgen und zwei bedingten Browser-Skips. Formatverifikation
   und `git diff --check` bestehen.
 - Vereinbarung: Begrenzter statischer DOM-Umfang; kein Plugin- oder
-  Ressourcenausfuehrungsverhalten. Dieser Pass wird lokal committet und nicht
-  gepusht.
+  Ressourcenausfuehrungsverhalten. Der Pass ist lokal als `616a950f` committet
+  und nicht gepusht.
 - Quellen: `specs/cache/html.html` (ID `html`, `#parsing-main-inbody`,
   Manifest `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
