@@ -131,6 +131,10 @@ claims, and are not listed as supported standards here.
 
 ### Implemented subsets
 
+For an in-body table start, HTML tree construction closes an in-scope
+paragraph only when the document is not in quirks mode; quirks mode preserves
+the paragraph around the table. The overall HTML estimate remains unchanged.
+
 HTML tree construction includes token-snapshot active formatting, the
 order-independent three-entry Noah's Ark rule, reconstruction and
 template/caption/cell markers, plus the no-furthest-block and bounded

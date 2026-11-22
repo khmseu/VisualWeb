@@ -150,7 +150,9 @@ after-after-body modes. Supported behavior includes:
   reprocess table tokens; a nested table start in table mode closes the current
   in-scope table and reprocesses the token, while nested tables in cells and
   captions remain descendants and restore the enclosing insertion mode when
-  closed. This includes supported template and caption-fragment contexts.
+  closed. An in-body table start closes an in-scope paragraph in no-quirks and
+  limited-quirks documents, but leaves it open in quirks-mode documents. This
+  includes supported template and caption-fragment contexts.
   In-table form starts follow the form-pointer
   exception: the form is inserted at the current table-mode location, then
   popped from the open-element stack; repeated starts are ignored while the

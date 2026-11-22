@@ -658,7 +658,7 @@ public static class HtmlParser
                         }
                         break;
                     case "table":
-                        CloseParagraph();
+                        if (document.Mode != DomDocumentMode.Quirks) { CloseParagraph(); }
                         Insert(tag);
                         mode = Mode.InTable;
                         return;

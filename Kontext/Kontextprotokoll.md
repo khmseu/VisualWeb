@@ -17681,3 +17681,28 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   und die drei CI-Workflows bestehen. Kein Folgeinkrement wurde begonnen.
 - Quellen: lokaler Git-Commit/Push, GitHub Actions fuer den genannten Commit,
   lokale Test- und Formatterausgaben sowie aktueller Chat.
+
+### KP-607 - Quirks-Mode-Tabellenstart
+
+- Dokumentiert am: 2026-11-22.
+- Nutzerangabe: Der Nutzer setzt die inkrementelle HTML/DOM-Arbeit mit
+  „continue“ fort.
+- Belegt: Die HTML-Regel fuer ein `table`-Starttag im In-Body-Modus schliesst
+  einen Absatz nur ausserhalb des Quirks-Modus. `HtmlParser.BodyToken` rief
+  `CloseParagraph()` zuvor bedingungslos auf. Eine fokussierte Theorie pruefte
+  No-Quirks, Limited-Quirks und Quirks; vor der Korrektur scheiterte nur der
+  Quirks-Fall. Jetzt wird der Absatz nur bei `document.Mode != Quirks`
+  geschlossen. Die drei fokussierten Faelle bestehen.
+- Validierung: Der fokussierte Test besteht mit drei Faellen; Engine.Html.Tests
+  besteht mit 7.649 Tests. Debug- und Release-Solution-Builds bestehen ohne
+  Warnungen/Fehler; beide Volltestlaeufe bestehen mit 17.645 Tests und zwei
+  bedingten Browser-Skips. Formatverifikation und `git diff --check` bestehen.
+- Status: Code und direkt betroffene HTML-Dokumentation sind geaendert;
+  Commit, Push und CI stehen noch aus.
+- Vereinbarung: Keine zusaetzliche Quirks-Layout-Zusage; die HTML-
+  Supporteinschaetzung bleibt unveraendert.
+- Quellen: `specs/cache/html.html#parsing-main-inbody` (ID `html`,
+  Manifest `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale fokussierte Testausgaben und aktueller Chat.

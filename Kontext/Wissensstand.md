@@ -558,6 +558,15 @@ Erfolgen und zwei bedingten Browser-Skips; Formatverifikation und
 `git diff --check` bestehen. Siehe
 [KP-604](./Kontextprotokoll.md#kp-604---generischer-tabellen-endtag-fallback).
 
+**Aktueller HTML-Pass: Quirks-Mode-Tabellenstart (2026-11-22; KP-607; in Arbeit):**
+Ein `table`-Starttag im In-Body-Modus schliesst einen in-scope Absatz nur
+ausserhalb des Quirks-Modus; im Quirks-Modus bleibt der Absatz offen. Die drei
+fokussierten No-Quirks/Limited-Quirks/Quirks-Faelle bestehen. Engine.Html.Tests
+besteht mit 7.649 Tests; Debug-/Release-Builds, Volltestlaeufe (je 17.645
+Erfolge und zwei bedingte Browser-Skips) und Formatverifikation bestehen.
+Commit, Push und CI stehen noch aus. Die HTML-Supporteinschaetzung bleibt
+unveraendert. Details und Provenienz: [KP-607](./Kontextprotokoll.md#kp-607---quirks-mode-tabellenstart).
+
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische
 Fragmentkontexte fuer die vorhandene begrenzte In-Body-Verarbeitung zugelassen.

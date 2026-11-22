@@ -1025,6 +1025,24 @@ public sealed class TreeTests
         Assert.Equal(" \n", Assert.IsType<DomText>(table.FirstChild).Data);
     }
 
+    [Theory]
+    [InlineData("<!doctype html>", DomDocumentMode.NoQuirks, false)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'anything'>", DomDocumentMode.LimitedQuirks, false)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>", DomDocumentMode.Quirks, true)]
+    public void TableStartClosesParagraphOnlyOutsideQuirksMode(
+        string doctype,
+        DomDocumentMode expectedMode,
+        bool tableRemainsInsideParagraph)
+    {
+        var result = Parse(doctype + "<p id=p>before<table><tr><td>cell</td></tr></table>after");
+        var paragraph = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "p");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+
+        Assert.Equal(expectedMode, result.Document.Mode);
+        Assert.Same(tableRemainsInsideParagraph ? paragraph : result.Document.Body, table.ParentNode);
+        Assert.Equal(tableRemainsInsideParagraph ? "beforecellafter" : "before", paragraph.TextContent);
+    }
+
     [Fact]
     public void FosteredTableTextReconstructionHonorsNodeLimit()
     {

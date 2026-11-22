@@ -546,7 +546,9 @@ instead of rejecting the page. The complete HTML initial-mode identifier
 tables select no-quirks/limited-quirks/quirks mode using ASCII comparisons,
 preserve inert identifiers and never fetch DTDs. This removes a parser blocker,
 not the remaining CSS/table/image rendering gaps or a claim of full quirks
-layout support.
+layout support. In-body table starts now close an in-scope paragraph only in
+no-quirks and limited-quirks modes; quirks-mode paragraphs remain open around
+the table, matching the HTML in-body rule.
 Validation: 35 parser classification/recovery cases plus a native content
 fixture pass; one prior unsupported case is replaced by positive coverage.
 The solution build and all 14,308 tests pass locally. Formatting reports only

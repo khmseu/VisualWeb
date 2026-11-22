@@ -54,7 +54,8 @@ remain unsupported.
 Legacy doctypes preserve public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and
-additional quirks-layout behavior is not implied.
+additional quirks-layout behavior is not implied. In-body table starts close
+an in-scope paragraph outside quirks mode, but leave it open in quirks mode.
 The active-formatting list uses token attribute snapshots, the
 order-independent three-entry Noah's Ark rule, reconstruction and
 template/caption/cell markers. Formatting end tags support the no-furthest-block
