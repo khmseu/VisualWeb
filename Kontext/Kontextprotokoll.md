@@ -17697,8 +17697,12 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   besteht mit 7.649 Tests. Debug- und Release-Solution-Builds bestehen ohne
   Warnungen/Fehler; beide Volltestlaeufe bestehen mit 17.645 Tests und zwei
   bedingten Browser-Skips. Formatverifikation und `git diff --check` bestehen.
-- Status: Code und direkt betroffene HTML-Dokumentation sind geaendert;
-  Commit, Push und CI stehen noch aus.
+- Status: Commit `332e510f` (`fix(html): honor quirks mode for table starts`)
+  ist auf `origin/main`. [Linux development](https://github.com/khmseu/VisualWeb/actions/runs/45082302622),
+  [Windows confinement](https://github.com/khmseu/VisualWeb/actions/runs/45082302596),
+  [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/45082301794) und
+  [Dev Environment Prebuild](https://github.com/khmseu/VisualWeb/actions/runs/45082301974)
+  bestehen.
 - Vereinbarung: Keine zusaetzliche Quirks-Layout-Zusage; die HTML-
   Supporteinschaetzung bleibt unveraendert.
 - Quellen: `specs/cache/html.html#parsing-main-inbody` (ID `html`,
