@@ -620,7 +620,7 @@ Der zuvor offene Dev-Environment-Prebuild fuer `a337155a` besteht ebenfalls
 [Missing.md](../plans/Missing.md) und
 [KP-609](./Kontextprotokoll.md#kp-609---noscript-fragmentkontext).
 
-**Aktueller HTML-Pass: statische Frameset-Dokumente (2026-11-23; KP-610; validiert, Commit 4738d14f erstellt):**
+**Aktueller HTML-Pass: statische Frameset-Dokumente (2026-11-23; KP-610; validiert, gepusht und CI bestanden):**
 Die Dokument-Tree-Construction unterstuetzt nun die Frameset-Modi fuer
 verschachtelte `<frameset>`/`<frame>`-Knoten, `frameset-ok`-Gating,
 `noframes`-RAWTEXT sowie die Modi nach dem Frameset. Frames erzeugen weiterhin
@@ -637,8 +637,9 @@ mit 17.660 Tests und zwei bedingten Browser-Prozess-Test-Skips.
 Die grobe HTML-Supporteinschaetzung bleibt unveraendert.
 Der zuvor offene Dev-Environment-Prebuild fuer Kontextcommit `c2a4f739`
 (`45099518203`) ist inzwischen erfolgreich abgeschlossen. Commit/Push und
-Commit `4738d14f` enthaelt die Implementierung; Push und CI stehen noch aus.
-Siehe
+Implementierung: `4738d14f`; gepusht mit Kontextcommit `cfc0881f`.
+Linux development, Windows confinement, CodeQL und Dev Environment Prebuilds
+bestehen fuer `cfc0881f`. Siehe
 [HTML/DOM-Guide](../docs/html-dom.md),
 [Missing.md](../plans/Missing.md) und
 [KP-610](./Kontextprotokoll.md#kp-610---statische-frameset-dokumente).

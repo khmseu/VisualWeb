@@ -17827,9 +17827,11 @@ third_party` und `git diff --check` bestehen.
 VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   bestanden. `dotnet test VisualWeb.slnx --no-build` besteht mit 17.660 Tests;
   zwei bedingte Browser-Prozess-Tests wurden uebersprungen. Implementierung
-  committed als `4738d14f`; Push und neue CI stehen aus. Der beim vorherigen
-  Check offene Prebuild fuer `c2a4f739`
-  (`45099518203`) ist inzwischen erfolgreich.
+  committed als `4738d14f`, gepusht mit Kontextcommit `cfc0881f`. Linux
+  development (`45105208768`), Windows confinement (`45105208770`), CodeQL
+  (`45105208313`) und Dev Environment Prebuilds (`45105208355`) bestehen fuer
+  `cfc0881f`. Der beim vorherigen Check offene Prebuild fuer `c2a4f739`
+  (`45099518203`) ist ebenfalls erfolgreich.
 - Vereinbarung/Provenienz: Der Nutzerauftrag ist fortlaufend WHATWG-HTML/DOM-
   Arbeit; der konkrete Frameset-Pass ist eine aus dem Tracker abgeleitete
   Auswahl, keine separat bestaetigte Nutzeranforderung.
