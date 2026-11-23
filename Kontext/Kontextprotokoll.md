@@ -17980,7 +17980,10 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   sequenziellen vollstaendigen Debug- und Release-Solutiontests bestehen
   jeweils mit 17.678 Tests und zwei bedingt uebersprungenen Browserfaellen.
   Formatverifikation und `git diff --check` bestehen. Die HTML-Schaetzung
-  bleibt unveraendert. Commit, Push und CI stehen noch aus.
+  bleibt unveraendert. Commit `5559aabf` ist auf `origin/main`; Linux
+  development (`45133963363`), Windows confinement (`45133963297`) und CodeQL
+  (`45133962930`) bestehen; Dev Environment Prebuilds (`45133963481`) laufen
+  noch.
 - Vereinbarung/Provenienz: Die Auswahl ist aus dem Tracker und dem vorhandenen
   TableToken-Unsupported-Pfad abgeleitet; eine gesonderte Nutzerentscheidung
   liegt nicht vor.
@@ -17990,3 +17993,158 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `src/Engine/Engine.Html/README.md`, `docs/standards.md`, `plans/Missing.md`,
   lokale Validierungsausgaben und aktueller Chat.
+
+### KP-614 - HTML/DOM-Abschlussplanung angefordert
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „make a plan for the completion of the html/dom support“.
+  Der uebergeordnete fruehere Wunsch nach gemeinsamer WHATWG-HTML-/DOM-
+  Fortsetzung ist unter [KP-523](#kp-523---whatwg-html-und-dom-als-neuer-schwerpunkt)
+  festgehalten.
+- Belegt: Der bestehende
+  [HTML/DOM-Completion-Plan](../plans/whatwg-html-dom-completion-plan.md)
+  beschreibt ausschliesslich bounded template support und ist mit drei Phasen
+  abgeschlossen. `docs/html-dom.md`, beide Engine-READMEs und
+  `docs/standards.md` dokumentieren weiterhin begrenzte Teilmengen sowie
+  offene Tree-Construction-, DOM-/Web-IDL-, HTML-Element- und Scripting-
+  Bereiche. Die HTML- und DOM-Quellen im Manifest tragen `checkedAt`
+  2026-11-07 und sind am Dokumentationsdatum juenger als 30 Tage.
+- Vorschlag, noch nicht beschlossen: Einen separaten mehrphasigen Fahrplan
+  fuer HTML-/DOM-Abschluss erstellen. Vorgeschlagene Bereiche sind
+  (1) abschnittsbezogene Coverage-/Abnahmekriterien, (2) restliche
+  HTML-Tree-Construction inklusive DOM-Fragment-/Namespace-Kopplung,
+  (3) fehlende native DOM-Algorithmen und APIs, (4) HTML-Parsing-/
+  Serialisierungs- und Web-IDL-Integration, (5) HTML-Element-/Formular-
+  Verhalten, (6) Scheduling, Events und Script-Lifecycle sowie
+  (7) Interoperabilitaets-/Konformitaetsnachweis und Dokumentation.
+  Korrespondierende HTML- und DOM-Aenderungen sollen gemeinsam spezifiziert
+  und getestet werden. Diese Bereiche sind eine Plan-Skizze, keine
+  Roadmapfreigabe oder Implementierungsbeauftragung.
+- Offen: „Vervollstaendigung“ ist noch nicht durch eine normative
+  Abnahmedefinition konkretisiert. Zu klaeren ist insbesondere, ob alle
+  einschlaegigen normativen HTML-/DOM-Anforderungen oder ein browserrelevanter
+  Kern angestrebt wird und wie platform-/standarduebergreifende Flaechen
+  (Netzwerk, Medien, Canvas, Accessibility) behandelt werden. Auch die
+  Aufnahme scriptseitiger `innerHTML`, Import-/Ressourcenladen und breiterer
+  Web-IDL-Oberflaechen bedarf einer ausdruecklichen Umfangsentscheidung.
+- Status: Planentwurf in Vorbereitung; keine neue Plan-Datei geschrieben,
+  keine Implementierung begonnen, keine bestehende Roadmap geaendert. Auf
+  Nutzerbestaetigung der Abschlussdefinition/Planrichtung warten.
+- Quellen: aktueller Chat; [HTML/DOM-Leitfaden](../docs/html-dom.md),
+  [Engine.Html](../src/Engine/Engine.Html/README.md),
+  [Engine.Dom](../src/Engine/Engine.Dom/README.md),
+  [Standardsinventar](../docs/standards.md#support-status),
+  [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility),
+  [abgeschlossener Template-Plan](../plans/whatwg-html-dom-completion-complete.md),
+  [Manifest](../specs/manifest.json) IDs `html` und `dom`.
+
+### KP-615 - Nutzerpriorisiert haeufige HTML/DOM-Features
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe/Anforderung: Zuerst diejenigen Standardteile umsetzen, die in
+  gaengigen Browsern tatsaechlich haeufig genutzt werden; weitere Features
+  aufnehmen, wenn sie wenig zusaetzlichen Aufwand verursachen; uebrige
+  Funktionalitaet aufschieben und als Liste fuer spaetere Lueckenschliessung
+  festhalten.
+- Status: Diese Priorisierungsregel ist bestaetigt. Die konkrete Einstufung
+  einzelner Features nach Hauefigkeit/Aufwand und der resultierende Plan sind
+  noch vorzuschlagen und freizugeben. „Haeufig genutzt“ wird fuer den Plan als
+  typische Website-/Browseranforderung interpretiert; eine empirische
+  Marktmessung wurde nicht angefordert oder ausgefuehrt.
+- Vorschlag: Zuerst ein nachvollziehbares, testgestuetztes Feature-Ranking
+  erstellen; haeufige Parsing-, DOM-, Fragment-/Markup-, Formular-,
+  Interaktions- und Scripting-Pfade priorisieren; niedrigaufwendige
+  Nachbarfeatures in denselben Arbeitsbereichen mitnehmen. Aufwandreiche,
+  seltene oder von neuen Subsystemen abhaengige Anforderungen in einem
+  eigenstaendigen Deferred-Register mit Standardsreferenz, Grund,
+  Abhaengigkeiten und Wiederaufnahmebedingung erfassen. Tests und Dokumentation
+  sollen gemeinsam mit jeder Phase erweitert werden.
+- Offen: Die Merkmale pro Prioritaetsklasse und der genaue Umfang der
+  Deferred-Liste werden in der Planfreigabe festgelegt. Eine Rangfolge nach
+  konkreter Produktions-Telemetrie liegt nicht vor; die Auswahl soll daher
+  durch vorhandene Missing-Eintraege, gaengige Seitennutzung und lokale
+  Test-/Implementierungsaufwaende begruendet werden.
+- Status der Arbeit: Ueberarbeiteter Planvorschlag ausstehend; keine neue
+  Plan-/Deferred-Datei geschrieben, kein Code geaendert. Die bestaetigte
+  Prioritaetsregel ersetzt die offene Scopefrage aus KP-614; sie genehmigt
+  noch nicht den resultierenden Plan oder dessen Umsetzung.
+- Quellen: aktueller Chat; [HTML/DOM-Leitfaden](../docs/html-dom.md),
+  [Standardsinventar](../docs/standards.md#support-status),
+  [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility),
+  [HTML/DOM-Planabschluss](../plans/whatwg-html-dom-completion-complete.md).
+
+### KP-616 - Priorisierter HTML/DOM-Planentwurf
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Die Features sollen nach gaengiger Nutzung in Browsern/Websites
+  priorisiert werden; niedrigaufwendige zusaetzliche Features sollen
+  aufgenommen, der Rest explizit geparkt und spaeter zur Lueckenschliessung
+  wieder aufgenommen werden.
+- Vorgeschlagene Phasen: (1) Nutzungs-/Aufwandsmatrix und Deferred-Register;
+  (2) haeufiges HTML-Dokument- und Fragmentparsing samt DOM-Kopplung;
+  (3) haeufige DOM-Abfrage, Mutation, Markup-/Serialisierungs- und
+  Web-IDL-Pfade; (4) gaengige HTML-Elemente, Formulare und Interaktionen;
+  (5) notwendige Script-/Dokumentlebenszykluspfade; (6) kostenguenstige,
+  angrenzende Features; (7) Integration, regressionsbasierte Konformitaets-
+  pruefung und aktualisierte Supportdokumentation.
+- Vorgeschlagene Prioritaetsklassen: „common“ fuer normale Dokumente,
+  Framework-/Website-DOM-Operationen, Formulare und erforderliche
+  Scriptinteraktion; „low-cost“ fuer Features, die bestehende Parser-/DOM-/
+  Scripting-Mechanismen direkt wiederverwenden; „deferred“ fuer seltene oder
+  subsystem-/plattformintensive Flaechen. „Common“ ist eine begruendete
+  Planannahme aus typischen Seitennutzungen, kein Ergebnis eigener
+  Produktions-Telemetrie.
+- Vorgeschlagene geparkte Kategorien: Shadow DOM/Custom Elements und
+  weitergehende Mutation-/Range-/Traversal-APIs; vollstaendige generierte
+  Web-IDL-Bindings; Frame-Browsingkontexte/Plugins; umfassende Media-, Canvas-
+  und WebGL-Funktionalitaet; umfassendes SVG/MathML-Rendering; Worker,
+  ServiceWorker, Storage und volle Fetch/CSP/Resource-Loading-Policies; seltene
+  Legacy-Elemente sowie weniger genutzte Parseralgorithmen. Jede konkrete
+  Deferred-Zeile soll Standardsanker, Ist-Stand, Grund, Abhaengigkeiten und
+  Wiederaufnahmebedingung erhalten. Diese Liste ist noch ein Vorschlag und
+  wird durch die Inventarisierung verfeinert, nicht pauschal als dauerhaft
+  ausgeschlossen verstanden.
+- Beabsichtigte Artefakte nach Planfreigabe: ein eigenstaendiger
+  Mehrphasenplan unter `plans/` und `plans/html-dom-deferred.md` als
+  fortsetzbares Deferred-Register; Links aus dem Missing-Tracker und den
+  Supportdokumenten. Der bestehende abgeschlossene Template-Plan bleibt
+  unveraendert.
+- Status: Nutzerprioritaet bestaetigt; dieser Planentwurf und seine
+  Einzelzuordnungen sind noch nicht genehmigt. Keine Plan-/Deferred-Datei,
+  Implementierung oder Roadmapaenderung erstellt.
+- Quellen: aktueller Chat; [HTML/DOM-Leitfaden](../docs/html-dom.md),
+  [HTML- und DOM-READMEs](../src/Engine/Engine.Html/README.md),
+  [Engine.Dom](../src/Engine/Engine.Dom/README.md),
+  [Standardsinventar](../docs/standards.md#support-status),
+  [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility),
+  [frueherer Template-Plan](../plans/whatwg-html-dom-completion-complete.md).
+
+### KP-617 - Priorisierter HTML/DOM-Plan genehmigt
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe/Entscheidung: „approved“ als Bestaetigung des unmittelbar
+  zuvor vorgelegten, priorisierten Mehrphasenplanentwurfs. Die Nutzerkriterien
+  sind: gaengige Browser-/Website-Features zuerst, angrenzende Features bei
+  geringem Mehraufwand einbeziehen und uebrige Luecken fuer spaetere Arbeit
+  sichtbar parken.
+- Belegt: Der siebenphasige Plan ist in
+  [whatwg-html-dom-completion-roadmap.md](../plans/whatwg-html-dom-completion-roadmap.md)
+  festgehalten. Ein separates
+  [Deferred-Register](../plans/html-dom-deferred.md) enthaelt 12 initiale
+  Kandidatenkategorien mit aktuellem Umfang, Parkgrund und Wiederaufnahme-
+  Bedingung; Phase 1 muss sie gegen den aktuellen Code/Teststand verifizieren.
+  [Missing.md](../plans/Missing.md) verlinkt beide Artefakte. Der vorhandene
+  abgeschlossene Template-Inkrementplan bleibt unveraendert.
+- Abgrenzung: Die Freigabe betrifft den vorgeschlagenen priorisierten
+  Plan-/Dokumentationsansatz, keine Behauptung von Vollkonformitaet und keinen
+  Commit. Sie autorisiert nicht stillschweigend Aenderungen an Sandbox-,
+  Netzwerk-, Script-Opt-in- oder sonstiger Browser-Sicherheitspolitik; diese
+  bleiben den festgelegten Reviews und Tests unterworfen.
+- Status: Plan genehmigt und geschrieben; Umsetzung noch nicht begonnen.
+  Naechster Schritt ist Phase 1 (Gap-Inventar, Nutzungs-/Aufwandsranking und
+  verifizierte Deferred-Liste), bevor Featureimplementierungen starten.
+- Validierung: `git diff --check` besteht. Keine Builds oder Tests ausgefuehrt,
+  da diese Aenderungen ausschliesslich Planung/Dokumentation betreffen.
+- Quellen: aktueller Chat; [genehmigte Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [Deferred-Register](../plans/html-dom-deferred.md),
+  [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility).

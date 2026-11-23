@@ -591,6 +591,10 @@ Evidence: `HTML tree-building scope`; focused tests cover the simple table subse
 including captions and fostered text; broader table conformance fixtures remain
 outside the supported scope.
 
+The prioritized common-feature plan and revisit-ready list of postponed HTML/DOM
+gaps are tracked in the [HTML/DOM completion roadmap](whatwg-html-dom-completion-roadmap.md)
+and [deferred register](html-dom-deferred.md).
+
 ### 5. General CSS, layout, and painting
 
 The browser now accepts optional trusted `--font-bold`, `--font-italic` and

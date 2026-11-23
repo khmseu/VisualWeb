@@ -8,6 +8,38 @@
 
 ## Aktueller Wissensstand
 
+**HTML/DOM-Abschlussplanung (2026-11-23; KP-614 bis KP-617; Plan genehmigt, Umsetzung offen):**
+Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
+gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
+Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
+soll als nachvollziehbare, spaeter fortsetzbare Liste geparkter Luecken
+erhalten bleiben. Der fruehere gemeinsame WHATWG-HTML-/DOM-Auftrag steht in
+[KP-523](./Kontextprotokoll.md#kp-523---whatwg-html-und-dom-als-neuer-schwerpunkt).
+Der abgeschlossene [Template-Plan](../plans/whatwg-html-dom-completion-plan.md)
+war nur ein begrenztes Inkrement. Das neue Vorhaben soll zuerst anhand der
+bestehenden Implementierung und lokalen Tests nach Nutzungsrelevanz und
+Aufwand klassifizieren. Der aktuelle Vorschlag gruppiert haeufige
+Dokument-/Fragmentparsing-, DOM-Abfrage-/Mutations-/Markup-, Formular-,
+Interaktions- und Scripting-Pfade in fruehe Umsetzungsphasen; kostenguenstige
+Nachbarfeatures sollen waehrenddessen mitgenommen werden. Aufwendige oder
+selten benoetigte Bereiche (z.B. Shadow DOM/Custom Elements, Media/Canvas,
+vollstaendige Web IDL und weitere Ressourcensysteme) sollen mit Standards-
+Referenz, Grund, Abhaengigkeiten und Wiederaufnahme-Hinweis in
+`plans/html-dom-deferred.md` geparkt werden. Der Nutzer hat den
+siebenphasigen Vorschlag genehmigt; die 12 initialen Deferred-Kategorien
+bleiben nach Phase 1 gegen Code, Tests und lokale Spec-Caches zu verifizieren
+und koennen neu priorisiert werden. Ranking beruht auf bestehendem Tracker,
+typischen Seitenanforderungen und lokalem Aufwand, nicht auf Produktions-
+Telemetrie. [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md) und
+[Deferred-Register](../plans/html-dom-deferred.md) sind geschrieben und im
+[Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility)
+verlinkt. Noch keine Implementierung oder Aenderung der genehmigten
+Browser-Roadmap. Naechster Schritt: Phase 1 des Plans ausfuehren.
+Siehe
+[KP-615](./Kontextprotokoll.md#kp-615---nutzerpriorisiert-haeufige-html-dom-features),
+[KP-617](./Kontextprotokoll.md#kp-617---priorisierter-html-dom-plan-genehmigt)
+und [KP-616](./Kontextprotokoll.md#kp-616---priorisierter-html-dom-planentwurf).
+
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige
 Features parallel bearbeiten. Beschlossen ist ein gestufter Template-Start:
@@ -691,7 +723,7 @@ Siehe
 [HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md) und
 [KP-612](./Kontextprotokoll.md#kp-612---noscript-in-tabellenmodi).
 
-**Aktueller HTML-Pass: `frame`/`frameset` in Tabellenmodi (2026-11-23; KP-613; lokal validiert, Commit offen):**
+**Aktueller HTML-Pass: `frame`/`frameset` in Tabellenmodi (2026-11-23; KP-613; committed, gepusht, CI teilweise bestanden):**
 Starttags fuer `frame` und `frameset` in Table-, TableBody- und Row-Modi
 verwenden jetzt das generische foster-parented In-Body-Fallback. ColumnGroup
 schliesst `colgroup` und reprocessiert diese Tags in Table. Das erstellt weder
@@ -703,8 +735,11 @@ und ist frisch. Engine.Html.Tests besteht mit 7.671 Tests in Debug und Release.
 Debug- und Release-Solution-Builds bestehen ohne Warnungen/Fehler; beide
 sequenziellen vollstaendigen Solution-Testlaeufe bestehen mit 17.678 Tests und
 zwei bedingt uebersprungenen Browserfaellen. Formatverifikation und
-`git diff --check` bestehen. Die HTML-Schaetzung bleibt unveraendert. Commit,
-Push und CI stehen aus. Siehe [HTML/DOM-Guide](../docs/html-dom.md),
+`git diff --check` bestehen. Die HTML-Schaetzung bleibt unveraendert. Commit
+`5559aabf` ist auf `origin/main`; Linux development (`45133963363`), Windows
+confinement (`45133963297`) und CodeQL (`45133962930`) bestehen; Dev
+Environment Prebuilds (`45133963481`) laufen noch. Siehe
+[HTML/DOM-Guide](../docs/html-dom.md),
 [Missing.md](../plans/Missing.md) und
 [KP-613](./Kontextprotokoll.md#kp-613---frameframeset-in-tabellenmodi).
 
