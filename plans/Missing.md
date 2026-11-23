@@ -482,6 +482,10 @@ foster parenting remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 
+- Static document-mode frameset tree construction now supports nested
+  `<frameset>` and `<frame>` nodes, frameset-ok gating, and the after-frameset
+  modes. Frame browsing contexts, resource loading, rendering, and frameset/frame
+  fragment contexts remain unsupported.
 - Document templates now parse in head/body with a bounded template
   insertion-mode stack. Ordinary supported in-body content and nested templates
   are constructed under each native `Content` fragment and use the inert
@@ -506,7 +510,8 @@ parser work includes:
   state; the API does not expose a scripting-enabled fragment mode. It also
   seeds the bounded form pointer from the context ancestry. The synthetic parser
   root is omitted from the result; fragment nodes honor parser limits and cancellation.
-  SVG/MathML, frameset/frame and other unsupported contexts fail explicitly.
+  SVG/MathML, frameset/frame fragment contexts and other unsupported contexts
+  fail explicitly.
   This does not add `innerHTML`, script bindings, general table/select
   algorithms or full fragment parsing conformance; unsupported tree-construction
   algorithms remain deferred.

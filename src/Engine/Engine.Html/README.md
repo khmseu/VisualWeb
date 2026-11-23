@@ -34,6 +34,10 @@ active-formatting markers, including fostered processing in table,
 table-body and row modes. Plugin behavior and external resources remain
 unsupported. Fragment parsing with these contexts uses the same bounded
 in-body handling.
+Static document-mode framesets build nested `<frameset>` and `<frame>` nodes
+with frameset-ok gating and after-frameset processing. Frames do not create
+browsing contexts, load resources or render; frameset/frame fragment contexts
+remain unsupported.
 Other end tags not handled by table-specific rules use the generic fostered
 in-body fallback in table, table-body and row modes; unsupported table starts
 remain explicit failures.

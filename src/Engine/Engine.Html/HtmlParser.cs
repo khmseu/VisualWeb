@@ -6,8 +6,13 @@ namespace VisualWeb.Engine.Html;
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
 /// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode">doctype mode selection</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#the-after-head-insertion-mode">after head</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inheadnoscript">in head noscript</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody">in body</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inframeset">in frameset</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-afterframeset">after frameset</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#the-after-after-frameset-insertion-mode">after after frameset</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#frameset-ok-flag">the frameset-ok flag</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intabletext">in table text</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incaption">in caption</see>,
@@ -69,7 +74,8 @@ public static class HtmlParser
     private enum Mode
     {
         Initial, BeforeHtml, BeforeHead, InHead, InHeadNoscript, AfterHead, InBody, Text,
-        InTable, InTableText, InCaption, InColumnGroup, InTableBody, InRow, InCell, InTemplate, AfterBody, AfterAfterBody
+        InTable, InTableText, InCaption, InColumnGroup, InTableBody, InRow, InCell, InTemplate,
+        AfterBody, AfterAfterBody, InFrameset, AfterFrameset, AfterAfterFrameset
     }
 
     private sealed class Builder
@@ -92,6 +98,7 @@ public static class HtmlParser
         private int nodes = 1;
         private bool ignoreNextLineFeed;
         private bool fosterParenting;
+        private bool framesetOk = true;
         private DomElement? formPointer;
         private DomElement? headElementPointer;
         private DomText? bufferedText;
@@ -419,7 +426,19 @@ public static class HtmlParser
                         if (token is HtmlTag { IsEndTag: false } afterHeadStart)
                         {
                             if (afterHeadStart.Name == "html") { Merge(document.DocumentElement!, afterHeadStart); return; }
-                            if (afterHeadStart.Name == "body") { Insert(afterHeadStart); mode = Mode.InBody; return; }
+                            if (afterHeadStart.Name == "body")
+                            {
+                                Insert(afterHeadStart);
+                                framesetOk = false;
+                                mode = Mode.InBody;
+                                return;
+                            }
+                            if (afterHeadStart.Name == "frameset")
+                            {
+                                Insert(afterHeadStart);
+                                mode = Mode.InFrameset;
+                                return;
+                            }
                             if (afterHeadStart.Name == "head") { Error("unexpected-head-start-tag"); return; }
                             if (HeadTags.Contains(afterHeadStart.Name))
                             {
@@ -460,6 +479,7 @@ public static class HtmlParser
                         }
 
                         Insert(Synthetic("body"));
+                        framesetOk = true;
                         mode = Mode.InBody;
                         continue;
                     case Mode.Text:
@@ -540,6 +560,15 @@ public static class HtmlParser
                     case Mode.InCell:
                         TableCellToken(token);
                         return;
+                    case Mode.InFrameset:
+                        InFramesetToken(token);
+                        return;
+                    case Mode.AfterFrameset:
+                        AfterFramesetToken(token);
+                        return;
+                    case Mode.AfterAfterFrameset:
+                        AfterAfterFramesetToken(token);
+                        return;
                 }
             }
         }
@@ -601,12 +630,105 @@ public static class HtmlParser
             Process(token);
         }
 
+        private void InFramesetToken(HtmlToken token)
+        {
+            if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
+            if (Miscellaneous(token, InsertionParent)) { return; }
+            if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "html" }) { BodyToken(token); return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "frameset" } frameset)
+            {
+                Insert(frameset);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "frameset" })
+            {
+                if (Current is DomElement { LocalName: "html" })
+                {
+                    Error("unexpected-frameset-end-tag");
+                    return;
+                }
+
+                open.RemoveAt(open.Count - 1);
+                if (!IsFragment && Current is not DomElement { LocalName: "frameset" })
+                {
+                    mode = Mode.AfterFrameset;
+                }
+
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "frame" } frame)
+            {
+                Insert(frame, push: false);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "noframes" } noframes)
+            {
+                StartText(noframes, HtmlTextMode.Rawtext);
+                return;
+            }
+
+            if (token is HtmlEndOfFile)
+            {
+                if (Current is not DomElement { LocalName: "html" }) { Error("eof-in-frameset"); }
+                return;
+            }
+
+            Error("unexpected-token-in-frameset");
+        }
+
+        private void AfterFramesetToken(HtmlToken token)
+        {
+            if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
+            if (Miscellaneous(token, InsertionParent)) { return; }
+            if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "html" }) { BodyToken(token); return; }
+            if (token is HtmlTag { IsEndTag: true, Name: "html" })
+            {
+                mode = Mode.AfterAfterFrameset;
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "noframes" } noframes)
+            {
+                StartText(noframes, HtmlTextMode.Rawtext);
+                return;
+            }
+
+            if (token is HtmlEndOfFile) { return; }
+            Error("unexpected-token-after-frameset");
+        }
+
+        private void AfterAfterFramesetToken(HtmlToken token)
+        {
+            if (Miscellaneous(token, document)) { return; }
+            if (token is HtmlDoctype || IsWhitespace(token)
+                || token is HtmlTag { IsEndTag: false, Name: "html" })
+            {
+                BodyToken(token);
+                return;
+            }
+
+            if (token is HtmlEndOfFile) { return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "noframes" } noframes)
+            {
+                StartText(noframes, HtmlTextMode.Rawtext);
+                return;
+            }
+
+            Error("unexpected-token-after-after-frameset");
+        }
+
         private void BodyToken(HtmlToken token, bool fromSelectContext = false)
         {
             if (token is HtmlCharacters text)
             {
                 if (text.Data.Contains('\0')) { Error("null-in-body"); }
                 var data = text.Data.Replace("\0", "", StringComparison.Ordinal);
+                if (data.Any(character => !HtmlTokenizer.Whitespace(character))) { framesetOk = false; }
                 if (data.Length > 0 && !fromSelectContext && !IsSelectContextActive)
                 {
                     ReconstructFormatting();
@@ -659,6 +781,7 @@ public static class HtmlParser
                         return;
                     case "body":
                         if (document.Body is { } body) { Merge(body, tag); }
+                        framesetOk = false;
                         Error("body-start-in-body");
                         return;
                     case "head": Error("unexpected-head-start-tag"); return;
@@ -669,13 +792,21 @@ public static class HtmlParser
                         if (scriptCompleted is not null) { StartText(tag, HtmlTextMode.Rawtext); return; }
                         break;
                     case "template": StartTemplate(tag); return;
-                    case "textarea": StartTextarea(tag); return;
+                    case "textarea":
+                        framesetOk = false;
+                        StartTextarea(tag);
+                        return;
                     case "xmp":
                         CloseParagraph();
                         ReconstructFormatting();
+                        framesetOk = false;
                         StartText(tag, HtmlTextMode.Rawtext);
                         return;
-                    case "iframe" or "noembed":
+                    case "iframe":
+                        framesetOk = false;
+                        StartText(tag, HtmlTextMode.Rawtext);
+                        return;
+                    case "noembed":
                         StartText(tag, HtmlTextMode.Rawtext);
                         return;
                     case "plaintext":
@@ -687,11 +818,13 @@ public static class HtmlParser
                         CloseListItem("li");
                         CloseParagraph();
                         Insert(tag);
+                        framesetOk = false;
                         return;
                     case "dd" or "dt":
                         CloseListItem("dd", "dt");
                         CloseParagraph();
                         Insert(tag);
+                        framesetOk = false;
                         return;
                     case "p":
                         CloseParagraph();
@@ -700,6 +833,7 @@ public static class HtmlParser
                     case "pre" or "listing":
                         CloseParagraph();
                         Insert(tag);
+                        framesetOk = false;
                         ignoreNextLineFeed = true;
                         return;
                     case "form":
@@ -713,16 +847,19 @@ public static class HtmlParser
                         if (InScope("button")) { Error("nested-button"); Close("button"); }
                         ReconstructFormatting();
                         Insert(tag);
+                        framesetOk = false;
                         return;
                     case "select":
                         if (InScope("select")) { throw Unsupported("Nested select elements are not implemented."); }
                         ReconstructFormatting();
                         Insert(tag);
+                        framesetOk = false;
                         return;
                     case "applet" or "marquee" or "object":
                         ReconstructFormatting();
                         Insert(tag);
                         formatting.Add(null);
+                        framesetOk = false;
                         return;
                     case "rb":
                     case "rtc":
@@ -740,8 +877,26 @@ public static class HtmlParser
                     case "table":
                         if (document.Mode != DomDocumentMode.Quirks) { CloseParagraph(); }
                         Insert(tag);
+                        framesetOk = false;
                         mode = Mode.InTable;
                         return;
+                    case "frameset":
+                        Error("frameset-start-in-body");
+                        if (open.Count <= 1 || open[1].LocalName != "body" || !framesetOk) { return; }
+
+                        open[1].ParentNode?.RemoveChild(open[1]);
+                        open.RemoveRange(1, open.Count - 1);
+                        Insert(tag);
+                        mode = Mode.InFrameset;
+                        return;
+                    case "input":
+                        if (!tag.Attributes.TryGetValue("type", out var inputType)
+                            || !AsciiEqualsIgnoreCase(inputType, "hidden"))
+                        {
+                            framesetOk = false;
+                        }
+
+                        break;
                     case "option":
                     case "optgroup":
                         if (open.LastOrDefault()?.LocalName == "option") { Close("option"); }
@@ -749,11 +904,13 @@ public static class HtmlParser
                     case "hr":
                         CloseParagraph();
                         Insert(tag, push: false);
+                        framesetOk = false;
                         return;
                     case "image":
                         Error("image-start-tag");
                         ReconstructFormatting();
                         Insert(tag with { Name = "img" }, push: false);
+                        framesetOk = false;
                         return;
                     case "a":
                         var anchorIndex = FindFormatting("a");
@@ -802,6 +959,11 @@ public static class HtmlParser
                     or "param" or "source" or "track"))
                 {
                     ReconstructFormatting();
+                }
+
+                if (tag.Name is "area" or "br" or "embed" or "img" or "keygen" or "wbr")
+                {
+                    framesetOk = false;
                 }
 
                 Insert(tag, push: !VoidTags.Contains(tag.Name));
@@ -854,6 +1016,7 @@ public static class HtmlParser
                     Error("br-end-tag");
                     ReconstructFormatting();
                     Insert(Synthetic("br"), push: false);
+                    framesetOk = false;
                     return;
                 case "applet" or "marquee" or "object":
                     var elementIndex = open.FindLastIndex(element => element.LocalName == tag.Name);
@@ -1763,6 +1926,7 @@ public static class HtmlParser
 
         private void StartTemplate(HtmlTag tag)
         {
+            framesetOk = false;
             Insert(tag);
             formatting.Add(null);
             templateModes.Add(Mode.InTemplate);
@@ -2247,7 +2411,7 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "svg", "math", "frameset", "frame"
+        "svg", "math"
     };
     private static readonly HashSet<string> UnsupportedFragmentContexts = new(StringComparer.Ordinal)
     {
@@ -2289,7 +2453,7 @@ public static class HtmlParser
         "fieldset", "figcaption", "figure", "footer", "header", "hgroup", "main", "menu", "nav", "ol",
         "search", "section", "summary", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "listing"
     };
-    private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(["applet", "marquee", "object"]).Concat(TableTags)
+    private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(["frame", "frameset", "applet", "marquee", "object"]).Concat(TableTags)
         .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script", "noscript",
             "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "template"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)

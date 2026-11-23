@@ -2514,6 +2514,98 @@ public sealed class TreeTests
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
     [Fact]
+    public void FramesetDocumentBuildsNestedFramesWithoutAnImplicitBody()
+    {
+        var result = Parse("<!doctype html><head></head><frameset cols='50%,50%'><frame src=left>"
+            + "<frameset rows='20%,80%'><frame src=right></frameset></frameset>");
+        var root = result.Document.DocumentElement!;
+        var frameset = Assert.IsType<DomElement>(root.LastChild);
+        var nestedFrameset = Assert.IsType<DomElement>(frameset.LastChild);
+
+        Assert.Null(result.Document.Body);
+        Assert.Equal(new[] { "head", "frameset" }, root.ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("50%,50%", frameset.GetAttribute("cols"));
+        Assert.Equal("left", Assert.IsType<DomElement>(frameset.FirstChild).GetAttribute("src"));
+        Assert.Equal("right", Assert.IsType<DomElement>(nestedFrameset.FirstChild).GetAttribute("src"));
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("hidden", false)]
+    [InlineData("text", true)]
+    public void FramesetReplacementRespectsTheFramesetOkFlag(string inputType, bool bodyRemains)
+    {
+        var result = Parse($"<!doctype html><input type={inputType}><frameset></frameset>");
+
+        Assert.Equal(bodyRemains, result.Document.Body is not null);
+        Assert.Contains(result.Errors, error => error.Code == "frameset-start-in-body");
+    }
+
+    [Fact]
+    public void ExplicitBodyDisallowsFramesetReplacement()
+    {
+        var result = Parse("<!doctype html><body><frameset></frameset>");
+
+        Assert.NotNull(result.Document.Body);
+    }
+
+    [Fact]
+    public void InBodyBodyStartDisallowsFramesetReplacement()
+    {
+        var result = Parse("<!doctype html><div></div><body><frameset></frameset>");
+
+        Assert.NotNull(result.Document.Body);
+    }
+
+    [Fact]
+    public void ButtonStartDisallowsFramesetReplacement()
+    {
+        var result = Parse("<!doctype html><button></button><frameset></frameset>");
+
+        Assert.NotNull(result.Document.Body);
+    }
+
+    [Theory]
+    [InlineData(" ", false)]
+    [InlineData("content", true)]
+    public void FramesetReplacementDependsOnNonWhitespaceBodyText(string bodyText, bool bodyRemains)
+    {
+        var result = Parse($"<!doctype html><div>{bodyText}</div><frameset></frameset>");
+
+        Assert.Equal(bodyRemains, result.Document.Body is not null);
+    }
+
+    [Fact]
+    public void AfterFramesetIgnoresOrdinaryContent()
+    {
+        var result = Parse("<!doctype html><frameset><frame></frameset><div id=ignored>content</div>");
+
+        Assert.Null(result.Document.GetElementById("ignored"));
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-token-after-frameset");
+    }
+
+    [Fact]
+    public void FramesetStartRejectedByFramesetOkStillUsesInBodyRulesForFrame()
+    {
+        var result = Parse("<!doctype html><input type=text><frameset><frame id=ordinary>");
+        var body = result.Document.Body!;
+
+        Assert.Same(body, result.Document.GetElementById("ordinary")!.ParentNode);
+        Assert.Contains(result.Errors, error => error.Code == "frameset-start-in-body");
+    }
+
+    [Fact]
+    public void NoframesInFramesetUsesRawText()
+    {
+        var result = Parse("<!doctype html><frameset><noframes><p id=fallback>fallback</p></noframes></frameset>");
+        var frameset = Assert.IsType<DomElement>(result.Document.DocumentElement!.LastChild);
+        var noframes = Assert.IsType<DomElement>(frameset.FirstChild);
+
+        Assert.Equal("<p id=fallback>fallback</p>", Assert.IsType<DomText>(Assert.Single(noframes.ChildNodes)).Data);
+        Assert.Null(result.Document.GetElementById("fallback"));
+    }
+
+    [Fact]
     public void NoscriptInBodyParsesMarkupWhenScriptingIsDisabled()
     {
         var result = Parse("<!doctype html><body><noscript><p id=fallback>fallback</p></noscript><p id=after>after</p>");

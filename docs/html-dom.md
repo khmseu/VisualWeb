@@ -63,9 +63,15 @@ browser/parser versions.
 
 [HtmlParser](../src/Engine/Engine.Html/HtmlParser.cs) implements initial,
 before-html, before-head, in-head, in-head-noscript, after-head, in-body,
-text, after-body and after-after-body modes. Supported behavior includes:
+text, after-body, after-after-body, in-frameset, after-frameset and
+after-after-frameset modes. Supported behavior includes:
 
 - Explicit or implied html/head/body; first-value root/body attribute merging.
+- Static document-mode framesets build nested `<frameset>` and `<frame>` nodes
+  using after-head, in-body, in-frameset, after-frameset and after-after-frameset
+  processing, including the frameset-ok flag and EOF diagnostics. This does not
+  create browsing contexts, load frame resources or render frames; frameset and
+  frame fragment contexts remain unsupported.
 - HTML5/legacy-compat and legacy public/system doctypes, preserving identifiers
   and selecting no-quirks, limited-quirks or quirks mode using the complete
   initial-mode identifier tables. Comparisons are ASCII-case-insensitive;
@@ -287,13 +293,12 @@ Unimplemented start tags that require table foster parenting throw explicitly,
 as do unsupported table tags outside the contexts covered above. Other end tags
 follow the table-mode fostered in-body fallback. Template content
 supports the bounded table and in-body/select paths described above; additional
-table/select algorithms remain explicitly unsupported. The
-following additionally throw explicitly: SVG/MathML,
-unsupported select contents whose ordinary in-body processing requires
-unimplemented algorithms; textarea-specific form semantics beyond first-LF
-handling; foreign content; framesets/frames;
-plugin and embedded resource behavior. Fragment contexts outside the supported
-parser subset are rejected. The adoption agency remains a bounded subset, not
+table/select algorithms remain explicitly unsupported. The following remain
+unsupported: SVG/MathML and other foreign content; frame browsing contexts,
+frame resource loading and rendering; plugin and embedded-resource behavior;
+select contents that require unimplemented algorithms; and textarea-specific
+form semantics beyond first-LF handling. Fragment contexts outside the
+supported parser subset are rejected. The adoption agency remains a bounded subset, not
 full HTML tree-construction conformance; this recovery does not implement full
 anchor semantics.
 
