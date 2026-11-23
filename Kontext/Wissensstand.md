@@ -636,13 +636,32 @@ Format-/Diff-Checks bestehen; der finale Solution-Volltest besteht ebenfalls
 mit 17.660 Tests und zwei bedingten Browser-Prozess-Test-Skips.
 Die grobe HTML-Supporteinschaetzung bleibt unveraendert.
 Der zuvor offene Dev-Environment-Prebuild fuer Kontextcommit `c2a4f739`
-(`45099518203`) ist inzwischen erfolgreich abgeschlossen. Commit/Push und
-Implementierung: `4738d14f`; gepusht mit Kontextcommit `cfc0881f`.
+(`45099518203`) ist inzwischen erfolgreich abgeschlossen. Implementierungscommit
+`4738d14f` ist gepusht; Kontextcommit `cfc0881f` haelt die Resultate fest.
 Linux development, Windows confinement, CodeQL und Dev Environment Prebuilds
 bestehen fuer `cfc0881f`. Siehe
 [HTML/DOM-Guide](../docs/html-dom.md),
 [Missing.md](../plans/Missing.md) und
 [KP-610](./Kontextprotokoll.md#kp-610---statische-frameset-dokumente).
+
+**Aktueller HTML/DOM-Pass: nativer Form-Owner (2026-11-23; KP-611; committed, gepusht und CI-geprueft):**
+`DomFormControls.FormOwner` berechnet den aktuellen Besitzer fuer die sieben
+eingebauten gelisteten Form-assoziierten Elemente aus Baum und Attributen.
+Bei verbundenen Elementen mit `form`-Attribut entscheidet die erste ID im
+Baum; fehlt sie oder ist sie kein `form`, ist der Besitzer null. In allen
+anderen Faellen gilt das naechste Form-Element im Ahnenpfad.
+Parser-insertierte Assoziation,
+form-assoziierte Custom Elements und scriptseitige APIs bleiben unsupported.
+Der Browser-Form-Snapshot blieb unveraendert. Auswahl und Umfang sind aus dem
+expliziten Restpunkt in [Missing.md](../plans/Missing.md) abgeleitet, nicht
+separat vom Nutzer bestaetigt. Der HTML-Cache hatte `checkedAt: 2026-11-07`
+und war am Dokumentationsdatum frisch. Die 75 Engine.Dom-Tests, der
+Solution-Build (0 Warnungen/Fehler), der Volltest (17.671 bestanden, 2
+bedingte Browser-Skips) und Formatverifikation bestehen. Commit `0c87d7c4` ist
+auf `origin/main`; Linux development, Windows confinement, CodeQL und Dev
+Environment Prebuilds bestehen. Siehe [HTML/DOM-Guide](../docs/html-dom.md),
+[Engine.Dom README](../src/Engine/Engine.Dom/README.md) und
+[KP-611](./Kontextprotokoll.md#kp-611---nativer-form-owner).
 
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische

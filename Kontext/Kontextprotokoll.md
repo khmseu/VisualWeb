@@ -17843,3 +17843,56 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   `Kontext/Wissensstand.md`, lokale Validierungsausgaben und aktueller Chat.
+
+### KP-611 - Nativer Form-Owner
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Der Nutzer setzt den uebergeordneten WHATWG-HTML/DOM-Auftrag
+  mit „continue“ fort. Eine separate Auswahl des Form-Owner-Verhaltens ist
+  nicht dokumentiert.
+- Auswahlgrundlage: `plans/Missing.md` nennt Form-Control-Ownership-APIs im
+  DOM als offene Luecke. `DomFormControls` normalisierte zuvor nur die
+  `input`-/`button`-Typen; PageRendering hat einen eigenen, begrenzten
+  Form-Snapshot mit vorindizierter ID-Suche und Cancellation. Der Pass fuehrt
+  eine native DOM-Abfrage ein und laesst diesen Browser-Snapshot unveraendert.
+- Belegt: Der lokale WHATWG-HTML-Cache (`specs/cache/html.html`, Manifest-ID
+  `html`, `checkedAt` 2026-11-07) beschreibt die Association-of-controls-and-
+  forms- und Reset-form-owner-Algorithmen. Der Cache war am Dokumentationsdatum
+  frisch.
+- Umsetzung: `DomFormControls.FormOwner` akzeptiert die eingebauten gelisteten
+  Elemente `button`, `fieldset`, `input`, `object`, `output`, `select` und
+  `textarea`. Es berechnet den Besitzer dynamisch aus der aktuellen Baum-/
+  Attributlage. Bei verbundenem Element mit `form`-Attribut zaehlt der erste
+  passende ID-Treffer im Baum; bei fehlendem Treffer oder Nicht-Form ist der
+  Besitzer null, ohne Vorfahren-Fallback. Sonst wird der naechste Form-
+  Vorfahr verwendet. Leere IDs/Formwerte koennen exakt matchen. Nicht gelistete
+  Elemente werden sichtbar mit `ArgumentException` abgewiesen.
+- Grenzen/Entscheidung: Parser-inserted form-owner flags, form-assoziierte
+  Custom Elements, DOM-Formzustand und scriptseitige Form-APIs bleiben
+  unsupported. Die vorhandene PageRendering-Snapshot-Logik wurde nicht auf
+  die neue API umgestellt, um ihre vorindizierte, cancellation-bewusste
+  Verarbeitung fuer den Browser-Subset nicht durch wiederholte Baumscans zu
+  ersetzen.
+- Regressionen: alle sieben eingebauten Elementnamen verwenden den naechsten
+  Formularvorfahren; explizite Besitzer beachten den ersten ID-Treffer auch
+  wenn er kein Formular ist; fehlende Ziele fallen bei verbundenen Elementen
+  nicht auf Vorfahren zurueck; Ab-/Wiederverbinden und Attribut-/ID-Aenderungen
+  werden beim naechsten Aufruf reflektiert; leere IDs matchen; nicht gelistete
+  Elemente werden abgewiesen.
+- Validierung: Engine.Dom.Tests 75 bestanden; `dotnet build VisualWeb.slnx`
+  mit 0 Warnungen/Fehlern; `dotnet test VisualWeb.slnx --no-build` mit 17.671
+  bestanden und 2 bedingten Browser-Prozess-Skips; Formatverifikation und
+  `git diff --check` bestanden. Commit `0c87d7c4` ist auf `origin/main`.
+  Linux development (`45111972547`), Windows confinement (`45111972681`),
+  CodeQL (`45111972514`) und Dev Environment Prebuilds (`45111972623`)
+  bestehen.
+- Vereinbarung/Provenienz: Die Auswahl ist aus dem Tracker und dem bestehenden
+  DOM-/Browser-Code abgeleitet; eine gesonderte Nutzerentscheidung liegt nicht
+  vor.
+- Quellen: `specs/cache/html.html#association-of-controls-and-forms`,
+  `#reset-the-form-owner`, `src/Engine/Engine.Dom/DomFormControls.cs`,
+  `tests/Engine.Dom.Tests/FormControlTests.cs`,
+  `src/Apps/VisualWeb.PageRendering/PageForms.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Dom/README.md`,
+  `docs/project-map.md`, `plans/Missing.md`, `Kontext/Wissensstand.md`,
+  lokale Validierungsausgaben und aktueller Chat.
