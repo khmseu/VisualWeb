@@ -17710,3 +17710,48 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale fokussierte Testausgaben und aktueller Chat.
+
+### KP-608 - `noscript`-Dokumentparsing
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Der Nutzer setzt den inkrementellen WHATWG-HTML/DOM-Auftrag
+  mit „continue“ fort.
+- Belegt: Der lokale HTML-Standard unterscheidet `noscript` nach dem
+  Parser-Scripting-Zustand. In einem Dokument verwendet `noscript` im Head
+  bei deaktiviertem Scripting den eigenen In-Head-Noscript-Modus; im Body gilt
+  normales In-Body-Parsing. Bei aktiviertem Scripting verwenden Head und Body
+  RAWTEXT. `noscript` ist kein After-Head-Head-Tag; nach `</head>` wird es im
+  Body-Modus verarbeitet.
+- Umsetzung: `HtmlParser` verwendet die Praesenz des bestehenden
+  `scriptCompleted`-Callbacks als Scripting-Zustand. Ein neuer
+  `InHeadNoscript`-Modus behandelt erlaubte Head-Tokens, ignorierte Tags und
+  Endtags sowie das Verlassen und Reprocessen sonstiger Tokens. Fragmentkontexte
+  fuer `noscript` bleiben explizit unsupported; Scriptvorbereitung wird nicht
+  erweitert.
+- Validierung: Fuenf fokussierte Noscript-Regressionen und Engine.Html.Tests
+  (7.653) bestehen. `dotnet build VisualWeb.slnx --no-restore` besteht ohne
+  Warnungen/Fehler; `dotnet test VisualWeb.slnx --no-build --no-restore`
+  besteht mit 17.649 Tests und zwei bedingten Browser-Skips.
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+  und `git diff --check` bestehen.
+- Status: Commit `dfad4bdb` (`fix(html): honor noscript scripting modes`) ist
+  auf `origin/main`. CodeQL
+  ([45089958469](https://github.com/khmseu/VisualWeb/actions/runs/45089958469))
+  und Linux development
+  ([45089958935](https://github.com/khmseu/VisualWeb/actions/runs/45089958935)),
+  Windows confinement
+  ([45089958705](https://github.com/khmseu/VisualWeb/actions/runs/45089958705))
+  bestehen. Dev Environment Prebuilds
+  ([45089958344](https://github.com/khmseu/VisualWeb/actions/runs/45089958344))
+  besteht ebenfalls.
+- Vereinbarung: Keine Vollkonformitaets- oder Support-Prozent-Aussage;
+  `noscript`-Fragmentkontexte bleiben ausserhalb des genehmigten
+  Fragmentumfangs.
+- Quellen: `specs/cache/html.html#parser-scripting-disabled`,
+  `#parsing-main-inhead`, `#parsing-main-inheadnoscript`,
+  `#the-after-head-insertion-mode` und `#parsing-main-inbody` (ID `html`,
+  Manifest `checkedAt` 2026-11-07), `src/Engine/Engine.Html/HtmlParser.cs`,
+  `src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  lokale Test-/Build-/Format-Ausgaben und aktueller Chat.

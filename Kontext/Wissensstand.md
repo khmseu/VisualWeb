@@ -4,7 +4,7 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-20, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-23, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
@@ -567,6 +567,30 @@ Erfolge und zwei bedingte Browser-Skips) und Formatverifikation bestehen.
 Commit `332e510f` ist auf `origin/main`; Linux, Windows, CodeQL und Dev
 Environment Prebuild CI bestehen. Die HTML-Supporteinschaetzung bleibt
 unveraendert. Details und Provenienz: [KP-607](./Kontextprotokoll.md#kp-607---quirks-mode-tabellenstart).
+
+**Aktueller HTML-Pass: `noscript`-Dokumentparsing (2026-11-23; KP-608; committed und gepusht):**
+Der Dokumentparser behandelt `noscript` scripting-abhaengig: Ohne
+Script-Completion-Callback gilt Scripting als deaktiviert; im Head wird der
+eigene In-Head-Noscript-Modus verwendet, im Body normale In-Body-Verarbeitung.
+Mit Callback wird RAWTEXT fuer `noscript` im Head und Body verwendet. Nach
+`</head>` bleibt `noscript` im In-Body-Pfad. `noscript`-Fragmentkontexte
+bleiben explizit unsupported; volle Scriptvorbereitung ist nicht Teil dieses
+Inkrements. Fuenf Regressionen, Engine.Html.Tests (7.653), Debug-Solution-
+Build (0 Warnungen/Fehler), Volltest (17.649 bestanden, zwei bedingte
+Browser-Skips), Formatverifikation und Diff-Check bestehen. Commit
+`dfad4bdb` ist auf `origin/main`. Linux development
+([45089958935](https://github.com/khmseu/VisualWeb/actions/runs/45089958935)),
+Windows confinement
+([45089958705](https://github.com/khmseu/VisualWeb/actions/runs/45089958705)),
+CodeQL
+([45089958469](https://github.com/khmseu/VisualWeb/actions/runs/45089958469))
+und Dev Environment Prebuilds
+([45089958344](https://github.com/khmseu/VisualWeb/actions/runs/45089958344))
+bestehen.
+Die HTML-Supporteinschaetzung bleibt unveraendert. Siehe
+[HTML/DOM-Guide](../docs/html-dom.md),
+[Missing.md](../plans/Missing.md) und
+[KP-608](./Kontextprotokoll.md#kp-608---noscript-dokumentparsing).
 
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische
