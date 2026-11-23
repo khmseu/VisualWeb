@@ -1937,6 +1937,13 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 ## Recommended priority
 
+**Approved HTML/DOM workstream (2026-11-23):** For HTML/DOM work, follow the
+[common-support roadmap](whatwg-html-dom-completion-roadmap.md) and its
+[deferred register](html-dom-deferred.md): prioritize common website behavior,
+then low-cost adjacent features, and keep the rest revisitable. This scoped
+priority takes precedence over the general standards-estimate ranking for this
+workstream; it does not change the ranking rule for other standards.
+
 **Standards-priority update (2026-11-15; revised from 2026-11-12):** Before
 each next standards-driven feature selection, consult the approximate coverage
 estimates in [standards.md](../docs/standards.md#support-status). Rank only

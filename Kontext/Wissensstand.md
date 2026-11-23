@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-23; KP-614 bis KP-617; Plan genehmigt, Umsetzung offen):**
+**HTML/DOM-Abschlussplanung (2026-11-23; KP-614 bis KP-618; Phase 1 abgeschlossen, Commit offen):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -26,19 +26,26 @@ selten benoetigte Bereiche (z.B. Shadow DOM/Custom Elements, Media/Canvas,
 vollstaendige Web IDL und weitere Ressourcensysteme) sollen mit Standards-
 Referenz, Grund, Abhaengigkeiten und Wiederaufnahme-Hinweis in
 `plans/html-dom-deferred.md` geparkt werden. Der Nutzer hat den
-siebenphasigen Vorschlag genehmigt; die 12 initialen Deferred-Kategorien
-bleiben nach Phase 1 gegen Code, Tests und lokale Spec-Caches zu verifizieren
-und koennen neu priorisiert werden. Ranking beruht auf bestehendem Tracker,
-typischen Seitenanforderungen und lokalem Aufwand, nicht auf Produktions-
-Telemetrie. [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md) und
-[Deferred-Register](../plans/html-dom-deferred.md) sind geschrieben und im
+siebenphasigen Vorschlag genehmigt. Phase 1 hat die aktuelle Unterstuetzung
+gegen Guides, Codepfade, lokale Testgruppen und Missing-Tracker geprueft.
+Der Initialrang priorisiert (1) gewoehnliche Dokument-Tree-Construction/
+Recovery, (2) Fragment-/Markup-Verhalten, (3) gaengige DOM-Abfragen/
+Mutationen, (4) Formulare/Interaktionen und (5) Script-/Dokumentlebenszyklus;
+kleine angrenzende Parser-/DOM-Erweiterungen koennen in den Umsetzungsphasen
+mitgenommen werden. Fuer 12 Deferred-Kategorien sind Ist-Grenzen, Begruendung,
+Wiederaufnahmebedingungen, wahrscheinliche Owner/Prerequisites und gepruefte
+Code-/Testhinweise festgehalten. Der Register bleibt verfeinerbar und nicht
+telemetriegestuetzt. [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md)
+und [Deferred-Register](../plans/html-dom-deferred.md) sind im
 [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility)
-verlinkt. Noch keine Implementierung oder Aenderung der genehmigten
-Browser-Roadmap. Naechster Schritt: Phase 1 des Plans ausfuehren.
+und [HTML/DOM-Guide](../docs/html-dom.md) verlinkt. Die Phase-1-Dokumentation
+ist lokal erstellt und selbst geprueft; `git diff --check` besteht. Keine
+Implementierung oder Aenderung der genehmigten Browser-Roadmap. Phase-1-
+Commit steht aus; die folgenden Implementierungsphasen haben nicht begonnen.
 Siehe
 [KP-615](./Kontextprotokoll.md#kp-615---nutzerpriorisiert-haeufige-html-dom-features),
 [KP-617](./Kontextprotokoll.md#kp-617---priorisierter-html-dom-plan-genehmigt)
-und [KP-616](./Kontextprotokoll.md#kp-616---priorisierter-html-dom-planentwurf).
+und [KP-618](./Kontextprotokoll.md#kp-618---phase-1-inventar-abgeschlossen).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

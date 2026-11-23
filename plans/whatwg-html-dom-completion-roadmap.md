@@ -32,6 +32,22 @@ complete and remains unchanged. This roadmap builds on it.
   and confinement rules. Any change to these policies needs its own explicit
   decision and tests.
 
+### Initial priority inventory
+
+The ordering below is the Phase 1 starting point, based on repository evidence.
+It is a user-approved workstream priority, not an empirical ranking of browser
+market share; Phase 1 may adjust it when the inventory exposes better evidence.
+
+| Priority | Feature area                                           | Current evidence and gap                                                                                                                                                                                                                                                                                                                                     | Planned phase     |
+| -------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| Common 1 | Ordinary document parsing and recovery                 | `Engine.Html` supports a large static subset and pinned tokenizer/tree fixtures, but the tree corpus covers only selected families; SVG and MathML starts are rejected and other tree algorithms still fail explicitly. See `TreeTests.OfficialStaticTreeFixture`, `UnsupportedTreeAlgorithmsFailExplicitly`, and `UnsupportedTableRecoveryFailsExplicitly`. | Phase 2           |
+| Common 2 | Fragment parsing and context-correct markup operations | `ParseFragment` supports bounded body, table, select, template, and text contexts with explicit unsupported cases. Script-facing `innerHTML` and serialization remain absent. See `FragmentTests` and `docs/html-dom.md`.                                                                                                                                    | Phases 2-3        |
+| Common 3 | DOM queries and tree/attribute mutation used by pages  | The script facade already includes selectors, mutation, class tokens, metadata, CharacterData, cloning, and static NodeList snapshots. The gap is broader common markup/collection behavior, not a missing DOM foundation. See `QueryTests`, `DomMutationTests`, `ClassTokenTests`, and `TreeInspectionTests`.                                               | Phase 3           |
+| Common 4 | Forms and browser-visible interactions                 | Browser-shell forms, focus, selection, and link activation have substantial bounded coverage. Native DOM computes built-in form ownership, but parser form state and script-visible form/control APIs remain incomplete. See `FormControlTests`, `FormTests`, `ShellTests`, `EventTests`, and `ClickDispatchTests`.                                          | Phase 4           |
+| Common 5 | Script scheduling and document lifecycle               | Explicit opt-in parser-ordered classics, readiness, microtasks, events, and import-free inline modules exist. Broader async/defer scheduling and module/resource loading remain missing. See `ClassicScriptTests`, `DocumentLifecycleTests`, `MicrotaskTests`, and `ModuleExecutionTests`.                                                                   | Phase 5           |
+| Low-cost | Adjacent parser recovery and simple interface behavior | Promote small corrections that reuse existing insertion-mode, native primitive, or binding paths; assess individually rather than broadening the API surface speculatively. Existing HTML/DOM focused tests provide regression patterns.                                                                                                                     | Phases 2-6        |
+| Deferred | New subsystems or advanced APIs                        | Shadow trees, full Web IDL, frame browsing contexts, media/graphics, broad resource policy, workers/storage, and platform accessibility require substantial new behavior or dependencies. The deferred register records current evidence and revisit conditions.                                                                                             | Deferred register |
+
 ### Phases
 
 1. **Phase 1: Inventory, ranking, and deferred register**

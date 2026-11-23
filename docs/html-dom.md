@@ -514,6 +514,9 @@ Direct DOM construction has no parser limits; its owner controls resource use.
 
 ## Pinned data and conformance evidence
 
+- The [prioritized support roadmap](../plans/whatwg-html-dom-completion-roadmap.md)
+  records common HTML/DOM work; the [deferred register](../plans/html-dom-deferred.md)
+  tracks larger or lower-priority gaps for later review.
 - [Official entities](../src/Engine/Engine.Html/Data/README.md): unmodified
   WHATWG `entities.json`, pinned by SHA-256, with WHATWG CC BY/BSD license.
 - [html5lib fixtures](../tests/Engine.Html.Tests/Data/README.md): MIT-licensed

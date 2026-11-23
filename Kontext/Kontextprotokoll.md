@@ -18148,3 +18148,38 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
 - Quellen: aktueller Chat; [genehmigte Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
   [Deferred-Register](../plans/html-dom-deferred.md),
   [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility).
+
+### KP-618 - Phase 1 Inventar abgeschlossen
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Commit `d12266de`
+  (`docs(html-dom): plan common support roadmap`) enthaelt die staged
+  genehmigte Roadmap, das Deferred-Register, den Missing-Tracker-Link und den
+  zugehoerigen Kontextcheckpoint. Danach wurde Phase 1 ausgefuehrt.
+- Belegt: Die Initialrangfolge legt gewoehnliche Dokument-Tree-Construction
+  und Recovery, Fragment-/Markup-Verhalten, gaengige DOM-Abfragen/Mutationen,
+  Formulare/Interaktionen sowie Script-/Dokumentlebenszyklus voran. Die
+  Roadmap ordnet sie vorhandenen HTML fixture/tree/fragment tests,
+  DOM query/mutation/form-control tests, Scripting lifecycle/module tests und
+  Browser form/interaction tests zu. Parser-Audit bestaetigt explizite
+  Ablehnung von `<svg>`/`<math>` und verbleibende Tree-Construction-
+  Unsupported-Pfade. Das Script-Facade besitzt bereits viele begrenzte
+  DOM-Operationen; `innerHTML`, vollstaendige Web-IDL, MutationObserver/Range,
+  erweiterte HTML-Interfaces und breitere Scheduling-/Loader-Pfade bleiben
+  offen oder deferred. Formulare und Interaktionen besitzen dagegen bereits
+  umfangreiche Browser-Tests, waehrend native DOM-Form-Owner- und script-
+  sichtbare Form-APIs deutlich schmaler sind.
+- Deferred-Register: HDF-001 bis HDF-012 enthalten initiale Scope-/Grund-/
+  Wiederaufnahmeangaben, Owner/Prerequisites und Code-/Testbelege. Es bleibt
+  verfeinerbar; keine Produktions-Telemetrie wurde verwendet. Standards-
+  Prozentwerte bleiben unveraendert.
+- Dateien: Roadmap, Deferred-Register, `docs/html-dom.md`, `plans/Missing.md`
+  sowie dieser Abschlussbericht. `Kontext/Wissensstand.md` und dieses Protokoll
+  wurden aktualisiert. Keine Produktionscode- oder Testaenderung.
+- Review/Validierung: Dokumentationsaenderungen direkt geprueft;
+  `git diff --check` besteht. Keine Builds oder Tests ausgefuehrt, da die
+  Phase ausschliesslich Dokumentation betrifft.
+- Status: Phase 1 lokal abgeschlossen, uncommitted; fuer diese Phase wurde
+  ein Conventional-Commit-Vorschlag in
+  [Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-1-complete.md)
+  festgehalten. Phase 2 hat noch nicht begonnen.
