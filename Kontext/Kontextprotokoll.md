@@ -17755,3 +17755,43 @@ VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern. Der gesamte Solution-
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   lokale Test-/Build-/Format-Ausgaben und aktueller Chat.
+
+### KP-609 - `noscript`-Fragmentkontext
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Der Nutzer setzt den uebergeordneten WHATWG-HTML/DOM-Auftrag
+  mit „continue“ fort.
+- Belegt: Der HTML-Fragmentparser wird gemaess lokalem Standard bei
+  deaktiviertem Scripting fuer einen `noscript`-Kontext im Data-Zustand
+  gestartet. `HtmlParser.ParseFragment` exponiert keinen scripting-enabled
+  Modus; der Fragmentparser hat auch keinen `scriptCompleted`-Callback. Der
+  `html`-Cacheeintrag hatte `checkedAt` 2026-11-07 und war am 2026-11-23
+  innerhalb des 30-Tage-Fensters.
+- Umsetzung: `noscript` wurde aus der Liste abgelehnter Fragmentkontexte
+  entfernt. Die existierende Default-Data-Tokenisierung und begrenzte In-Body-
+  Verarbeitung liefern die deaktivierte-Scripting-Variante; ein Modus fuer
+  scripting-enabled Fragments, Scriptvorbereitung, Scriptbindings oder
+  `innerHTML` wurde nicht hinzugefuegt. Eine Regression prueft reale
+  Markup-Elemente im Fragment, Owner-Document-Identitaet und leere
+  Parserdiagnostik.
+- Validierung: Der neue Test scheiterte vor der Parseraenderung am
+  Unsupported-Kontext-Guard und besteht danach. Engine.Html.Tests: 7.653;
+  `dotnet build VisualWeb.slnx`: null Warnungen/Fehler; `dotnet test
+VisualWeb.slnx --no-build`: 17.649 bestanden und zwei bedingte Browser-Skips;
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestehen.
+- Status: Commit `7a236353` (`fix(html): support noscript fragment parsing`)
+  ist auf `origin/main`. Ein frueher `gh run list --commit 7a236353` zeigte
+  noch keine Laeufe; der Folgecheck fand die vier gestarteten Laeufe. Linux
+  development (`45097056193`), Windows confinement (`45097056239`),
+  Dev Environment Prebuild (`45097055369`) und CodeQL (`45097055350`)
+  bestehen. Der zuvor offene Dev-Environment-Prebuild fuer `a337155a`
+  (`45092434125`) besteht ebenfalls.
+- Vereinbarung: Keine Erhoehung der groben HTML-Prozentangabe. Die
+  Fragment-API stellt weiterhin kein scripting-enabled Verhalten bereit.
+- Quellen: `specs/cache/html.html#initialize-an-html-fragment-parser`,
+  `#parsing-html-fragments` (ID `html`, Manifest `checkedAt` 2026-11-07),
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  `Kontext/Wissensstand.md` und lokale Validierungsausgaben.

@@ -45,7 +45,9 @@ Template-Plan ab, nicht die WHATWG-HTML/DOM-Vollkonformitaet. Siehe
 **HTML/DOM-Fragment Parsing (2026-11-20; KP-530/531; committed und gepusht):**
 Der Nutzer waehlte fuer Fragment Parsing alle derzeit unterstuetzten
 Dokument-Kontexte einschliesslich Table-, Select-, Template- und Text-Modi;
-SVG/MathML, `noscript` und `frameset` bleiben explizit unsupported.
+SVG/MathML, `noscript` und `frameset` blieben in diesem ersten Stand explizit
+unsupported; `noscript` wurde spaeter fuer scripting-disabled Fragmentparser in
+KP-609 freigegeben.
 Script-Bindings, `innerHTML` und Vollkonformitaet sind nicht Teil dieses
 Inkrements. `HtmlParser.ParseFragment` liefert ein kontextdokument-eigenes
 `DocumentFragment`, setzt die bestehenden begrenzten Einfuegemodi und
@@ -591,6 +593,32 @@ Die HTML-Supporteinschaetzung bleibt unveraendert. Siehe
 [HTML/DOM-Guide](../docs/html-dom.md),
 [Missing.md](../plans/Missing.md) und
 [KP-608](./Kontextprotokoll.md#kp-608---noscript-dokumentparsing).
+
+**Aktueller HTML-Pass: `noscript`-Fragmentkontext (2026-11-23; KP-609; committed und gepusht):**
+`HtmlParser.ParseFragment` akzeptiert nun `noscript` als Kontext. Da die
+Fragment-API keinen scripting-enabled Modus exponiert, bleibt der Tokenizer im
+standardgemaessen Data-Zustand fuer deaktiviertes Scripting; `noscript`-Inhalt
+wird als begrenztes In-Body-Fragment geparst. Keine Scriptvorbereitung,
+Scriptbindings oder `innerHTML`-Unterstuetzung. Die Regression scheiterte vor
+der Aenderung am Unsupported-Kontext-Guard und besteht danach; Engine.Html
+7.653/7.653, Solution-Build ohne Warnungen/Fehler, Volltests 17.649 bestanden
+mit zwei bedingten Browser-Skips, Formatverifikation und Diff-Check bestehen.
+Commit `7a236353` ist auf `origin/main`. Die CI-Workflows waren beim letzten
+Check noch nicht in `gh run list` sichtbar; beim Folgecheck liefen Linux
+development, Windows confinement, Dev Environment Prebuild und CodeQL. Alle
+vier Laeufe bestehen: Linux
+([45097056193](https://github.com/khmseu/VisualWeb/actions/runs/45097056193)),
+Windows
+([45097056239](https://github.com/khmseu/VisualWeb/actions/runs/45097056239)),
+Prebuild
+([45097055369](https://github.com/khmseu/VisualWeb/actions/runs/45097055369))
+und CodeQL
+([45097055350](https://github.com/khmseu/VisualWeb/actions/runs/45097055350)).
+Der zuvor offene Dev-Environment-Prebuild fuer `a337155a` besteht ebenfalls
+(45092434125). Die HTML-Supporteinschaetzung bleibt unveraendert. Siehe
+[HTML/DOM-Guide](../docs/html-dom.md),
+[Missing.md](../plans/Missing.md) und
+[KP-609](./Kontextprotokoll.md#kp-609---noscript-fragmentkontext).
 
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische
@@ -3697,7 +3725,7 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-038 | Bedeutet „WHATWG URL vollstaendig“ die Core/.NET-Spezifikationsalgorithmen oder auch die browserseitige JavaScript-URL-/URLSearchParams-API mit Live-Linkage und Web-IDL-Verhalten? | Beantwortet: Nutzer genehmigte Core-Algorithmen sowie browserseitige URL-/URLSearchParams-Semantik und interface-spezifisches Web IDL | Allgemeine Web-IDL-Generierung bleibt ausgeschlossen; Umsetzung folgt dem genehmigten Sechs-Phasen-Plan | Nutzerbestaetigung 2026-11-18; [Plan](../plans/whatwg-url-completion-plan.md), [Core guide](../docs/core.md#url), [URL spec cache](../specs/cache/url.html), [KP-468](./Kontextprotokoll.md#kp-468---url-planumfang-genehmigt) |
 | Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Umgesetzt sind begrenzte PageRendering-Bindungen fuer readonly `document.URL`, `document.documentURI`, `Node.baseURI` und die URL-Komponenten von `<a>`/`<area>`. Die Nutzeranweisung vom 2026-11-19 erweitert das Ziel auf breitere HTML/DOM-Folgearbeit, waehlt aber noch kein erstes Inkrement | Keine Vollintegration oder Prozentsteigerung aus den begrenzten Teilumfaengen ableiten; mit Q-040 die Reichweite des neuen Auftrags klaeren | Nutzeranweisung „let's do the html/dom related changes next“ und „complete WHATWH html and dom“; KP-513 bis KP-515, KP-523, [HTML/DOM](../docs/html-dom.md), [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Support-Inventar](../docs/standards.md#implemented-subsets) |
 | Q-040 | Was bedeutet der Auftrag, WHATWG HTML und DOM zu „vervollstaendigen“, und welches erste zusammengehoerige HTML-/DOM-Inkrement ist gemeint? | Beantwortet fuer den ersten mehrphasigen Template-Umfang: Nutzer genehmigte bounded Template-Contents, Parser-Subset und Inertheits-/Limitintegration. Ein vollstaendiger HTML/DOM-Abschlussendpunkt ist weiterhin nicht definiert | Phase 1-3 des [Plans](../plans/whatwg-html-dom-completion-plan.md) in separaten, getesteten Phasen ausfuehren; danach den naechsten Inkrementumfang anhand des aktualisierten Trackers waehlen | Ausdrueckliche Nutzerfreigabe 2026-11-19; KP-524; [HTML/DOM guide](../docs/html-dom.md), [approved plan](../plans/whatwg-html-dom-completion-plan.md) |
-| Q-041 | Welchen Umfang soll die naechste HTML/DOM-Arbeit nach dem Template-Plan haben? | Beantwortet: Nutzer waehlt Option 2; bounded Fragment Parsing ist in KP-530/531 umgesetzt und in KP-605 auf `applet`, `marquee` und `object` erweitert | Kontextdokument-eigenes `DocumentFragment` fuer die dokumentierten In-Body-, Table-, Select-, Template- und Text-Modi; SVG/MathML, frameset/frame, `noscript` sowie nicht unterstuetzte Algorithmen scheitern explizit. Keine Script-Bindings oder `innerHTML` | Ausdrueckliche Nutzerwahl „2“; [KP-530](./Kontextprotokoll.md#kp-530---fragment-parsing-umfang-beschlossen), [KP-531](./Kontextprotokoll.md#kp-531---fragment-parsing-committed-und-ci-geprueft), [KP-605](./Kontextprotokoll.md#kp-605---embedded-fragmentkontexte), [HTML fragment parsing](../specs/cache/html.html#parsing-html-fragments) |
+| Q-041 | Welchen Umfang soll die naechste HTML/DOM-Arbeit nach dem Template-Plan haben? | Beantwortet: Nutzer waehlt Option 2; bounded Fragment Parsing ist in KP-530/531 umgesetzt und in KP-605 auf `applet`, `marquee` und `object` erweitert | Urspruenglicher Umfang: Kontextdokument-eigenes `DocumentFragment` fuer die dokumentierten In-Body-, Table-, Select-, Template- und Text-Modi; SVG/MathML, frameset/frame, `noscript` sowie nicht unterstuetzte Algorithmen scheitern explizit. KP-609 erweitert `noscript` um den scripting-disabled Data-Zustand. Keine Script-Bindings oder `innerHTML` | Ausdrueckliche Nutzerwahl „2“; [KP-530](./Kontextprotokoll.md#kp-530---fragment-parsing-umfang-beschlossen), [KP-531](./Kontextprotokoll.md#kp-531---fragment-parsing-committed-und-ci-geprueft), [KP-605](./Kontextprotokoll.md#kp-605---embedded-fragmentkontexte), [KP-609](./Kontextprotokoll.md#kp-609---noscript-fragmentkontext), [HTML fragment parsing](../specs/cache/html.html#parsing-html-fragments) |
 
 Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
 festgehaltene Ausschluss von Top-Level-await ist ersetzt.
