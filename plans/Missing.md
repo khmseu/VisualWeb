@@ -409,7 +409,10 @@ that route with RAWTEXT tokenization; this adds no browsing contexts or
 resource loading. `noscript` starts in table, column-group, table-body and row
 modes use fostered in-body insertion. With scripting disabled, end tags use the
 same path; with scripting enabled, the start enters RAWTEXT and the matching
-end restores the originating table mode.
+end restores the originating table mode. `frame` and `frameset` starts use the
+generic fostered in-body fallback in table, table-body and row modes; this
+does not add browsing contexts, frame loading or rendering. Column-group mode
+closes `colgroup` and reprocesses those tokens in table mode.
 `xmp` starts and unmatched end tags use the same route
 after the in-body paragraph/formatting handling. Block-element starts
 and end tags in those modes use the same path: `div`, `p`,

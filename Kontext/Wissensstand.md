@@ -663,7 +663,7 @@ Environment Prebuilds bestehen. Siehe [HTML/DOM-Guide](../docs/html-dom.md),
 [Engine.Dom README](../src/Engine/Engine.Dom/README.md) und
 [KP-611](./Kontextprotokoll.md#kp-611---nativer-form-owner).
 
-**Aktueller HTML-Pass: `noscript` in Tabellenmodi (2026-11-23; KP-612; lokal validiert, Commit/CI offen):**
+**Vorheriger HTML-Pass: `noscript` in Tabellenmodi (2026-11-23; KP-612; committed, gepusht und CI-geprueft):**
 `noscript`-Starttags in Table-, ColumnGroup-, TableBody- und Row-Modi verwenden
 nun den bestehenden Foster-Parent-/In-Body-Pfad. Bei deaktiviertem Scripting
 nutzen Endtags denselben Pfad und Markup wird normal verarbeitet; bei
@@ -684,9 +684,29 @@ Format- und Diff-Checks bestehen. Die grobe HTML-Schaetzung bleibt
 unveraendert.
 Der erste parallele Volltestlauf meldete vier Browser-Prozessfehler; diese
 traten in den sequenziellen Wiederholungen nicht auf. Implementierungscommit
-steht aus; nach dem Push CI beobachten. Siehe
+`e64ec0d9` ist auf `origin/main`. Linux development (Run
+`45129422198`), Windows confinement (`45129422114`), CodeQL
+(`45129421363`) und Dev Environment Prebuilds (`45129437476`) bestehen.
+Siehe
 [HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md) und
 [KP-612](./Kontextprotokoll.md#kp-612---noscript-in-tabellenmodi).
+
+**Aktueller HTML-Pass: `frame`/`frameset` in Tabellenmodi (2026-11-23; KP-613; lokal validiert, Commit offen):**
+Starttags fuer `frame` und `frameset` in Table-, TableBody- und Row-Modi
+verwenden jetzt das generische foster-parented In-Body-Fallback. ColumnGroup
+schliesst `colgroup` und reprocessiert diese Tags in Table. Das erstellt weder
+Browsing-Kontexte noch Frame-Loads oder Rendering; `frameset` folgt lediglich
+den In-Body-/`frameset-ok`-Regeln. Die Auswahl ist aus den noch explizit
+unsupported Table-Starttags in [Missing.md](../plans/Missing.md) abgeleitet,
+nicht separat bestaetigt. Der lokale HTML-Cache hatte `checkedAt: 2026-11-07`
+und ist frisch. Engine.Html.Tests besteht mit 7.671 Tests in Debug und Release.
+Debug- und Release-Solution-Builds bestehen ohne Warnungen/Fehler; beide
+sequenziellen vollstaendigen Solution-Testlaeufe bestehen mit 17.678 Tests und
+zwei bedingt uebersprungenen Browserfaellen. Formatverifikation und
+`git diff --check` bestehen. Die HTML-Schaetzung bleibt unveraendert. Commit,
+Push und CI stehen aus. Siehe [HTML/DOM-Guide](../docs/html-dom.md),
+[Missing.md](../plans/Missing.md) und
+[KP-613](./Kontextprotokoll.md#kp-613---frameframeset-in-tabellenmodi).
 
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische

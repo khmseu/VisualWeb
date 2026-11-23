@@ -213,6 +213,10 @@ after-after-frameset modes. Supported behavior includes:
   fostered in-body insertion. With scripting disabled, end tags use the same
   path and markup is parsed normally; with scripting enabled, the start enters
   RAWTEXT and the matching end restores the originating table mode.
+  `frame` and `frameset` starts use the generic fostered in-body fallback in
+  table, table-body and row modes; this does not add browsing contexts,
+  frame loading or rendering. Column-group mode closes `colgroup` and
+  reprocesses these starts through table mode.
   `xmp` starts and unmatched end tags use the same path and preserve the
   existing in-body paragraph/formatting handling before entering RAWTEXT.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,

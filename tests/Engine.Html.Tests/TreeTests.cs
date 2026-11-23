@@ -131,6 +131,34 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void FrameStartInTableModeUsesFosteredInBodyRules()
+    {
+        var parsed = Parse("<!doctype html><body><table><frame id=frame><tr><td>cell</td></tr></table>");
+        var body = parsed.Document.Body!;
+        var frame = Assert.IsType<DomElement>(body.FirstChild);
+        var table = Assert.IsType<DomElement>(frame.NextSibling);
+
+        Assert.Equal("frame", frame.LocalName);
+        Assert.Equal("frame", frame.GetAttribute("id"));
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("cell", Assert.Single(table.Descendants().OfType<DomElement>(), element => element.LocalName == "td").TextContent);
+        Assert.Contains(parsed.Errors, error => error.Code == "fostered-frame-start-in-table");
+    }
+
+    [Fact]
+    public void FramesetStartInTableModeUsesFosteredInBodyRules()
+    {
+        var parsed = Parse("<!doctype html><body><table><frameset></frameset><tr><td>cell</td></tr></table>");
+        var table = Assert.IsType<DomElement>(parsed.Document.Body!.FirstChild);
+        var row = Assert.Single(table.Descendants().OfType<DomElement>(), element => element.LocalName == "tr");
+
+        Assert.Equal("cell", row.TextContent);
+        Assert.DoesNotContain(parsed.Document.Descendants().OfType<DomElement>(), element => element.LocalName == "frameset");
+        Assert.Contains(parsed.Errors, error => error.Code == "fostered-frameset-start-in-table");
+        Assert.Contains(parsed.Errors, error => error.Code == "frameset-start-in-body");
+    }
+
+    [Fact]
     public void TemplateContentUsesSeparateOwnerDocumentAndDoesNotEnterDocumentTree()
     {
         var result = Parse("<!doctype html><body><template><p id=inside>content</p></template><p id=outside>body</p>");

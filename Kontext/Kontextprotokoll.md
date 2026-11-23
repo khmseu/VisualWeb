@@ -17934,14 +17934,59 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   `dotnet test VisualWeb.slnx --no-build` meldete vier Fehler im
   Browser-Projekt (Multiprocess-Listbox-Assertion, Resource-Scope-Timeout,
   zwei Renderer-Deadlinefehler); die sequenziellen Debug- und
-  Release-Wiederholungen bestanden ohne diese Fehler. Commit, Push und CI
-  stehen noch aus.
+  Release-Wiederholungen bestanden ohne diese Fehler. Commit `e64ec0d9` ist
+  auf `origin/main`. Linux development (Run `45129422198`), Windows
+  confinement (`45129422114`), CodeQL (`45129421363`) und Dev Environment
+  Prebuilds (`45129437476`) bestehen.
 - Vereinbarung/Provenienz: Die Auswahl ist aus dem Tracker und dem bestehenden
   Parserpfad abgeleitet; eine gesonderte Nutzerentscheidung liegt nicht vor.
 - Quellen: `specs/cache/html.html#parsing-main-intable`,
   `#parsing-main-inbody`, `#parser-scripting-disabled`,
   `src/Engine/Engine.Html/HtmlParser.cs`,
   `tests/Engine.Html.Tests/FragmentTests.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `src/Engine/Engine.Html/README.md`, `docs/standards.md`, `plans/Missing.md`,
+  lokale Validierungsausgaben und aktueller Chat.
+
+### KP-613 - Frame/Frameset-Starts in Tabellenmodi
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Der Nutzer setzt den uebergeordneten WHATWG-HTML/DOM-Auftrag
+  mit „continue“ fort. Eine separate Auswahl dieser Token ist nicht
+  dokumentiert.
+- Auswahlgrundlage: `plans/Missing.md` nennt unimplementierte Table-Start-
+  Algorithmen weiterhin als explizite Luecke. In `HtmlParser.TableToken`
+  waren `frame` und `frameset` besondere Tags, die nicht ueber die generische
+  foster-parented In-Body-Verarbeitung liefen und deshalb am Unsupported-
+  Fehler endeten.
+- Belegt: Der lokale WHATWG-HTML-Cache (`specs/cache/html.html`, Manifest-ID
+  `html`, `checkedAt` 2026-11-07) legt fuer den Anything-else-Fall in In-Table
+  Parse-Error, Foster-Parenting und Verarbeitung nach In-Body fest. Der Cache
+  war am Dokumentationsdatum frisch. ColumnGroup schliesst `colgroup` und
+  reprocessiert nicht-`col`-/nicht-`template`-Starts in Table.
+- Umsetzung: `frame`- und `frameset`-Starttags laufen in Table-, TableBody-
+  und Row-Modi ueber den generischen foster-parented In-Body-Pfad. Der
+  ColumnGroup-Modus schliesst `colgroup` und reprocessiert sie anschliessend
+  in Table. Dadurch folgt `frame` der vorhandenen In-Body-Einsetzung; `frameset`
+  verwendet die vorhandenen `frameset-ok`-Regeln. Es entstehen keine
+  Browsing-Kontexte, Frame-Loads oder Renderpfade.
+- Regressionen: Ein Dokumenttest prueft ein foster-parented statisches
+  `frame`-Element vor der Tabelle sowie eine danach korrekt konstruierte Zeile.
+  Ein zweiter Test prueft, dass ein `frameset`-Start in Table den vorherigen
+  Unsupported-Fehler vermeidet, die bestehenden In-Body-Diagnosen erzeugt und
+  die folgende Tabellenzeile weiter aufgebaut wird.
+- Validierung: Engine.Html.Tests besteht mit 7.671 Tests in Debug und Release.
+  Debug- und Release-Solution-Builds bestehen ohne Warnungen/Fehler. Die
+  sequenziellen vollstaendigen Debug- und Release-Solutiontests bestehen
+  jeweils mit 17.678 Tests und zwei bedingt uebersprungenen Browserfaellen.
+  Formatverifikation und `git diff --check` bestehen. Die HTML-Schaetzung
+  bleibt unveraendert. Commit, Push und CI stehen noch aus.
+- Vereinbarung/Provenienz: Die Auswahl ist aus dem Tracker und dem vorhandenen
+  TableToken-Unsupported-Pfad abgeleitet; eine gesonderte Nutzerentscheidung
+  liegt nicht vor.
+- Quellen: `specs/cache/html.html#parsing-main-intable`,
+  `#parsing-main-incolgroup`, `#parsing-main-inbody`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
   `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
   `src/Engine/Engine.Html/README.md`, `docs/standards.md`, `plans/Missing.md`,
   lokale Validierungsausgaben und aktueller Chat.

@@ -21,6 +21,10 @@ only `textarea` suppresses an initial LF. `noscript` starts in table,
 column-group, table-body and row modes use fostered in-body insertion.
 With scripting disabled, end tags use the same path; with scripting enabled,
 the start enters RAWTEXT and its matching end restores the originating mode.
+`frame` and `frameset` starts use the generic fostered in-body fallback in
+table, table-body and row modes; this does not create browsing contexts or load
+or render frames. Column-group mode closes `colgroup` and reprocesses them in
+table mode.
 Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
