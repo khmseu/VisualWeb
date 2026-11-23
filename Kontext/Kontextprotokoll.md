@@ -17795,3 +17795,49 @@ third_party` und `git diff --check` bestehen.
   `tests/Engine.Html.Tests/FragmentTests.cs`, `docs/html-dom.md`,
   `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
   `Kontext/Wissensstand.md` und lokale Validierungsausgaben.
+
+### KP-610 - Statische Frameset-Dokumente
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Der Nutzer setzt den uebergeordneten WHATWG-HTML/DOM-Auftrag
+  mit „continue“ fort. Eine separate Auswahl des Frameset-Verhaltens ist nicht
+  dokumentiert.
+- Auswahlgrundlage: `plans/Missing.md` fuehrt statische Frameset-Tree-
+  Construction als explizite Luecke; die vorhandene Parser-Guard lehnte
+  `<frameset>` und `<frame>` ab. Der Increment-Umfang wurde auf DOM-
+  Tree-Construction begrenzt; Frame-Navigation, Ressourcen und Rendering
+  bleiben ausserhalb des Browser-Subsystem-Scope.
+- Belegt: Der lokale WHATWG-HTML-Cache (`specs/cache/html.html`, Manifest-ID
+  `html`, `checkedAt` 2026-11-07) beschreibt die Modi after head, in body,
+  in frameset, after frameset und after after frameset sowie die
+  `frameset-ok`-Transitions. Der Cache war am Dokumentationsdatum frisch.
+- Umsetzung: `HtmlParser` baut document-mode Framesets einschliesslich
+  verschachtelter Frames und `noframes`-RAWText; in-body Frameset-Replacement
+  folgt dem `frameset-ok`-Flag und den speziellen Token-Transitions
+  einschliesslich expliziter/impliziter Body- und Button-Starts, Text,
+  Hidden-Input, Tabelle, Listen und weiterer markierter Tags. Nach-Frameset-
+  Modi ignorieren nicht erlaubten Inhalt mit Diagnostik. Frame- und
+  Frameset-Fragmentkontexte bleiben unsupported; es gibt keine Child-
+  Navigables, Requests oder Layout-Unterstuetzung.
+- Regressionen: verschachtelte Frames, Frameset-Attribute/Body-Abwesenheit,
+  Hidden- versus Nicht-Hidden-Input, whitespace- versus Nicht-Whitespace-Text,
+  explizite und wiederholte Body-Starts, Button, ignorierter Inhalt nach dem
+  Frameset, `noframes`-RAWText sowie In-Body-Recovery eines Frame-Tags.
+- Validierung: Engine.Html.Tests 7.664 bestanden; `dotnet build
+VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
+  bestanden. `dotnet test VisualWeb.slnx --no-build` besteht mit 17.660 Tests;
+  zwei bedingte Browser-Prozess-Tests wurden uebersprungen. Implementierung
+  committed als `4738d14f`; Push und neue CI stehen aus. Der beim vorherigen
+  Check offene Prebuild fuer `c2a4f739`
+  (`45099518203`) ist inzwischen erfolgreich.
+- Vereinbarung/Provenienz: Der Nutzerauftrag ist fortlaufend WHATWG-HTML/DOM-
+  Arbeit; der konkrete Frameset-Pass ist eine aus dem Tracker abgeleitete
+  Auswahl, keine separat bestaetigte Nutzeranforderung.
+- Quellen: `specs/cache/html.html#the-after-head-insertion-mode`,
+  `#parsing-main-inbody`, `#frameset-ok-flag`, `#parsing-main-inframeset`,
+  `#parsing-main-afterframeset`,
+  `#the-after-after-frameset-insertion-mode`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `docs/standards.md`, `src/Engine/Engine.Html/README.md`, `plans/Missing.md`,
+  `Kontext/Wissensstand.md`, lokale Validierungsausgaben und aktueller Chat.

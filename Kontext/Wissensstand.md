@@ -45,9 +45,9 @@ Template-Plan ab, nicht die WHATWG-HTML/DOM-Vollkonformitaet. Siehe
 **HTML/DOM-Fragment Parsing (2026-11-20; KP-530/531; committed und gepusht):**
 Der Nutzer waehlte fuer Fragment Parsing alle derzeit unterstuetzten
 Dokument-Kontexte einschliesslich Table-, Select-, Template- und Text-Modi;
-SVG/MathML, `noscript` und `frameset` blieben in diesem ersten Stand explizit
-unsupported; `noscript` wurde spaeter fuer scripting-disabled Fragmentparser in
-KP-609 freigegeben.
+SVG/MathML, `noscript` und frameset/frame-Fragmentkontexte blieben in diesem
+ersten Stand explizit unsupported; `noscript` wurde spaeter fuer
+scripting-disabled Fragmentparser in KP-609 freigegeben.
 Script-Bindings, `innerHTML` und Vollkonformitaet sind nicht Teil dieses
 Inkrements. `HtmlParser.ParseFragment` liefert ein kontextdokument-eigenes
 `DocumentFragment`, setzt die bestehenden begrenzten Einfuegemodi und
@@ -594,7 +594,7 @@ Die HTML-Supporteinschaetzung bleibt unveraendert. Siehe
 [Missing.md](../plans/Missing.md) und
 [KP-608](./Kontextprotokoll.md#kp-608---noscript-dokumentparsing).
 
-**Aktueller HTML-Pass: `noscript`-Fragmentkontext (2026-11-23; KP-609; committed und gepusht):**
+**HTML-Pass: `noscript`-Fragmentkontext (2026-11-23; KP-609; committed und gepusht):**
 `HtmlParser.ParseFragment` akzeptiert nun `noscript` als Kontext. Da die
 Fragment-API keinen scripting-enabled Modus exponiert, bleibt der Tokenizer im
 standardgemaessen Data-Zustand fuer deaktiviertes Scripting; `noscript`-Inhalt
@@ -619,6 +619,29 @@ Der zuvor offene Dev-Environment-Prebuild fuer `a337155a` besteht ebenfalls
 [HTML/DOM-Guide](../docs/html-dom.md),
 [Missing.md](../plans/Missing.md) und
 [KP-609](./Kontextprotokoll.md#kp-609---noscript-fragmentkontext).
+
+**Aktueller HTML-Pass: statische Frameset-Dokumente (2026-11-23; KP-610; validiert, Commit 4738d14f erstellt):**
+Die Dokument-Tree-Construction unterstuetzt nun die Frameset-Modi fuer
+verschachtelte `<frameset>`/`<frame>`-Knoten, `frameset-ok`-Gating,
+`noframes`-RAWTEXT sowie die Modi nach dem Frameset. Frames erzeugen weiterhin
+keine Browsing-Kontexte, laden keine Ressourcen und werden nicht gerendert;
+Frameset-/Frame-Fragmentkontexte bleiben explizit unsupported. Die Auswahl
+dieses konkreten Inkrements folgt dem dokumentierten Parser-Support-Gap in
+[Missing.md](../plans/Missing.md); eine separate Nutzerentscheidung zu genau
+diesem Verhalten ist nicht dokumentiert.
+Der lokale HTML-Standardcache hatte `checkedAt: 2026-11-07` und lag am
+Dokumentationsdatum innerhalb des 30-Tage-Fensters. Engine.Html.Tests besteht
+mit 7.664 Tests, der Solution-Build mit null Warnungen/Fehlern und
+Format-/Diff-Checks bestehen; der finale Solution-Volltest besteht ebenfalls
+mit 17.660 Tests und zwei bedingten Browser-Prozess-Test-Skips.
+Die grobe HTML-Supporteinschaetzung bleibt unveraendert.
+Der zuvor offene Dev-Environment-Prebuild fuer Kontextcommit `c2a4f739`
+(`45099518203`) ist inzwischen erfolgreich abgeschlossen. Commit/Push und
+Commit `4738d14f` enthaelt die Implementierung; Push und CI stehen noch aus.
+Siehe
+[HTML/DOM-Guide](../docs/html-dom.md),
+[Missing.md](../plans/Missing.md) und
+[KP-610](./Kontextprotokoll.md#kp-610---statische-frameset-dokumente).
 
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische
