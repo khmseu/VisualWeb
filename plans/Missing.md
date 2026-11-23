@@ -509,6 +509,11 @@ parser work includes:
   `noscript` and other unsupported contexts fail explicitly. This does not add
   `innerHTML`, script bindings, general table/select algorithms or full fragment
   parsing conformance; unsupported tree-construction algorithms remain deferred.
+- Document `noscript` now follows the parser scripting state: disabled scripting
+  uses the dedicated in-head-noscript mode in the head and ordinary in-body
+  parsing in the body; enabled scripting uses RAWTEXT in either location.
+  `noscript` fragment contexts remain explicitly unsupported, and this does not
+  add full script preparation.
 - Active formatting now retains token attribute snapshots, applies the
   order-independent three-entry Noah's Ark rule, reconstructs entries and
   respects template/caption/cell markers. Formatting end tags implement the

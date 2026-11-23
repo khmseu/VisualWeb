@@ -135,6 +135,17 @@ For an in-body table start, HTML tree construction closes an in-scope
 paragraph only when the document is not in quirks mode; quirks mode preserves
 the paragraph around the table. The overall HTML estimate remains unchanged.
 
+Document `noscript` uses the
+[parser scripting state](../specs/cache/html.html#parser-scripting-disabled).
+Disabled scripting selects the dedicated
+[in-head-noscript mode](../specs/cache/html.html#parsing-main-inheadnoscript)
+in the head and ordinary
+[in-body handling](../specs/cache/html.html#parsing-main-inbody) in the body;
+enabled scripting selects RAWTEXT through the
+[in-head](../specs/cache/html.html#parsing-main-inhead) and in-body rules. This
+does not add full script preparation, and `noscript` fragment contexts remain
+unsupported. The overall HTML estimate remains unchanged.
+
 HTML tree construction includes token-snapshot active formatting, the
 order-independent three-entry Noah's Ark rule, reconstruction and
 template/caption/cell markers, plus the no-furthest-block and bounded

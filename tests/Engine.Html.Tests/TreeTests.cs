@@ -2510,9 +2510,74 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
-    [InlineData("<noscript>x")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Fact]
+    public void NoscriptInBodyParsesMarkupWhenScriptingIsDisabled()
+    {
+        var result = Parse("<!doctype html><body><noscript><p id=fallback>fallback</p></noscript><p id=after>after</p>");
+        var body = result.Document.Body!;
+        var noscript = Assert.IsType<DomElement>(body.FirstChild);
+
+        Assert.Equal("noscript", noscript.LocalName);
+        Assert.Equal("p", Assert.IsType<DomElement>(Assert.Single(noscript.ChildNodes)).LocalName);
+        Assert.Same(noscript, result.Document.GetElementById("fallback")!.ParentNode);
+        Assert.Equal("after", result.Document.GetElementById("after")!.TextContent);
+    }
+
+    [Fact]
+    public void NoscriptAfterHeadUsesInBodyRules()
+    {
+        var result = Parse("<!doctype html><head></head><noscript><p id=fallback>fallback</p></noscript>");
+        var noscript = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+
+        Assert.Equal("noscript", noscript.LocalName);
+        Assert.Equal("p", Assert.IsType<DomElement>(Assert.Single(noscript.ChildNodes)).LocalName);
+        Assert.Same(noscript, result.Document.GetElementById("fallback")!.ParentNode);
+    }
+
+    [Fact]
+    public void NoscriptInHeadUsesInHeadNoscriptRulesWhenScriptingIsDisabled()
+    {
+        var result = Parse("<!doctype html><head><noscript><meta id=m><style id=s>a{}</style></noscript><title id=t>x</title></head>");
+        var head = result.Document.Head!;
+        var noscript = Assert.IsType<DomElement>(head.FirstChild);
+
+        Assert.Equal(new[] { "meta", "style" }, noscript.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("title", Assert.IsType<DomElement>(head.LastChild).LocalName);
+        Assert.Equal("a{}", result.Document.GetElementById("s")!.TextContent);
+    }
+
+    [Fact]
+    public void NoscriptHeadFallbackExitsAndReprocessesTheToken()
+    {
+        var result = Parse("<!doctype html><head><noscript><div id=fallback>content</div></noscript></head>");
+        var noscript = Assert.IsType<DomElement>(result.Document.Head!.FirstChild);
+
+        Assert.Empty(noscript.ChildNodes);
+        Assert.Equal("content", result.Document.GetElementById("fallback")!.TextContent);
+        Assert.Same(result.Document.Body, result.Document.GetElementById("fallback")!.ParentNode);
+    }
+
+    [Fact]
+    public void NoscriptUsesRawTextWhenScriptingIsEnabled()
+    {
+        var result = HtmlParser.Parse(
+            "<!doctype html><head><noscript><p>head fallback</p></noscript></head>"
+            + "<body><noscript><p id=literal>body fallback</p></noscript><p id=after>after</p>",
+            options: null,
+            cancellationToken: TestContext.Current.CancellationToken,
+            document: new DomDocument(),
+            scriptCompleted: _ => { });
+        var headNoscript = Assert.IsType<DomElement>(result.Document.Head!.FirstChild);
+        var bodyNoscript = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+
+        Assert.Equal("<p>head fallback</p>", headNoscript.TextContent);
+        Assert.Equal("<p id=literal>body fallback</p>", bodyNoscript.TextContent);
+        Assert.Null(result.Document.GetElementById("literal"));
+        Assert.Equal("p", Assert.IsType<DomElement>(bodyNoscript.NextSibling).LocalName);
+    }
 
     [Theory]
     [InlineData("a")]

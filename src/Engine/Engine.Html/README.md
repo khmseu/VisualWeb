@@ -25,6 +25,10 @@ and `label` start/end foster parenting in table/column-group/table-body/row
 modes, `plaintext` starts and unmatched end tags in those modes, root-attribute merging for in-table
 `html` starts, body/head starts and unmatched head ends in table, table-body
 and row modes, and template start/end processing in those modes.
+Document `noscript` uses the parser scripting state: disabled scripting selects
+the in-head-noscript insertion mode in head and ordinary in-body parsing in
+body, while enabled scripting selects RAWTEXT in head and body. This does not
+add fragment contexts or full script preparation.
 `applet`/`marquee`/`object` start/end tags use bounded in-body handling with
 active-formatting markers, including fostered processing in table,
 table-body and row modes. Plugin behavior and external resources remain
@@ -113,8 +117,9 @@ behavior. Fragment text contexts have no appropriate end tag, so their
 tokenizer state consumes matching-looking markup as text through the end of
 input. Fragment content uses
 the configured input, node, depth, error and cancellation limits.
-Unsupported contexts (including SVG, MathML, `noscript` and `frameset`) fail
-explicitly; unsupported tree-construction algorithms remain unsupported.
+Unsupported fragment contexts (including SVG, MathML, `noscript` and
+`frameset`) fail explicitly; unsupported tree-construction algorithms remain
+unsupported.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.

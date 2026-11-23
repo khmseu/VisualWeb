@@ -6,6 +6,7 @@ namespace VisualWeb.Engine.Html;
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
 /// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode">doctype mode selection</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inheadnoscript">in head noscript</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody">in body</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intabletext">in table text</see>,
@@ -28,7 +29,8 @@ namespace VisualWeb.Engine.Html;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported; bounded table insertion modes apply within template
 /// content, including template EOF recovery;
-/// other foster-parenting cases, nested tables in captions, nested selects, unsupported fragment contexts, scripting,
+/// other foster-parenting cases, nested tables in captions, nested selects, unsupported fragment contexts,
+/// full script preparation,
 /// and adoption-agency reparenting requiring table foster parenting are unsupported.</remarks>
 public static class HtmlParser
 {
@@ -50,6 +52,12 @@ public static class HtmlParser
         return new Builder(input, options ?? new(), cancellationToken, fragmentContext: contextElement).RunFragment();
     }
 
+    /// <summary>Parses into an empty document and optionally completes parser scripts as they close.</summary>
+    /// <remarks>
+    /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#parser-scripting-disabled">parser scripting state</see>.
+    /// The callback's presence also sets the parser scripting state used by
+    /// <c>noscript</c> handling.
+    /// </remarks>
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options, CancellationToken cancellationToken,
         DomDocument document, Action<DomElement>? scriptCompleted)
     {
@@ -60,7 +68,7 @@ public static class HtmlParser
 
     private enum Mode
     {
-        Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text,
+        Initial, BeforeHtml, BeforeHead, InHead, InHeadNoscript, AfterHead, InBody, Text,
         InTable, InTableText, InCaption, InColumnGroup, InTableBody, InRow, InCell, InTemplate, AfterBody, AfterAfterBody
     }
 
@@ -370,6 +378,15 @@ public static class HtmlParser
                                 case "script": StartText(headStart, HtmlTextMode.ScriptData); return;
                                 case "template": StartTemplate(headStart); return;
                                 case "head": Error("unexpected-head-start-tag"); return;
+                                case "noscript":
+                                    if (scriptCompleted is not null) { StartText(headStart, HtmlTextMode.Rawtext); }
+                                    else
+                                    {
+                                        Insert(headStart);
+                                        mode = Mode.InHeadNoscript;
+                                    }
+
+                                    return;
                             }
                         }
 
@@ -493,6 +510,9 @@ public static class HtmlParser
                         Error("content-after-html");
                         mode = Mode.InBody;
                         continue;
+                    case Mode.InHeadNoscript:
+                        InHeadNoscriptToken(token);
+                        return;
                     case Mode.InBody:
                         BodyToken(token);
                         return;
@@ -522,6 +542,63 @@ public static class HtmlParser
                         return;
                 }
             }
+        }
+
+        private void InHeadNoscriptToken(HtmlToken token)
+        {
+            if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
+            if (Miscellaneous(token, Current)) { return; }
+            if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "html" })
+            {
+                BodyToken(token);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "noscript" })
+            {
+                open.RemoveAt(open.Count - 1);
+                mode = Mode.InHead;
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false } headNoscriptTag
+                && headNoscriptTag.Name is "basefont" or "bgsound" or "link" or "meta" or "noframes" or "style")
+            {
+                mode = Mode.InHead;
+                Process(token);
+                if (mode == Mode.InHead) { mode = Mode.InHeadNoscript; }
+                else if (mode == Mode.Text) { originalMode = Mode.InHeadNoscript; }
+
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "br" })
+            {
+                Error("unexpected-br-end-tag-in-head-noscript");
+                open.RemoveAt(open.Count - 1);
+                mode = Mode.InHead;
+                Process(token);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false } invalidHeadStart
+                && invalidHeadStart.Name is "head" or "noscript")
+            {
+                Error("unexpected-tag-in-head-noscript");
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true })
+            {
+                Error("unexpected-end-tag-in-head-noscript");
+                return;
+            }
+
+            Error("unexpected-token-in-head-noscript");
+            open.RemoveAt(open.Count - 1);
+            mode = Mode.InHead;
+            Process(token);
         }
 
         private void BodyToken(HtmlToken token, bool fromSelectContext = false)
@@ -588,6 +665,9 @@ public static class HtmlParser
                     case "title": StartText(tag, HtmlTextMode.Rcdata); return;
                     case "style" or "noframes": StartText(tag, HtmlTextMode.Rawtext); return;
                     case "script": StartText(tag, HtmlTextMode.ScriptData); return;
+                    case "noscript":
+                        if (scriptCompleted is not null) { StartText(tag, HtmlTextMode.Rawtext); return; }
+                        break;
                     case "template": StartTemplate(tag); return;
                     case "textarea": StartTextarea(tag); return;
                     case "xmp":
@@ -2167,7 +2247,7 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "svg", "math", "frameset", "frame", "noscript"
+        "svg", "math", "frameset", "frame"
     };
     private static readonly HashSet<string> UnsupportedFragmentContexts = new(StringComparer.Ordinal)
     {
@@ -2210,7 +2290,7 @@ public static class HtmlParser
         "search", "section", "summary", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "listing"
     };
     private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(["applet", "marquee", "object"]).Concat(TableTags)
-        .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script",
+        .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script", "noscript",
             "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "template"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)
     {

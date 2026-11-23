@@ -62,8 +62,8 @@ browser/parser versions.
 ## Static document tree subset
 
 [HtmlParser](../src/Engine/Engine.Html/HtmlParser.cs) implements initial,
-before-html, before-head, in-head, after-head, in-body, text, after-body and
-after-after-body modes. Supported behavior includes:
+before-html, before-head, in-head, in-head-noscript, after-head, in-body,
+text, after-body and after-after-body modes. Supported behavior includes:
 
 - Explicit or implied html/head/body; first-value root/body attribute merging.
 - HTML5/legacy-compat and legacy public/system doctypes, preserving identifiers
@@ -73,6 +73,11 @@ after-after-body modes. Supported behavior includes:
   `invalid-doctype` instead of aborting. DTD identifiers never cause fetching.
 - Comments/processing instructions at the appropriate document/tree locations.
 - Head metadata and title/style/script text; misplaced head content restoration.
+  Document `noscript` follows the parser scripting state: with scripting
+  disabled, head content uses the dedicated in-head-noscript rules and body
+  content uses ordinary in-body parsing; with scripting enabled, head and body
+  `noscript` content uses RAWTEXT. This does not broaden fragment support or
+  script preparation.
 - Ordinary HTML body elements, headings, paragraphs, block starts and scoped
   end tags. The active-formatting list retains token attribute snapshots,
   applies the three-equivalent-entry Noah's Ark rule (attribute order
@@ -283,10 +288,11 @@ table/select algorithms remain explicitly unsupported. The
 following additionally throw explicitly: SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
-handling; foreign content; framesets/frames; noscript; plugin and embedded
-resource behavior. Fragment contexts outside the supported parser subset are
-rejected. The adoption agency remains a bounded subset, not full HTML tree-construction
-conformance; this recovery does not implement full anchor semantics.
+handling; foreign content; framesets/frames; `noscript` fragment contexts;
+plugin and embedded resource behavior. Fragment contexts outside the supported
+parser subset are rejected. The adoption agency remains a bounded subset, not
+full HTML tree-construction conformance; this recovery does not implement full
+anchor semantics.
 
 Doctype classification follows the cached
 [initial insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode)
