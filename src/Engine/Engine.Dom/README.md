@@ -20,8 +20,10 @@ set of contexts; it is not full HTML fragment parsing.
 Child/attribute collections have read-only public views. Attribute names and
 HTML node names fold ASCII only. Text content, sibling links, connection status,
 ID lookup, HTML document title and explicit adoption are available.
-`DomFormControls` normalizes only the `input` and `button` type keywords; there
-is no form state, form-owner, value or constraint-validation API. DOM factory validation is
+`DomFormControls` normalizes the `input` and `button` type keywords and computes
+the current owner of built-in listed form-associated elements from the tree.
+Parser-inserted form-owner state, custom elements, form state, value and
+constraint-validation APIs remain unsupported. DOM factory validation is
 distinct from the internal HTML parser's recovered attribute path.
 Checked ToggleAttribute supports optional forced presence without replacing
 existing values. Ordered storage preserves replacement position and appends

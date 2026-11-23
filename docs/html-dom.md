@@ -281,13 +281,18 @@ an open form from the stack while leaving the form pointer set; new form starts
 remain ignored until a later form end clears the pointer. Adoption-agency cases
 that would remove the pointed-to form remain unsupported. `input` stays a void
 element and `button` an ordinary element, so control text never renders as raw
-markup. The parser does not expose a form-owner API; the browser's
-bounded form ownership is described in the [shell guide](browser-shell.md).
+markup. The native DOM exposes `DomFormControls.FormOwner` for built-in listed
+form-associated elements. It recomputes ownership from the current tree: a
+connected element with a `form` attribute uses only the first matching ID in
+tree order, and has no owner if that element is absent or not a form. Otherwise,
+the nearest ancestor form is used. Parser-inserted associations and
+form-associated custom elements remain unsupported. The browser's bounded form
+ownership is described in the [shell guide](browser-shell.md).
 Inside template contents, including template-context
 fragment parsing, form starts ignore and do not change the outer form pointer;
 in-body starts still close a `p`, and in-scope form ends close the innermost
 form after implied end tags. In-table starts are inserted and popped without
-changing the pointer. This adds no form-control ownership or script APIs.
+changing the pointer. This adds no form state or script-facing form APIs.
 
 Unimplemented start tags that require table foster parenting throw explicitly,
 as do unsupported table tags outside the contexts covered above. Other end tags
@@ -310,10 +315,12 @@ replace the original doctype or mode. This document-only parser does not expose
 srcdoc/parser-mode-lock flags. Mode selection does not add legacy CSS sizing,
 table/image-baseline quirks or other unsupported rendering algorithms.
 
-`DomFormControls` exposes only `input type` and `button type` keyword
-normalization. Apart from the bounded native template element described below,
-there are no specialized HTML element classes, custom-element reactions,
-DOM form state, form-associated custom elements, constraint-validation APIs, stylesheet application, navigation or V8 integration.
+`DomFormControls` exposes `input type`/`button type` keyword normalization and
+the bounded native form-owner query described above. Apart from the bounded
+native template element described below, there are no specialized HTML element
+classes, custom-element reactions, DOM form state, form-associated custom
+elements, constraint-validation APIs, stylesheet application, navigation or
+V8 integration.
 Well-formed unsupported tags are still unsupported; this is a finite static
 subset, not general browser HTML tree-construction conformance.
 Native DOM creation of a template element is supported independently: it has a

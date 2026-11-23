@@ -456,8 +456,10 @@ other unsupported table algorithms and broader template behavior remain
 unsupported.
 Forms in template contents and template-context fragments ignore and preserve
 the outer form pointer; in-body form ends close in-scope forms and in-table
-form starts insert and pop without setting the pointer. Form-control ownership
-APIs in the DOM and script-facing form APIs remain missing.
+form starts insert and pop without setting the pointer. `DomFormControls`
+provides a computed form-owner query for the built-in listed form-associated
+elements using current tree/attribute state; parser-inserted associations,
+form-associated custom elements and script-facing form APIs remain missing.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells and captions remain
 descendants and restore the enclosing insertion mode when closed. This also
@@ -567,7 +569,8 @@ The solution build and all 14,308 tests pass locally. Formatting reports only
 the three previously documented baseline findings.
 
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
-script-visible form state and APIs, custom-element reactions, and other browser
+script-visible form state and APIs, parser-inserted form-owner state,
+form-associated custom elements, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
 Parser template construction remains a narrow static subset: table/select
 algorithms beyond the documented bounded combinations, foreign content,
