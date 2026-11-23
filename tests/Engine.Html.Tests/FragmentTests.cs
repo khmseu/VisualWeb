@@ -380,10 +380,25 @@ public sealed class FragmentTests
         Assert.DoesNotContain(result.Errors, error => error.Code is "nested-form" or "unexpected-form-end-tag");
     }
 
+    [Fact]
+    public void ParseFragment_noscriptContextUsesDisabledScriptingDataState()
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement("noscript");
+
+        var result = HtmlParser.ParseFragment("<p>fallback <b>markup</b></p>", context,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var paragraph = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("fallback markup", paragraph.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Empty(result.Errors);
+    }
+
     [Theory]
     [InlineData("svg")]
     [InlineData("math")]
-    [InlineData("noscript")]
     [InlineData("frameset")]
     public void ParseFragmentUnsupportedContextFailsExplicitly(string contextName)
     {

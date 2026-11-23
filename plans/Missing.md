@@ -502,18 +502,20 @@ parser work includes:
   `DocumentFragment` for existing in-body, table, select and template insertion
   modes plus the `html` context's before-head mode, and initializes RCDATA,
   RAWTEXT, ScriptData and PLAINTEXT states from supported text contexts without
-  an appropriate end tag; it also seeds the
-  bounded form pointer from the context ancestry. The synthetic parser root is
-  omitted from the result; fragment nodes honor parser limits and cancellation.
-  SVG/MathML, frameset/frame,
-  `noscript` and other unsupported contexts fail explicitly. This does not add
-  `innerHTML`, script bindings, general table/select algorithms or full fragment
-  parsing conformance; unsupported tree-construction algorithms remain deferred.
+  an appropriate end tag. `noscript` contexts use the scripting-disabled Data
+  state; the API does not expose a scripting-enabled fragment mode. It also
+  seeds the bounded form pointer from the context ancestry. The synthetic parser
+  root is omitted from the result; fragment nodes honor parser limits and cancellation.
+  SVG/MathML, frameset/frame and other unsupported contexts fail explicitly.
+  This does not add `innerHTML`, script bindings, general table/select
+  algorithms or full fragment parsing conformance; unsupported tree-construction
+  algorithms remain deferred.
 - Document `noscript` now follows the parser scripting state: disabled scripting
   uses the dedicated in-head-noscript mode in the head and ordinary in-body
   parsing in the body; enabled scripting uses RAWTEXT in either location.
-  `noscript` fragment contexts remain explicitly unsupported, and this does not
-  add full script preparation.
+  Fragment contexts now follow the fragment algorithm's scripting-disabled
+  Data-state behavior; the API does not expose a scripting-enabled fragment
+  mode. This does not add full script preparation.
 - Active formatting now retains token attribute snapshots, applies the
   order-independent three-entry Noah's Ark rule, reconstructs entries and
   respects template/caption/cell markers. Formatting end tags implement the

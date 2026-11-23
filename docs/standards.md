@@ -143,8 +143,11 @@ in the head and ordinary
 [in-body handling](../specs/cache/html.html#parsing-main-inbody) in the body;
 enabled scripting selects RAWTEXT through the
 [in-head](../specs/cache/html.html#parsing-main-inhead) and in-body rules. This
-does not add full script preparation, and `noscript` fragment contexts remain
-unsupported. The overall HTML estimate remains unchanged.
+does not add full script preparation. `noscript` fragment contexts use the
+fragment algorithm's scripting-disabled Data state; the API does not expose
+scripting-enabled fragment parsing. See the
+[HTML fragment parsing algorithm](../specs/cache/html.html#parsing-html-fragments).
+The overall HTML estimate remains unchanged.
 
 HTML tree construction includes token-snapshot active formatting, the
 order-independent three-entry Noah's Ark rule, reconstruction and

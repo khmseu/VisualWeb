@@ -28,7 +28,7 @@ and row modes, and template start/end processing in those modes.
 Document `noscript` uses the parser scripting state: disabled scripting selects
 the in-head-noscript insertion mode in head and ordinary in-body parsing in
 body, while enabled scripting selects RAWTEXT in head and body. This does not
-add fragment contexts or full script preparation.
+add full script preparation.
 `applet`/`marquee`/`object` start/end tags use bounded in-body handling with
 active-formatting markers, including fostered processing in table,
 table-body and row modes. Plugin behavior and external resources remain
@@ -113,12 +113,14 @@ unsupported.
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,
 template, `html`-context before-head, RCDATA, RAWTEXT, ScriptData or PLAINTEXT
-behavior. Fragment text contexts have no appropriate end tag, so their
+behavior. `noscript` contexts use the fragment algorithm's scripting-disabled
+Data state; this API does not expose a scripting-enabled fragment mode.
+Fragment text contexts have no appropriate end tag, so their
 tokenizer state consumes matching-looking markup as text through the end of
 input. Fragment content uses
 the configured input, node, depth, error and cancellation limits.
-Unsupported fragment contexts (including SVG, MathML, `noscript` and
-`frameset`) fail explicitly; unsupported tree-construction algorithms remain
+Unsupported fragment contexts (including SVG, MathML and `frameset`) fail
+explicitly; unsupported tree-construction algorithms remain
 unsupported.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.

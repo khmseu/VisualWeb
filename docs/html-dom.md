@@ -76,8 +76,9 @@ text, after-body and after-after-body modes. Supported behavior includes:
   Document `noscript` follows the parser scripting state: with scripting
   disabled, head content uses the dedicated in-head-noscript rules and body
   content uses ordinary in-body parsing; with scripting enabled, head and body
-  `noscript` content uses RAWTEXT. This does not broaden fragment support or
-  script preparation.
+  `noscript` content uses RAWTEXT. `noscript` fragment contexts use the
+  scripting-disabled Data state because the fragment API does not expose a
+  scripting-enabled mode. This does not add script preparation.
 - Ordinary HTML body elements, headings, paragraphs, block starts and scoped
   end tags. The active-formatting list retains token attribute snapshots,
   applies the three-equivalent-entry Noah's Ark rule (attribute order
@@ -121,12 +122,14 @@ text, after-body and after-after-body modes. Supported behavior includes:
   It selects the bounded insertion mode for supported in-body, table, select and
   template contexts plus the `html` context's before-head mode, and starts
   RCDATA, RAWTEXT, ScriptData or PLAINTEXT tokenization where applicable.
+  `noscript` contexts use the fragment algorithm's scripting-disabled Data
+  state; this API does not expose a scripting-enabled fragment mode.
   Text-mode fragments have no appropriate end tag, so matching-looking markup
   remains text through EOF. Synthetic parser-root
   nodes are not returned; the bounded form pointer comes from the context's
   ancestor chain, and fragment nodes are covered by parser limits and
-  cancellation. SVG, MathML,
-  frameset/frame, `noscript` and other unsupported contexts fail explicitly.
+  cancellation. SVG, MathML, frameset/frame and other unsupported contexts
+  fail explicitly.
 - List-item and definition-list implied closures, pre/listing/textarea first-LF
   handling, void elements (including `<wbr>`) and ignored self-closing flags on
   non-void HTML. Layout interprets `<wbr>` as an optional line-break opportunity
@@ -288,7 +291,7 @@ table/select algorithms remain explicitly unsupported. The
 following additionally throw explicitly: SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
-handling; foreign content; framesets/frames; `noscript` fragment contexts;
+handling; foreign content; framesets/frames;
 plugin and embedded resource behavior. Fragment contexts outside the supported
 parser subset are rejected. The adoption agency remains a bounded subset, not
 full HTML tree-construction conformance; this recovery does not implement full
