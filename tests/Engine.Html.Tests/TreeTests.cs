@@ -9,6 +9,79 @@ public sealed class TreeTests
     private static HtmlParseResult Parse(string input, HtmlParserOptions? options = null) =>
         HtmlParser.Parse(input, options, TestContext.Current.CancellationToken);
 
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void InBodyTableStructureStartsAreIgnoredWithoutDisruptingContent(string tag)
+    {
+        var result = Parse($"<!doctype html><body><p>before<{tag} id=ignored/>after<span>later</span></p>"
+            + "<table><caption>title</caption><colgroup><col></colgroup><thead><tr><th>head</th></tr></thead>"
+            + "<tbody><tr><td>cell</td></tr></tbody><tfoot><tr><td>foot</td></tr></tfoot></table>");
+
+        var body = result.Document.Body!;
+        var paragraph = Assert.IsType<DomElement>(body.FirstChild);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("beforeafterlater", paragraph.TextContent);
+        Assert.Equal("span", Assert.IsType<DomElement>(paragraph.LastChild).LocalName);
+        Assert.Null(result.Document.GetElementById("ignored"));
+        var table = Assert.IsType<DomElement>(body.LastChild);
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal(["caption", "colgroup", "thead", "tbody", "tfoot"],
+            table.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("titleheadcellfoot", table.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-table-structure-start-tag-in-body");
+        Assert.Single(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void InBodyUnmatchedTableStructureEndsAreIgnoredWithoutDisruptingContent(string tag)
+    {
+        var result = Parse($"<!doctype html><body><p>before</{tag}>after<span>later</span></p>"
+            + "<table><tr><td>cell</td></tr></table>");
+
+        var body = result.Document.Body!;
+        var paragraph = Assert.IsType<DomElement>(body.FirstChild);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("beforeafterlater", paragraph.TextContent);
+        Assert.Equal("span", Assert.IsType<DomElement>(paragraph.LastChild).LocalName);
+        var table = Assert.IsType<DomElement>(body.LastChild);
+        Assert.Equal("table", table.LocalName);
+        var section = Assert.IsType<DomElement>(table.FirstChild);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        var cell = Assert.IsType<DomElement>(row.FirstChild);
+        Assert.Equal("tbody", section.LocalName);
+        Assert.Equal("tr", row.LocalName);
+        Assert.Equal("td", cell.LocalName);
+        Assert.Equal("cell", cell.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.Single(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("<!doctype html><head><td>")]
+    [InlineData("<!doctype html><head></td>")]
+    [InlineData("<!doctype html><body><select><td>")]
+    [InlineData("<!doctype html><body><select></td>")]
+    [InlineData("<!doctype html><frameset></td>")]
+    public void TableStructureTagsInOtherUnsupportedContextsStillFail(string input) =>
+        Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
     [Fact]
     public void LegacyPreElementsRetainTheirDistinctParsingModes()
     {

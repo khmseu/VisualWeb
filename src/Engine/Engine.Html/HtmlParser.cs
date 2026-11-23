@@ -286,6 +286,7 @@ public static class HtmlParser
 
                 if (token is HtmlTag tableTag && TableTags.Contains(tableTag.Name)
                     && !IsTableMode(mode) && mode != Mode.InTemplate
+                    && !(mode == Mode.InBody && !IsSelectContextActive)
                     && !(tableTag.Name == "table"
                         && mode is Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.AfterHead or Mode.InBody))
                 {
@@ -881,6 +882,10 @@ public static class HtmlParser
                         Insert(tag);
                         framesetOk = false;
                         mode = Mode.InTable;
+                        return;
+                    case "caption" or "col" or "colgroup" or "tbody" or "thead" or "tfoot" or "tr" or "td" or "th":
+                        // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody.
+                        Error("unexpected-table-structure-start-tag-in-body");
                         return;
                     case "frameset":
                         Error("frameset-start-in-body");

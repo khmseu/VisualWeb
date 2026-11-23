@@ -18183,3 +18183,71 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   ein Conventional-Commit-Vorschlag in
   [Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-1-complete.md)
   festgehalten. Phase 2 hat noch nicht begonnen.
+
+### KP-619 - Phase-1-Commit und Phase-2-Parserarbeit
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Die zu Phase 1
+  gehoerenden sieben staged Dokumentationsdateien wurden als `17f78884`
+  (`docs(html-dom): rank common support gaps`) committed; der Pre-Commit-Hook
+  formatierte die geaenderten Markdown-Dateien und meldete keine Probleme.
+- Belegt: Phase 2 implementiert die HTML-In-Body-Regeln fuer Starttags
+  `caption`, `col`, `colgroup`, `tbody`, `thead`, `tfoot`, `tr`, `td` und
+  `th`: Parse-Fehler, ignorieren, danachfolgenden Inhalt erhalten. Nicht
+  zugeordnete Endtags derselben Gruppe folgen der vorhandenen generischen
+  In-Body-Recovery. Dokument- und Body-Fragmenttests sichern dies; normale
+  Tabellen und explizite Fehler in anderen Modi werden mitgeprueft.
+- Belegt: Der Code-Review genehmigte die Aenderung nach statischer Pruefung.
+  Implementierungsagent meldete rot/gruen fuer 18 neue Faelle; fokussierte
+  HTML-Tests, Engine.Html.Tests, Solution-Build und Formatpruefung waren
+  erfolgreich. Ein voller Solution-Testlauf wurde vor Abschluss von
+  Browser.Tests beendet; die unabhaengige Vollvalidierung steht aus.
+- Ableitung aus dem Nutzerwunsch, keine separate ausdrueckliche Einzelwahl:
+  Basic foreign-content parsing wird nicht parser-only approximiert.
+  `DomElement.NamespaceUri` ist fest HTML, und Attribute haben keine
+  Namespace-Identitaet; HTML foreign-content benoetigt zusaetzlich
+  angepasste Namen/Attribute und Einfuege-/Breakout-Regeln. Der Roadmap-Schritt
+  verlangt nun erneute Kostenpruefung und ordnet die korrekte Erweiterung
+  HDF-005 zu, passend zur Vorgabe, kostenguenstige Nachbarfeatures aufzunehmen
+  und den Rest nachvollziehbar zu vertagen. SVG/MathML bleiben explizit
+  unsupported; Prozentschaetzungen bleiben gleich.
+- Dateien: Parser, Engine.Html-Tests, HTML/DOM-Guide, Engine.Html README,
+  Standards-Supportinventar, Roadmap und Deferred-Register.
+- Status: Phase-1-Commit erfolgt. Phase-2-Inkrement lokal implementiert und
+  reviewed; Source-/Dokumentationsaenderungen noch uncommitted. Vollvalidierung
+  und Commit-Rueckgabe stehen aus.
+- Quellen: aktueller Chat; [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [Deferred-Register](../plans/html-dom-deferred.md), [HTML-Standard: in-body
+  parsing](../specs/cache/html.html#parsing-main-inbody),
+  [DomElement](../src/Engine/Engine.Dom/DomElement.cs),
+  [Tests](../tests/Engine.Html.Tests/TreeTests.cs).
+
+### KP-620 - Phase 2 abgeschlossen und vollvalidiert
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Belegt: Die Parser-Recovery umfasst jetzt sowohl ignorierte In-Body-
+  Tabellenstruktur-Starts als auch nicht zugeordnete Endtags fuer `caption`,
+  `col`, `colgroup`, `tbody`, `thead`, `tfoot`, `tr`, `td` und `th`.
+  Dokument- und Body-Fragmenttests pruefen Fortsetzung nach den Tokens;
+  weitere Tests sichern gueltige Tabellen und explizite Fehler in
+  Select-/anderen Modi.
+- Belegt: Die finale Code-Pruefung ist nach Korrektur des HDF-011-Verweises
+  genehmigt. `dotnet build VisualWeb.slnx` bestand ohne Warnungen/Fehler;
+  `dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj` bestand mit
+  7.713 Tests; `dotnet test VisualWeb.slnx --no-build` bestand fuer alle
+  Projekte, darunter 1.396 Browser-Tests mit zwei uebersprungenen
+  plattformgebundenen Faellen; Formatverifikation und `git diff --check`
+  bestanden ebenfalls.
+- Belegt: Phase 2 dokumentiert die Kostenentscheidung fuer HDF-005 und
+  aktualisiert HTML/DOM-Guide, Engine.Html README, Standardsinventar und
+  Roadmap. Die ungeaenderte ~20%-Schaetzung ist keine Messung der neuen
+  Einzelregel und keine Konformitaetsaussage.
+- Dateien: Parser/Tests, zugehoerige Guides und Standardsinventar,
+  Phase-2-Roadmapstatus/Deferred-Register, Abschlussbericht und Kontext.
+- Review: APPROVED nach Aenderung des HDF-011-Verweises, damit die
+  SVG/MathML-Vertagung unter HDF-005 eindeutig bleibt.
+- Status: Phase 2 abgeschlossen, aber alle Phase-2-Aenderungen sind noch
+  uncommitted. Conventional-Commit-Vorschlag steht im
+  [Phase-2-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md).
+- Quelle: aktueller Chat; Build-, Test-, Format- und Review-Ausgaben; [Phase-2-
+  Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md).

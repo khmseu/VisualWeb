@@ -49,6 +49,8 @@ remain unsupported.
 Other end tags not handled by table-specific rules use the generic fostered
 in-body fallback in table, table-body and row modes; unsupported table starts
 remain explicit failures.
+In ordinary in-body parsing, `caption`, `col`, `colgroup`, `tbody`, `thead`,
+`tfoot`, `tr`, `td` and `th` starts report a parse error and are ignored.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

@@ -302,6 +302,8 @@ in-body starts still close a `p`, and in-scope form ends close the innermost
 form after implied end tags. In-table starts are inserted and popped without
 changing the pointer. This adds no form state or script-facing form APIs.
 
+In ordinary in-body parsing, `caption`, `col`, `colgroup`, `tbody`, `thead`,
+`tfoot`, `tr`, `td` and `th` start tags report a parse error and are ignored.
 Unimplemented start tags that require table foster parenting throw explicitly,
 as do unsupported table tags outside the contexts covered above. Other end tags
 follow the table-mode fostered in-body fallback. Template content

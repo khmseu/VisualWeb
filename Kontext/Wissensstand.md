@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-23; KP-614 bis KP-618; Phase 1 abgeschlossen, Commit offen):**
+**HTML/DOM-Abschlussplanung (2026-11-23; KP-614 bis KP-620; Phase 1 und 2 abgeschlossen, Phase-2-Commit offen):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -38,14 +38,26 @@ Code-/Testhinweise festgehalten. Der Register bleibt verfeinerbar und nicht
 telemetriegestuetzt. [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md)
 und [Deferred-Register](../plans/html-dom-deferred.md) sind im
 [Missing-Tracker](../plans/Missing.md#4-general-html-and-dom-compatibility)
-und [HTML/DOM-Guide](../docs/html-dom.md) verlinkt. Die Phase-1-Dokumentation
-ist lokal erstellt und selbst geprueft; `git diff --check` besteht. Keine
-Implementierung oder Aenderung der genehmigten Browser-Roadmap. Phase-1-
-Commit steht aus; die folgenden Implementierungsphasen haben nicht begonnen.
-Siehe
+und [HTML/DOM-Guide](../docs/html-dom.md) verlinkt. Phase 1 wurde als
+`17f78884` (`docs(html-dom): rank common support gaps`) committed.
+Phase 2 implementiert, dass In-Body-Dokumente und Body-Fragmente
+Tabellenstruktur-Starttags `caption`, `col`, `colgroup`, `tbody`, `thead`,
+`tfoot`, `tr`, `td` und `th` mit Parse-Fehler ignorieren; nicht zugeordnete
+Struktur-Endtags laufen durch generische In-Body-Recovery. Andere Modi bleiben
+explizit begrenzt. Tests und Review sind erfolgt; Solution-Build,
+Engine.Html.Tests, gesamte Solution-Test-Suite und Formatverifikation bestehen.
+Der Phase-2-Commit steht noch aus.
+Die Priorisierung wurde nach Codeeinsicht verfeinert: Foreign-Content erfordert
+namespace-erhaltende DOM-Elemente/-Attribute und Tree-Construction-Regeln; da
+`DomElement.NamespaceUri` auf HTML festgelegt ist, wird der Parserumfang nicht
+approximiert und HDF-005 im Deferred-Register geparkt. Dies ist eine aus der
+Nutzerprioritaet "guenstig ergaenzen, Rest verschieben" abgeleitete
+Aufwandsentscheidung, keine separate Telemetrie- oder Konformitaetsaussage.
+Der Support-Prozentsatz bleibt unveraendert. Siehe
+[Phase-2-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md),
 [KP-615](./Kontextprotokoll.md#kp-615---nutzerpriorisiert-haeufige-html-dom-features),
 [KP-617](./Kontextprotokoll.md#kp-617---priorisierter-html-dom-plan-genehmigt)
-und [KP-618](./Kontextprotokoll.md#kp-618---phase-1-inventar-abgeschlossen).
+bis [KP-620](./Kontextprotokoll.md#kp-620---phase-2-abgeschlossen-und-vollvalidiert).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

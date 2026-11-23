@@ -6,6 +6,84 @@ namespace VisualWeb.Engine.Html.Tests;
 public sealed class FragmentTests
 {
     [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void BodyContextIgnoresTableStructureStartsAndKeepsFollowingContent(string tag)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment($"<p>before<{tag} id=ignored>after<span>later</span></p>"
+            + "<table><tr><td>cell</td></tr></table>",
+            document.CreateElement("body"), cancellationToken: TestContext.Current.CancellationToken);
+
+        var paragraph = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("beforeafterlater", paragraph.TextContent);
+        Assert.Equal("span", Assert.IsType<DomElement>(paragraph.LastChild).LocalName);
+        var table = Assert.IsType<DomElement>(result.Fragment.LastChild);
+        Assert.Equal("table", table.LocalName);
+        var section = Assert.IsType<DomElement>(table.FirstChild);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        var cell = Assert.IsType<DomElement>(row.FirstChild);
+        Assert.Equal("tbody", section.LocalName);
+        Assert.Equal("tr", row.LocalName);
+        Assert.Equal("td", cell.LocalName);
+        Assert.Equal("cell", cell.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Single(result.Errors, error => error.Code == "unexpected-table-structure-start-tag-in-body");
+        Assert.Single(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void BodyContextIgnoresUnmatchedTableStructureEndsAndKeepsFollowingContent(string tag)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment($"<p>before</{tag}>after<span>later</span></p>"
+            + "<table><tr><td>cell</td></tr></table>",
+            document.CreateElement("body"), cancellationToken: TestContext.Current.CancellationToken);
+
+        var paragraph = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("beforeafterlater", paragraph.TextContent);
+        Assert.Equal("span", Assert.IsType<DomElement>(paragraph.LastChild).LocalName);
+        var table = Assert.IsType<DomElement>(result.Fragment.LastChild);
+        Assert.Equal("table", table.LocalName);
+        var section = Assert.IsType<DomElement>(table.FirstChild);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        var cell = Assert.IsType<DomElement>(row.FirstChild);
+        Assert.Equal("tbody", section.LocalName);
+        Assert.Equal("tr", row.LocalName);
+        Assert.Equal("td", cell.LocalName);
+        Assert.Equal("cell", cell.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.Single(result.Errors);
+    }
+
+    [Fact]
+    public void SelectContextStillRejectsTableStructureEndTags()
+    {
+        var document = new DomDocument();
+        Assert.Throws<UnsupportedHtmlException>(() => HtmlParser.ParseFragment("</td>",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Theory]
     [InlineData("a")]
     [InlineData("nobr")]
     public void FragmentNestedFormattingStartsUseAdjustedAdoptionParent(string tag)
