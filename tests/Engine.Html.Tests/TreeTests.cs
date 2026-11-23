@@ -92,6 +92,45 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void EnabledNoscriptInTableModeUsesRawTextAndRestoresTableMode()
+    {
+        var document = new DomDocument();
+        var parsed = HtmlParser.Parse(
+            "<!doctype html><body><table><noscript><p>fallback</p></noscript><tr><td>cell</td></tr></table>",
+            options: null, cancellationToken: TestContext.Current.CancellationToken, document: document,
+            scriptCompleted: _ => { });
+
+        var noscript = Assert.IsType<DomElement>(document.Body!.FirstChild);
+        var table = Assert.IsType<DomElement>(noscript.NextSibling);
+        var row = Assert.Single(table.Descendants().OfType<DomElement>(), element => element.LocalName == "tr");
+
+        Assert.Equal("noscript", noscript.LocalName);
+        Assert.Equal("<p>fallback</p>", noscript.TextContent);
+        Assert.IsType<DomText>(Assert.Single(noscript.ChildNodes));
+        Assert.Equal("cell", row.TextContent);
+        Assert.Contains(parsed.Errors, error => error.Code == "fostered-noscript-start-in-table");
+    }
+
+    [Fact]
+    public void NoscriptInColumnGroupModeFallsBackToTableMode()
+    {
+        var parsed = Parse(
+            "<!doctype html><body><table><colgroup><noscript>fallback</noscript><tr><td>cell</td></tr></table>");
+        var body = parsed.Document.Body!;
+        var noscript = Assert.IsType<DomElement>(body.FirstChild);
+        var table = Assert.IsType<DomElement>(noscript.NextSibling);
+        var colgroup = Assert.IsType<DomElement>(table.FirstChild);
+        var row = Assert.Single(table.Descendants().OfType<DomElement>(), element => element.LocalName == "tr");
+
+        Assert.Equal("noscript", noscript.LocalName);
+        Assert.Equal("fallback", noscript.TextContent);
+        Assert.Equal("colgroup", colgroup.LocalName);
+        Assert.Equal("cell", row.TextContent);
+        Assert.Contains(parsed.Errors, error => error.Code == "fostered-noscript-start-in-table");
+        Assert.Contains(parsed.Errors, error => error.Code == "fostered-noscript-end-in-table");
+    }
+
+    [Fact]
     public void TemplateContentUsesSeparateOwnerDocumentAndDoesNotEnterDocumentTree()
     {
         var result = Parse("<!doctype html><body><template><p id=inside>content</p></template><p id=outside>body</p>");

@@ -406,7 +406,11 @@ restores the table insertion mode. `title` starts and unmatched end tags use
 the same route, entering RCDATA without initial-line-feed suppression.
 `iframe`, `noembed` and `noframes` starts and unmatched end tags also use
 that route with RAWTEXT tokenization; this adds no browsing contexts or
-resource loading. `xmp` starts and unmatched end tags use the same route
+resource loading. `noscript` starts in table, column-group, table-body and row
+modes use fostered in-body insertion. With scripting disabled, end tags use the
+same path; with scripting enabled, the start enters RAWTEXT and the matching
+end restores the originating table mode.
+`xmp` starts and unmatched end tags use the same route
 after the in-body paragraph/formatting handling. Block-element starts
 and end tags in those modes use the same path: `div`, `p`,
 `pre`, `listing`, `h1`-`h6`, `li`, `dd`,

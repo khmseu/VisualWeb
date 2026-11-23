@@ -17,7 +17,11 @@ ends in table/table-body/row modes with bounded foster-parent insertion,
 supported void-element tokens in those modes, `textarea`/`title` RCDATA and
 `iframe`/`noembed`/`noframes`/`xmp` RAWTEXT starts with unmatched end-tag
 recovery;
-only `textarea` suppresses an initial LF. Text-only table
+only `textarea` suppresses an initial LF. `noscript` starts in table,
+column-group, table-body and row modes use fostered in-body insertion.
+With scripting disabled, end tags use the same path; with scripting enabled,
+the start enters RAWTEXT and its matching end restores the originating mode.
+Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
 exception, formatting-element and `span` foster parenting, `option`/`optgroup`

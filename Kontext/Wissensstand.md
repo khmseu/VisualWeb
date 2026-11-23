@@ -644,7 +644,7 @@ bestehen fuer `cfc0881f`. Siehe
 [Missing.md](../plans/Missing.md) und
 [KP-610](./Kontextprotokoll.md#kp-610---statische-frameset-dokumente).
 
-**Aktueller HTML/DOM-Pass: nativer Form-Owner (2026-11-23; KP-611; committed, gepusht und CI-geprueft):**
+**Vorheriger HTML/DOM-Pass: nativer Form-Owner (2026-11-23; KP-611; committed, gepusht und CI-geprueft):**
 `DomFormControls.FormOwner` berechnet den aktuellen Besitzer fuer die sieben
 eingebauten gelisteten Form-assoziierten Elemente aus Baum und Attributen.
 Bei verbundenen Elementen mit `form`-Attribut entscheidet die erste ID im
@@ -662,6 +662,31 @@ auf `origin/main`; Linux development, Windows confinement, CodeQL und Dev
 Environment Prebuilds bestehen. Siehe [HTML/DOM-Guide](../docs/html-dom.md),
 [Engine.Dom README](../src/Engine/Engine.Dom/README.md) und
 [KP-611](./Kontextprotokoll.md#kp-611---nativer-form-owner).
+
+**Aktueller HTML-Pass: `noscript` in Tabellenmodi (2026-11-23; KP-612; lokal validiert, Commit/CI offen):**
+`noscript`-Starttags in Table-, ColumnGroup-, TableBody- und Row-Modi verwenden
+nun den bestehenden Foster-Parent-/In-Body-Pfad. Bei deaktiviertem Scripting
+nutzen Endtags denselben Pfad und Markup wird normal verarbeitet; bei
+aktiviertem Scripting beginnt der Start RAWTEXT und das passende Endtag kehrt
+zum urspruenglichen Tabellenmodus zurueck. Frameset-/Frame-Fragmentkontexte
+aus der frueheren ausdruecklichen
+Fragmentumfangsentscheidung bleiben unveraendert unsupported.
+Die Auswahl ist aus den verbleibenden explizit fehlenden Tabellen-Startregeln
+in [Missing.md](../plans/Missing.md) abgeleitet, nicht separat vom Nutzer
+bestaetigt. Der HTML-Cache hatte `checkedAt: 2026-11-07` und war am
+Dokumentationsdatum frisch. Engine.Html.Tests besteht mit 7.669 Tests in
+Debug und Release. Debug- und Release-Solution-Builds bestehen mit 0
+Warnungen/Fehlern (vor der letzten reinen Testergaenzung). Der finale
+sequenzielle Debug-Solutiontest besteht mit 17.676 Tests und zwei bedingt
+uebersprungenen Browserfaellen; der Release-Solutiontest bestand zuvor mit
+17.675 Tests und zwei bedingten Skips, vor der ColumnGroup-Regression.
+Format- und Diff-Checks bestehen. Die grobe HTML-Schaetzung bleibt
+unveraendert.
+Der erste parallele Volltestlauf meldete vier Browser-Prozessfehler; diese
+traten in den sequenziellen Wiederholungen nicht auf. Implementierungscommit
+steht aus; nach dem Push CI beobachten. Siehe
+[HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md) und
+[KP-612](./Kontextprotokoll.md#kp-612---noscript-in-tabellenmodi).
 
 **Embedded-Fragmentkontexte (2026-11-22; KP-605; validiert):**
 `applet`, `marquee` und `object` sind jetzt zusaetzlich als statische

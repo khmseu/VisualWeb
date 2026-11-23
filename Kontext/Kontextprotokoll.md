@@ -17896,3 +17896,52 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   `docs/standards.md`, `src/Engine/Engine.Dom/README.md`,
   `docs/project-map.md`, `plans/Missing.md`, `Kontext/Wissensstand.md`,
   lokale Validierungsausgaben und aktueller Chat.
+
+### KP-612 - Noscript in Tabellenmodi
+
+- Dokumentiert am: 2026-11-23, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Der Nutzer setzt den uebergeordneten WHATWG-HTML/DOM-Auftrag
+  mit „continue“ fort. Eine separate Auswahl des `noscript`-Verhaltens in
+  Tabellenmodi ist nicht dokumentiert.
+- Auswahlgrundlage: `plans/Missing.md` haelt nicht implementierte
+  foster-parented Tabellen-Startregeln als Restarbeit fest. `noscript` war in
+  `HtmlParser.TableToken` als spezielles Element weder in der Foster-Parent-
+  Fallliste noch in den Tabellen-Startregeln enthalten und fiel deshalb auf
+  einen expliziten Unsupported-Fehler. Der Pass erweitert ausschliesslich
+  diesen vorhandenen Foster-Parent-/In-Body-Pfad fuer `noscript`.
+- Belegt: Der lokale WHATWG-HTML-Cache (`specs/cache/html.html`, Manifest-ID
+  `html`, `checkedAt` 2026-11-07) beschreibt das In-Table-Fallback ueber
+  foster-parented In-Body-Verarbeitung sowie den scripting-abhaengigen
+  `noscript`-Zustand. Der Cache war am Dokumentationsdatum frisch.
+- Umsetzung: `noscript`-Starttags und bei deaktiviertem Scripting auch
+  Endtags werden in Table-, TableBody- und Row-Modi ueber `TableToken`
+  foster-parented in Body-Regeln verarbeitet; ColumnGroup faellt ueber den
+  bestehenden Moduswechsel dorthin zurueck. Bei aktiviertem Scripting oeffnet
+  der Start RAWTEXT; das passende Endtag verlaesst den Textmodus und stellt den
+  Tabellenmodus wieder her. Das fuegt weder Skriptausfuehrung noch
+  Ressourcenverhalten hinzu.
+- Regressionen: Fragmenttests decken Table-, TableBody- und Row-Kontexte ab.
+  Ein Dokumenttest mit aktiviertem Scripting prueft RAWTEXT und dass eine
+  folgende Tabellenzeile nach dem `noscript`-Endtag weiterhin gebaut wird.
+- Validierung: Engine.Html.Tests besteht mit 7.669 Tests in Debug und Release.
+  Debug- und Release-Solution-Builds bestehen mit 0 Warnungen/Fehlern; diese
+  Builds liefen vor der letzten reinen Testergaenzung. Der finale sequenzielle
+  Debug-Volltest besteht mit 17.676 Tests und zwei bedingt uebersprungenen
+  Browser-Prozessfaellen. Der Release-Volltest bestand zuvor mit 17.675 Tests
+  und denselben zwei bedingten Skips, also vor dieser zusaetzlichen
+  ColumnGroup-Regression. Formatverifikation und `git diff --check` bestehen;
+  die grobe HTML-Schaetzung bleibt unveraendert. Der erste parallele Aufruf
+  `dotnet test VisualWeb.slnx --no-build` meldete vier Fehler im
+  Browser-Projekt (Multiprocess-Listbox-Assertion, Resource-Scope-Timeout,
+  zwei Renderer-Deadlinefehler); die sequenziellen Debug- und
+  Release-Wiederholungen bestanden ohne diese Fehler. Commit, Push und CI
+  stehen noch aus.
+- Vereinbarung/Provenienz: Die Auswahl ist aus dem Tracker und dem bestehenden
+  Parserpfad abgeleitet; eine gesonderte Nutzerentscheidung liegt nicht vor.
+- Quellen: `specs/cache/html.html#parsing-main-intable`,
+  `#parsing-main-inbody`, `#parser-scripting-disabled`,
+  `src/Engine/Engine.Html/HtmlParser.cs`,
+  `tests/Engine.Html.Tests/FragmentTests.cs`,
+  `tests/Engine.Html.Tests/TreeTests.cs`, `docs/html-dom.md`,
+  `src/Engine/Engine.Html/README.md`, `docs/standards.md`, `plans/Missing.md`,
+  lokale Validierungsausgaben und aktueller Chat.

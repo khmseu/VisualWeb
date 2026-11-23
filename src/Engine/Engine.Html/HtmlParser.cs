@@ -27,7 +27,8 @@ namespace VisualWeb.Engine.Html;
 /// supported block/list-item start/end tags in table, table-body, and row modes with
 /// bounded foster-parent insertion are supported. Formatting-element, ruby-annotation, and <c>span</c>
 /// start/end tags, ordinary non-special elements, <c>option</c>, <c>optgroup</c>, and <c>label</c>
-/// start/end tags and <c>plaintext</c> tokens also
+/// start/end tags, scripting-aware <c>noscript</c> starts and
+/// disabled-scripting end tags, and <c>plaintext</c> tokens also
 /// use bounded foster-parent insertion in table, column-group, table-body, and row modes. <c>plaintext</c>
 /// starts consume the remaining input as text; adoption reparenting that itself requires table foster
 /// parenting remains unsupported;
@@ -1335,7 +1336,7 @@ public static class HtmlParser
                 if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
                     || FormattingTags.Contains(tag.Name) || !SpecialTags.Contains(tag.Name)
                     || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
-                        or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label" or "body" or "head"
+                        or "iframe" or "noembed" or "noframes" or "noscript" or "xmp" or "span" or "option" or "optgroup" or "label" or "body" or "head"
                         or "applet" or "marquee" or "object"
                     || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
                         or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")
@@ -1424,7 +1425,7 @@ public static class HtmlParser
             if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
                 || FormattingTags.Contains(tag.Name) || !SpecialTags.Contains(tag.Name)
                 || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "br" or "hr" or "img" or "image" or "wbr" or "textarea" or "title" or "plaintext" or "select"
-                    or "iframe" or "noembed" or "noframes" or "xmp" or "span" or "option" or "optgroup" or "label" or "head"
+                    or "iframe" or "noembed" or "noframes" or "noscript" or "xmp" or "span" or "option" or "optgroup" or "label" or "head"
                     or "applet" or "marquee" or "object"
                 || tag.Name is "ruby" or "rb" or "rtc" or "rp" or "rt"
                     or "abbr" or "cite" or "data" or "dfn" or "kbd" or "mark" or "q" or "samp" or "sub" or "sup" or "time" or "var")

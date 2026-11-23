@@ -209,6 +209,10 @@ after-after-frameset modes. Supported behavior includes:
   `iframe`, `noembed` and `noframes` starts and unmatched end tags also follow
   the same path, with RAWTEXT tokenization; their content is text, not an
   embedded browsing context or resource load.
+  `noscript` starts in table, column-group, table-body and row modes use
+  fostered in-body insertion. With scripting disabled, end tags use the same
+  path and markup is parsed normally; with scripting enabled, the start enters
+  RAWTEXT and the matching end restores the originating table mode.
   `xmp` starts and unmatched end tags use the same path and preserve the
   existing in-body paragraph/formatting handling before entering RAWTEXT.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,

@@ -397,6 +397,26 @@ public sealed class FragmentTests
     }
 
     [Theory]
+    [InlineData("table")]
+    [InlineData("tbody")]
+    [InlineData("tr")]
+    public void ParseFragment_noscriptInTableModesUsesFosteredInBodyRules(string contextName)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<noscript><p>fallback</p></noscript>", document.CreateElement(contextName),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var noscript = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        var paragraph = Assert.IsType<DomElement>(Assert.Single(noscript.ChildNodes));
+        Assert.Equal("noscript", noscript.LocalName);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("fallback", paragraph.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-noscript-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-noscript-end-in-table");
+    }
+
+    [Theory]
     [InlineData("svg")]
     [InlineData("math")]
     [InlineData("frameset")]
