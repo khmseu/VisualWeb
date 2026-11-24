@@ -1004,8 +1004,8 @@ presence without access to visited state; all links are treated as unvisited
 and `:visited` remains unsupported. `:scope`
 is supported as described below. Rejecting pseudo-elements
 rather than returning an empty list is an
-intentional finite-subset deviation. No selector cache, live collections,
-innerHTML or dynamic script scheduling is added. Inline pages gain these APIs
+intentional finite-subset deviation. No selector cache, live collections or
+dynamic script scheduling is added. Inline pages gain these APIs
 under the existing opt-in; lifecycle, retention and confinement are unchanged.
 
 ## Scoped selector queries (`:scope`)
@@ -1102,15 +1102,38 @@ returned to JavaScript. Input/conversion/budget/hierarchy failures do not
 partially perform the requested mutation; independent side effects in caller
 conversion hooks remain ordinary script effects.
 
-This does not add `childNodes`/`children` collections, `innerHTML`, selectors,
-clone/import/adopt APIs, shadow DOM, events or observers. Appending or changing
-script elements **never schedules execution**. During the initial parse, only
+This does not add `childNodes`/`children` collections, clone/import/adopt APIs,
+shadow DOM, events or observers. Bounded `Element.innerHTML` is documented below.
+Appending, changing or fragment-parsing script elements **never schedules
+execution**. During the initial parse, only
 parser-inserted eligible scripts execute when the parser reaches them; removal
 or mutation of later script elements does not create a queued snapshot. Embedded
 styles and inline attribute/tree changes feed the final style/layout/paint pass,
 and the mutated DOM remains retained for resize without repeating execution.
 Unsupported CSS/layout/resource features still fail explicitly; this is not
 broader HTML element behavior.
+
+## Bounded `Element.innerHTML`
+
+The Element prototype's `innerHTML` accessor uses private `innerhtml-get` and
+`innerhtml-set` primitive operations. It checks the receiver brand before
+setter conversion; `null` becomes the empty string, while all other values use
+ordinary DOMString conversion (including an observable Symbol conversion
+error). The getter serializes children through Engine.Html; the setter parses
+with the receiver as fragment context and commits only after parser, node,
+attribute and cancellation preflight. Existing removed nodes retain identity
+and ownership. Template accessors serialize/replace `template.content` and
+adopt inserted content into the inert template-contents owner document.
+
+The implementation is limited to this repository's HTML-only supported
+contexts and parser algorithms. Unsupported frame, frameset, SVG, MathML and
+unsupported table/select algorithms fail visibly; no namespace or shadow-root
+behavior is implied. Returned markup is raw and **not sanitized**. Fragment
+parsing never runs script callbacks, executes inserted scripts, fetches
+resources or queues dynamic script execution. No `outerHTML`,
+`insertAdjacentHTML` or sanitization API is exposed. See
+[HTML and DOM](html-dom.md#bounded-element-innerhtml) and HTML's
+[`innerHTML` IDL/getter/setter](../specs/cache/html.html#the-innerhtml-property).
 
 ## Opt-in parser-blocking classic page scripts (phase 11d)
 

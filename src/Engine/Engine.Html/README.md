@@ -25,6 +25,16 @@ the start enters RAWTEXT and its matching end restores the originating mode.
 table, table-body and row modes; this does not create browsing contexts or load
 or render frames. Column-group mode closes `colgroup` and reprocesses them in
 table mode.
+
+The bounded `HtmlFragmentSerializer.SerializeChildren` API implements native
+HTML fragment serialization for supported HTML Element/Text/Comment/
+ProcessingInstruction trees, including ordered attributes, escaping, raw-text
+parents, void elements and template contents. It is used by script-facing
+`Element.innerHTML`; the setter parses with the receiver context and replaces
+children only after parsing and limit preflight. This output is **not
+sanitized**. Frame, frameset, SVG, MathML and other unsupported parser contexts
+or algorithms fail explicitly; fragment insertion does not execute scripts or
+load resources.
 Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer

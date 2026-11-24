@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
+using VisualWeb.Engine.Html;
 
 namespace VisualWeb.Engine.Scripting;
 
@@ -104,6 +105,8 @@ internal sealed class DomBindings : IDisposable
                 "title-set" => SetTitle(value),
                 "text-get" => Observe(Text(Node(handle))),
                 "text-set" => SetText(Node(handle), value),
+                "innerhtml-get" => InnerHtml(handle),
+                "innerhtml-set" => SetInnerHtml(handle, value),
                 "node-value-get" => Observe(Node(handle) is DomCharacterData data ? data.Data : null),
                 "node-value-set" => SetNodeValue(Node(handle), value),
                 "data-get" => Observe(CharacterData(handle).Data),
@@ -172,6 +175,7 @@ internal sealed class DomBindings : IDisposable
             return result is null ? "null:" : "ok:" + result;
         }
         catch (FormatException exception) { return "syntax:" + exception.Message; }
+        catch (UnsupportedHtmlException exception) { return "unsupported:" + exception.Message; }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         { return "error:DOM operation canceled."; }
         catch (Exception exception) when (exception is ScriptLimitException or DomException or InvalidOperationException
@@ -183,6 +187,44 @@ internal sealed class DomBindings : IDisposable
     }
 
     private string? Observe(string? value) { if (value is not null) { Budget(value); } return value; }
+    private string InnerHtml(int handle)
+        => Observe(HtmlFragmentSerializer.SerializeChildren(Element(handle), MaxNodes, MaxTextCharacters, MaxAttributes, cancellation))!;
+
+    private string SetInnerHtml(int handle, string value)
+    {
+        var element = Element(handle);
+        var parsed = HtmlParser.ParseFragment(value, element, new HtmlParserOptions
+        {
+            MaxInputCharacters = MaxTextCharacters,
+            MaxNodes = MaxNodes,
+            MaxDepth = 512,
+            MaxErrors = 10_000
+        }, cancellation);
+        PreflightFragment(parsed.Fragment);
+        cancellation.ThrowIfCancellationRequested();
+        DomNode destination = element is DomTemplateElement template ? template.Content : element;
+        destination.ReplaceAll(parsed.Fragment);
+        return "";
+    }
+
+    private void PreflightFragment(DomDocumentFragment fragment)
+    {
+        var pending = new Stack<DomNode>(fragment.ChildNodes.Reverse());
+        var count = 0;
+        while (pending.TryPop(out var node))
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (++count > MaxNodes) { throw new ScriptLimitException("DOM innerHTML node limit exceeded."); }
+            if (node is DomElement element)
+            {
+                if (element.Attributes.Count > MaxAttributes)
+                { throw new ScriptLimitException("DOM innerHTML attribute limit exceeded."); }
+                var children = element is DomTemplateElement nestedTemplate
+                    ? nestedTemplate.Content.ChildNodes : element.ChildNodes;
+                for (var index = children.Count - 1; index >= 0; index--) { pending.Push(children[index]); }
+            }
+        }
+    }
     private string BaseUri(int handle)
     {
         _ = Node(handle);
@@ -792,6 +834,7 @@ internal sealed class DomBindings : IDisposable
                 const result = bridge(operation, handle, other, reference, name, value);
                 if (result[0] === 'n') return null;
                 if (result[0] === 's') throw new SyntaxErrorCtor(apply(slice, result, 7));
+                if (result[0] === 'u') throw new TypeErrorCtor('Unsupported HTML: ' + apply(slice, result, 12));
                 if (result[0] !== 'o') throw new TypeErrorCtor(apply(slice, result, 6));
                 return apply(slice, result, 3);
             };
@@ -1036,6 +1079,13 @@ internal sealed class DomBindings : IDisposable
                 }});
             };
             installNode(document); installNode(prototype); installNode(nodePrototype);
+            define(prototype, 'innerHTML', {enumerable: true,
+                get() {return call('innerhtml-get', elementBrand(this));},
+                set(value) {
+                    const id = elementBrand(this);
+                    call('innerhtml-set', id, value === null ? '' : `${value}`);
+                }
+            });
             const unscopables=create(null);
             define(unscopables,'remove',{value:true,enumerable:true});
             freeze(unscopables);

@@ -128,6 +128,22 @@ public abstract partial class DomNode
         return child;
     }
 
+    /// <summary>Atomically replaces this node's children with a document fragment's children.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-node-replace-all">replace all</see>
+    /// (local ID <c>dom</c>). The fragment is checked as one insertion before any existing child is removed.</remarks>
+    internal void ReplaceAll(DomDocumentFragment fragment)
+    {
+        ArgumentNullException.ThrowIfNull(fragment);
+        if (ReferenceEquals(this, fragment))
+        {
+            throw Hierarchy("A node cannot replace its children with itself.");
+        }
+
+        ValidateInsertion(fragment, null, null);
+        foreach (var child in children.ToArray()) { RemoveChild(child); }
+        InsertValidated(fragment, null);
+    }
+
     /// <summary>Remove this ChildNode from its parent, or do nothing when detached.</summary>
     /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-childnode-remove">remove</see>.
     /// Only Element, CharacterData and DocumentType implement this mixin.
@@ -188,15 +204,15 @@ public abstract partial class DomNode
             throw Hierarchy("This node type cannot participate in this insertion.");
         }
 
+        var inserted = node is DomDocumentFragment ? node.children.ToArray() : [node];
         for (DomNode? ancestor = this; ancestor is not null; ancestor = ancestor.ParentNode)
         {
-            if (ancestor == node)
+            if (ancestor == node || inserted.Contains(ancestor))
             {
                 throw Hierarchy("Insertion would create a cycle.");
             }
         }
 
-        var inserted = node is DomDocumentFragment ? node.children.ToArray() : [node];
         if (this is not DomDocument)
         {
             if (inserted.Any(n => n is DomDocumentType))

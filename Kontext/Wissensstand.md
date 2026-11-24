@@ -4,11 +4,11 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-23, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-24, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-23; KP-614 bis KP-620; Phase 1 und 2 abgeschlossen, Phase-2-Commit offen):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-622; Phases 1-3 complete, Phase 3 commit pending):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -44,9 +44,21 @@ Phase 2 implementiert, dass In-Body-Dokumente und Body-Fragmente
 Tabellenstruktur-Starttags `caption`, `col`, `colgroup`, `tbody`, `thead`,
 `tfoot`, `tr`, `td` und `th` mit Parse-Fehler ignorieren; nicht zugeordnete
 Struktur-Endtags laufen durch generische In-Body-Recovery. Andere Modi bleiben
-explizit begrenzt. Tests und Review sind erfolgt; Solution-Build,
-Engine.Html.Tests, gesamte Solution-Test-Suite und Formatverifikation bestehen.
-Der Phase-2-Commit steht noch aus.
+explizit begrenzt. Tests und Review sind erfolgt; Solution-Build, Engine.Html.Tests, gesamte
+Solution-Test-Suite und Formatverifikation bestehen. Phase 2 wurde als
+`72b27f7a` (`fix(html): recover stray table structure tags`) committed.
+Phase 3 implementiert script-facing `Element.innerHTML` fuer den explizit
+unterstuetzten HTML-Subset: kontextbezogene Fragment-Parsing/Serialisierung,
+Template-Content, begrenzte Traversierung/Ausgabe und atomare Kindersetzung
+bei Fehlern. Serialisierte Ausgabe ist keine Sanitization; unstuetzte
+Kontexte/Algorithmen scheitern explizit und Parser-Insertion bleibt inert.
+Die Processing-Instruction-Serialisierung endet standardgemaess mit `?>`,
+einschliesslich Leerraum vor dem Terminator bei leerer Datenfolge. Build,
+betroffene Testprojekte, vollstaendige Solution-Tests und Formatverifikation
+bestanden; ein erster paralleler Volltestlauf zeigte zwei isoliert bestandene
+Timeouts, der nachfolgende Volltestlauf war erfolgreich. Review ist APPROVED.
+Phase 3 ist abgeschlossen, aber noch nicht committed; der Commitvorschlag steht
+im [Phase-3-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-3-complete.md).
 Die Priorisierung wurde nach Codeeinsicht verfeinert: Foreign-Content erfordert
 namespace-erhaltende DOM-Elemente/-Attribute und Tree-Construction-Regeln; da
 `DomElement.NamespaceUri` auf HTML festgelegt ist, wird der Parserumfang nicht
@@ -57,7 +69,10 @@ Der Support-Prozentsatz bleibt unveraendert. Siehe
 [Phase-2-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md),
 [KP-615](./Kontextprotokoll.md#kp-615---nutzerpriorisiert-haeufige-html-dom-features),
 [KP-617](./Kontextprotokoll.md#kp-617---priorisierter-html-dom-plan-genehmigt)
-bis [KP-620](./Kontextprotokoll.md#kp-620---phase-2-abgeschlossen-und-vollvalidiert).
+bis [KP-621](./Kontextprotokoll.md#kp-621---phase-2-commit-und-phase-3-begonnen).
+Phase 3 und die finale Validierung sind unter
+[KP-622](./Kontextprotokoll.md#kp-622---bounded-innerhtml-implementiert-und-validiert)
+dokumentiert.
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

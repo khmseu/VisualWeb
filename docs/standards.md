@@ -131,6 +131,18 @@ claims, and are not listed as supported standards here.
 
 ### Implemented subsets
 
+Script-facing `Element.innerHTML` now uses context-sensitive
+[HTML fragment parsing](../specs/cache/html.html#parsing-html-fragments) and
+the [HTML fragment serialization algorithm](../specs/cache/html.html#html-fragment-serialisation-algorithm),
+with getter/setter behavior from
+[HTML `innerHTML`](../specs/cache/html.html#the-innerhtml-property). A checked
+native replacement follows [DOM replace all](../specs/cache/dom.html#concept-node-replace-all).
+The implementation is limited to the supported HTML-only parser contexts,
+bounded by explicit budgets, does not sanitize output, and does not execute or
+schedule inserted scripts or load resources. SVG, MathML, frame/frameset,
+unsupported table/select algorithms, namespaces and shadow roots remain out of
+scope. The HTML (~20%) and DOM (~20%) estimates are unchanged.
+
 For an in-body table start, HTML tree construction closes an in-scope
 paragraph only when the document is not in quirks mode; quirks mode preserves
 the paragraph around the table. The overall HTML estimate remains unchanged.

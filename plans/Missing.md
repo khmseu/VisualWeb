@@ -506,8 +506,11 @@ parser work includes:
   in-head/template processing and restore the table insertion mode. Template
   contents use the bounded table algorithms for supported table,
   caption/column/section, row and cell starts. Select modes, other unsupported
-  table algorithms, SVG/MathML, script-facing template bindings and `innerHTML`
-  remain unsupported. General forms (only the
+  table algorithms, SVG/MathML, and most script-facing template bindings remain
+  unsupported. Bounded script-facing `Element.innerHTML` now uses the supported
+  context-sensitive fragment parser and serializer subset described in
+  `docs/html-dom.md`; it is not sanitized and unsupported contexts still fail.
+  General forms (only the
   simple form-pointer subset exists), select handling requiring tree-building
   algorithms outside the currently supported in-body subset, and other
   specialized parsing algorithms also remain incomplete.
@@ -521,8 +524,9 @@ parser work includes:
   root is omitted from the result; fragment nodes honor parser limits and cancellation.
   SVG/MathML, frameset/frame fragment contexts and other unsupported contexts
   fail explicitly.
-  This does not add `innerHTML`, script bindings, general table/select
-  algorithms or full fragment parsing conformance; unsupported tree-construction
+  The bounded script-facing `Element.innerHTML` uses this parser and native
+  fragment serialization without claiming full fragment conformance. It does
+  not add general table/select algorithms; unsupported tree-construction
   algorithms remain deferred.
 - Document `noscript` now follows the parser scripting state: disabled scripting
   uses the dedicated in-head-noscript mode in the head and ordinary in-body
@@ -581,7 +585,9 @@ form-associated custom elements, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
 Parser template construction remains a narrow static subset: table/select
 algorithms beyond the documented bounded combinations, foreign content,
-plugin/resource behavior, script bindings and `innerHTML` are deferred.
+plugin/resource behavior and broad script bindings are deferred. Only the
+bounded HTML-only `Element.innerHTML` subset is implemented; it does not add
+sanitization or unsupported parser algorithms.
 The bounded static fragment API does not change the overall HTML/DOM support
 assessment or rough percentages.
 

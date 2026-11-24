@@ -4,6 +4,7 @@
     <ProjectReference Include="../../Core/Core.Url/Core.Url.csproj" />
     <ProjectReference Include="../Engine.Dom/Engine.Dom.csproj" />
     <ProjectReference Include="../Engine.Css/Engine.Css.csproj" />
+    <ProjectReference Include="../Engine.Html/Engine.Html.csproj" />
     <PackageReference Include="Microsoft.ClearScript.V8" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-x64" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-arm64" />

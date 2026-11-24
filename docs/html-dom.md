@@ -338,8 +338,7 @@ stable, fragment-backed `Content` property whose children are separate from
 the element's ordinary child list. Template contents use the document's inert
 template-contents owner document, including nested templates, and adoption and
 deep cloning preserve that separation. The parser constructs ordinary document
-templates within the bounded subset above; parser construction does not add
-script-facing template bindings or an `innerHTML` API.
+templates within the bounded subset above.
 
 ## DOM boundary and invariants
 
@@ -374,9 +373,37 @@ mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
 Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs,
 most special element behavior and full script bindings are deferred. Additional
-table/select template algorithms, script-facing template bindings and
-`innerHTML` remain unsupported. The static fragment parser is not exposed as a
-script-facing `innerHTML` API.
+table/select template algorithms remain unsupported.
+
+## Bounded `Element.innerHTML`
+
+The script facade exposes a branded `Element.innerHTML` getter/setter through
+the existing primitive-only callback bridge. The getter serializes children
+(template content for `<template>`) using the local
+[HTML fragment serialization algorithm](../specs/cache/html.html#html-fragment-serialisation-algorithm)
+and HTML `innerHTML` [IDL](../specs/cache/html.html#the-innerhtml-property:dom-element-innerhtml),
+[getter](../specs/cache/html.html#the-innerhtml-property:dom-element-innerhtml-2)
+and [setter](../specs/cache/html.html#the-innerhtml-property:dom-element-innerhtml-3) sections.
+Ordered attributes, text/attribute escaping, raw-text parents, void elements,
+comments, processing instructions and template contents are covered. This is
+raw HTML, **not sanitization**.
+
+The setter performs Web IDL string conversion after checking the Element
+receiver (`null` becomes empty), parses with the receiver's fragment context,
+checks node/attribute/output/storage limits and cancellation, then uses checked
+replace-all. Parse, unsupported-algorithm, conversion, limit, cancellation or
+replacement failures preserve existing children and their identity/ownership.
+Template replacements go into the stable `Content` fragment and are adopted
+into its inert owner document. This path does not invoke parser script callbacks,
+execute inserted scripts, fetch resources or schedule dynamic scripts. Only the
+supported HTML-only contexts work; SVG, MathML, frame/frameset, unsupported
+select/table algorithms, namespaces and shadow roots remain explicit failures
+or unsupported features. It does not expose `outerHTML` or other markup
+insertion APIs.
+
+The native replacement helper follows DOM's
+[replace all](../specs/cache/dom.html#concept-node-replace-all) operation and
+validates the full insertion before it removes existing children.
 The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup

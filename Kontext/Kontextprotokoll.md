@@ -18251,3 +18251,66 @@ VisualWeb.slnx` 0 Warnungen/Fehler; Formatverifikation und `git diff --check`
   [Phase-2-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md).
 - Quelle: aktueller Chat; Build-, Test-, Format- und Review-Ausgaben; [Phase-2-
   Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md).
+
+### KP-621 - Phase-2-Commit und Phase-3 begonnen
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Die elf staged Phase-2-
+  Dateien wurden als `72b27f7a` (`fix(html): recover stray table structure
+tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
+  und meldete keine Probleme.
+- Belegt: Das Worktree ist nach dem Commit sauber; die zwei vorherigen
+  HTML/DOM-Roadmap-Commits sind lokal auf `main`.
+- Phase 3 ist nach der genehmigten
+  [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md#phases) begonnen.
+  Belegt sind der vorhandene kontextbezogene `HtmlParser.ParseFragment`-Pfad
+  und das Fehlen script-facing `innerHTML`/HTML-Serialisierung; die
+  Scripting-Bridge referenziert derzeit Engine.Dom, nicht Engine.Html.
+- Vorschlag aus read-only Recherche, noch nicht implementiert/beschlossen:
+  script-facing `Element.innerHTML` getter/setter mit kontextbezogenem
+  `ParseFragment`, budgetbegrenzter nativer Fragment-Serialisierung,
+  Template-Content-Sonderpfad und atomares Verhalten bei Parser-/Limitfehlern.
+  Markup-Serialisierung ist keine Sanitization. Das Projekt behält HTML-/
+  Scripting-Opt-in, neutrale Script-Insertion, Ownership-/Wrapper-Guards,
+  Ressourcen-/Netzwerkpolitik, Cancellation und exakte Text-/Node-Budgets.
+- Status: Phase 2 committed und abgeschlossen. Phase 3 ist aktiv; die
+  Umfangseinschaetzung basiert auf Oracle-Recherche, der Implementierungsumfang
+  muss noch gegen lokale Standards und bestehende Helpers finalisiert werden.
+- Quelle: aktueller Chat; [Roadmap Phase 3](../plans/whatwg-html-dom-completion-roadmap.md#phase-3-common-dom-and-markup-operations),
+  [HTML/DOM-Guide](../docs/html-dom.md#dom-boundary-and-invariants),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
+  [HtmlParser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [Phase-2-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-2-complete.md).
+
+### KP-622 - Bounded innerHTML implementiert und validiert
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Belegt: Phase 3 ergaenzt einen script-facing `Element.innerHTML`-Getter und
+  -Setter fuer den explizit unterstuetzten HTML-Subset. Der Getter nutzt
+  budgetbegrenzte native Fragment-Serialisierung; der Setter parst
+  kontextbezogen und ersetzt Kinder erst nach erfolgreichem Preflight. Template
+  verwendet `Content`; `null` wird zu leerer Eingabe. Fehler fuer unstuetzte
+  Algorithmen bleiben sichtbar. Parsing/Inhalte werden nicht ausgefuehrt oder
+  geladen; die Serialisierung ist keine Sanitization.
+- Belegt: Die HTML-Fragment-Serialisierung fuer Processing Instructions muss
+  mit `?>` enden und das Trenn-Leerzeichen auch bei leerer Datenfolge ausgeben.
+  Eine gezielte Regression war vor dem Fix rot und danach gruen.
+- Review: Die Implementierung wurde APPROVED; nach der abschliessenden
+  Terminator-Korrektur bestaetigte eine finale read-only Review erneut
+  APPROVED.
+- Validierung: `dotnet build VisualWeb.slnx` bestand mit 0 Warnungen/Fehlern.
+  `Engine.Dom.Tests` (78), `Engine.Html.Tests` (7.717) und
+  `Engine.Scripting.Tests` (404) bestanden; `dotnet format VisualWeb.slnx
+--verify-no-changes --no-restore --exclude third_party` bestand. Ein erster
+  `dotnet test VisualWeb.slnx --no-build`-Lauf hatte je einen Timeout im
+  URL-Setter-Scriptingtest und Browser-Middle-Linktest. Beide Tests bestanden
+  isoliert; der erneute vollstaendige Solution-Testlauf bestand.
+- Status: Phase 3 abgeschlossen und validiert, aber nicht committed. Die
+  Aenderungen bleiben im Worktree; vor Phase 4 wartet der Ablauf auf die
+  Commitfreigabe des Nutzers.
+- Quelle: aktueller Chat, gezielte TDD-Ausgabe, Reviews und Test-/Build-/
+  Format-Ausgaben; [Phase-3-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-3-complete.md),
+  [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md#phase-3-common-dom-and-markup-operations),
+  [HTML/DOM-Guide](../docs/html-dom.md),
+  [HtmlFragmentSerializer](../src/Engine/Engine.Html/HtmlFragmentSerializer.cs),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs).
