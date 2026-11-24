@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-625; Phases 1-3 committed, Phase 4 implementation active):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-628; Phases 1-4 complete at bounded scope, Phase 5 not started):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -32,7 +32,7 @@ Der Initialrang priorisiert (1) gewoehnliche Dokument-Tree-Construction/
 Recovery, (2) Fragment-/Markup-Verhalten, (3) gaengige DOM-Abfragen/
 Mutationen, (4) Formulare/Interaktionen und (5) Script-/Dokumentlebenszyklus;
 kleine angrenzende Parser-/DOM-Erweiterungen koennen in den Umsetzungsphasen
-mitgenommen werden. Fuer 12 Deferred-Kategorien sind Ist-Grenzen, Begruendung,
+mitgenommen werden. Fuer 13 Deferred-Kategorien sind Ist-Grenzen, Begruendung,
 Wiederaufnahmebedingungen, wahrscheinliche Owner/Prerequisites und gepruefte
 Code-/Testhinweise festgehalten. Der Register bleibt verfeinerbar und nicht
 telemetriegestuetzt. [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md)
@@ -65,9 +65,19 @@ ohne Submit- oder Navigationsdefault. Das folgt der bestehenden
 browser-owned focus-target/Event-Pipeline; eventuelle IPC-Uebermittlung bleibt
 data-only. Dies ist eine aus dem bestehenden `inert`-Control-Pfad abgeleitete
 Priorisierung, keine volle PointerEvent-/Button-Aktivierungsimplementierung.
-Implementiert mit rendererlokaler Zielvalidierung und data-only IPC v51;
-Phase 4 bleibt aktiv. Details: [KP-624](./Kontextprotokoll.md#kp-624---phase-4-button-click-scope-gewaehlt)
-und [KP-625](./Kontextprotokoll.md#kp-625---begrenzte-type-button-klickaktivierung).
+Implementiert mit rendererlokaler Zielvalidierung und data-only IPC v51; der
+Commit `ce505520` (`feat(browser): dispatch trusted clicks for type=button`)
+schliesst Phase 4 im priorisierten Umfang ab. Submit-/Reset-Click,
+Submit-/Reset-/Input-/Change-Events und live script-sichtbare, browser-editierte
+Formwerte bleiben unter HDF-013 vertagt: async Eventdispatch und retained
+Repaint koennen Formularstruktur/Ownership aendern, waehrend browser-eigene
+Werte an Kontroll-Snapshots gebunden sind. Eine Umsetzung ohne stabile
+Identitaets-/Wertabgleichssemantik koennte stale oder verlorene Formwerte
+verwenden. Phase 4 behauptet keine komplette Formular-Event-Implementierung.
+Siehe [Phase-4-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-4-complete.md),
+[Deferred-Register HDF-013](../plans/html-dom-deferred.md),
+[KP-624](./Kontextprotokoll.md#kp-624---phase-4-button-click-scope-gewaehlt)
+bis [KP-628](./Kontextprotokoll.md#kp-628---phase-4-im-priorisierten-umfang-abgeschlossen).
 Die Priorisierung wurde nach Codeeinsicht verfeinert: Foreign-Content erfordert
 namespace-erhaltende DOM-Elemente/-Attribute und Tree-Construction-Regeln; da
 `DomElement.NamespaceUri` auf HTML festgelegt ist, wird der Parserumfang nicht
@@ -81,10 +91,10 @@ Der Support-Prozentsatz bleibt unveraendert. Siehe
 bis [KP-621](./Kontextprotokoll.md#kp-621---phase-2-commit-und-phase-3-begonnen).
 Phase 3 und die finale Validierung sind unter
 [KP-622](./Kontextprotokoll.md#kp-622---bounded-innerhtml-implementiert-und-validiert)
-dokumentiert; Commit und Phase 4 starten in
-[KP-623](./Kontextprotokoll.md#kp-623---phase-3-commit-und-phase-4-begonnen),
-mit der Begruendung zur Auswahl des naechsten Verhaltens in
-[KP-624](./Kontextprotokoll.md#kp-624---phase-4-button-click-scope-gewaehlt).
+dokumentiert; Phase 4 und deren Abschlussgrenze sind unter
+[KP-623](./Kontextprotokoll.md#kp-623---phase-3-commit-und-phase-4-begonnen)
+bis [KP-628](./Kontextprotokoll.md#kp-628---phase-4-im-priorisierten-umfang-abgeschlossen)
+nachvollziehbar.
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

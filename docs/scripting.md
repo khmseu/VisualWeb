@@ -250,6 +250,8 @@ and transactional retained repaint as link clicks, with blur/focus before click.
 Canceled or uncanceled events never submit, reset, navigate, or serialize the
 button. Script-disabled pages dispatch nothing. No `onclick`, PointerEvent,
 keyboard event synthesis, or submit/reset click behavior is implied.
+Submit/reset event defaults and live script-visible browser-edited form values
+remain deferred with the [form event/state work](../plans/html-dom-deferred.md).
 
 ## Focused-link click dispatch (pass 6)
 

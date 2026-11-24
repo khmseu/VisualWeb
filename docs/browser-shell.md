@@ -635,6 +635,8 @@ required empty fields, edited too-short/overlong values, pattern mismatches,
 unsupported pattern syntax, or query/URL limit overflow. Form-level `novalidate` and a selected submit button's `formnovalidate` skip supported constraint checks; address/scheme and origin protections still apply. `formaction` is supported, while the other submitter overrides remain unsupported.
 There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
 events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard selection range support.
+Submit/reset click dispatch and live script-visible edited control values remain
+deferred with the [form event/state work](../plans/html-dom-deferred.md).
 
 ## Navigation and page policy
 

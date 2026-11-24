@@ -18387,3 +18387,70 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   wurden 1426 Tests bestanden; einzelne plattformspezifische Drucktests
   meldeten zur Laufzeit Skip.
   Phase 4 bleibt in Arbeit; dies ist kein Phasenabschluss und kein Commit.
+
+### KP-626 - Phase-4-Button-Click-Commit und Fortsetzung
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Die gestagten,
+  review-approved und vollvalidierten Phase-4-Aenderungen wurden als
+  `ce505520` (`feat(browser): dispatch trusted clicks for type=button`)
+  committed. Der Pre-Commit-Hook formatierte `docs/standards.md` und
+  bestaetigte 22 geaenderte Dateien ohne Probleme.
+- Belegt: Der Worktree ist nach dem Commit sauber; `main` liegt fuenf Commits
+  vor `origin/main`.
+- Status: Der begrenzte type=button-Inkrement ist committed. Phase 4 bleibt
+  gemaess Roadmap aktiv und wird mit dem naechsten priorisierten
+  Form-/Interaktionsverhalten fortgesetzt.
+- Quelle: aktueller Chat; Commit `ce505520`; Phase-4-Implementierungs- und
+  Reviewausgaben; [Roadmap Phase 4](../plans/whatwg-html-dom-completion-roadmap.md#phase-4-common-html-elements-forms-and-interactions).
+
+### KP-627 - Submit-/Reset-Event-Pipeline als HDF-013 vertagt
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Belegt: Die lokale HTML-/DOM-Spezifikation beschreibt canceled-flag/
+  preventDefault vor Aktivierungsverhalten, Submitter-/Form-Owner-Aufloesung
+  und separate submit-/reset-Events. Die `html`-/`dom`-Caches (`checkedAt`
+  2026-11-07) sind am 2026-11-24 frisch.
+- Belegt laut Read-only-Codeforschung: `BrowserController.Submit` und
+  `ResetForm` arbeiten mit browser-owned Kontroll-Snapshots. Der neu eingefuehrte
+  Page-Click-Pfad dispatcht asynchron und rendert retained neu; wenn Listener
+  Formularstruktur oder Kontroll-Snapshots aendern, kann die bestehende
+  Snapshot-Gleichheitslogik shell-eigene Edits loeschen. Ein Default aus stale
+  Indizes koennte daher falsche Formdaten submitten oder falsche Controls
+  resetten.
+- Ableitung/Entscheidung: Submit-/Reset-Click- und Default-Integration,
+  submit/reset/input/change Events, requestSubmit/script submission sowie
+  live script-sichtbare browser-editierte Werte werden nicht approximiert.
+  Sie sind unter neuem HDF-013 geparkt und brauchen zuerst stabile
+  Kontrollidentitaeten/Wertabgleich, cancellation/default ordering,
+  transactional repaint und lokale/Prozess-Regressionen.
+- Quelle: Oracle-Read-only-Recherche; `specs/cache/html.html`,
+  `specs/cache/dom.html`, `specs/manifest.json`; [BrowserController.cs](../src/Apps/VisualWeb.Browser/BrowserController.cs),
+  [Deferred-Register HDF-013](../plans/html-dom-deferred.md),
+  [Browser-shell guide](../docs/browser-shell.md).
+
+### KP-628 - Phase 4 im priorisierten Umfang abgeschlossen
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Belegt: Der begrenzte Phase-4-Code wurde als `ce505520`
+  (`feat(browser): dispatch trusted clicks for type=button`) committed und
+  APPROVED reviewed. Enabled input/button type=button Controls dispatchen fuer
+  opted-in Pointer-, Enter- und Space-Aktivierung trusted plain click; listener
+  DOM-Mutationen werden in local/process modes retained neu gezeichnet. Der
+  Browser behaelt Submit-/Reset-/Navigationsdefaults unveraendert.
+- Abschlussgrenze: Die bereits umfangreichen shell-owned Controls, Formulare,
+  Fokus-/Selection-/Link-Pfade bleiben wie dokumentiert. Phase 4 schliesst mit
+  dem ausgewaehlten fehlenden `type=button`-Interaktionsverhalten; HDF-013
+  dokumentiert event-/wertsynchronisationsabhaengige Form-APIs als spaetere,
+  nicht billig isolierbare Arbeit. Dies ist keine Vollkonformitaetsbehauptung.
+- Validierung des Code-Inkrements: Solution-Build, targeted Browser-/
+  IPC-Tests, vollstaendige Solution-Tests, Formatverifikation und
+  `git diff --check` bestanden; Renderer/IPC tests bestaetigen local/process.
+  Der Phase-4-Bericht enthaelt die erfassten Testzahlen.
+- Status: Code committed; dieser Abschlussbericht, Roadmap-/Deferred- und
+  Kontextabgleich sind Dokumentationsaenderungen und noch uncommitted.
+  Phase 5 hat nicht begonnen.
+- Quelle: Commit `ce505520`, Review- und Validierungsausgaben, Oracle-
+  Recherche; [Phase-4-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-4-complete.md),
+  [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [Deferred-Register](../plans/html-dom-deferred.md).
