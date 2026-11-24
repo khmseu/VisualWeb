@@ -359,7 +359,8 @@ budgets.
 There is no document/module loader. Static and dynamic imports, external
 `type="module"` sources, import maps, speculation rules, module `async`, and
 legacy `for`/`event` attributes fail explicitly. The `defer` attribute has no
-effect on modules and is ignored. Classic `async`/`defer` scheduling remains
+effect on modules and is ignored. Inline classic `async`/`defer` attributes
+are also ignored; external classic `async`/`defer` scheduling remains
 unsupported. Modules cannot fetch or access files; V8 document access remains
 disabled. Inline CSP nonce/hash checks still apply before execution. This is a
 bounded development subset, not full HTML module scheduling or a persistent
@@ -1169,6 +1170,13 @@ thread or process worker waits at the parser pause. The renderer has no network
 capability. Global lexical state persists across scripts in that navigation,
 but not between navigations or tabs.
 
+For eligible inline classics (no `src`), `async` and `defer` are no-ops:
+execution still occurs at parser position while `document.readyState` is
+`loading`. This follows [script preparation](https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element)
+(local spec ID `html`), without implementing asynchronous or deferred
+scheduling. The separate `InlinePageScripts.Collect`/`Execute` utility uses
+an already parsed document and does not provide parser-position visibility.
+
 External scripts are limited to successful HTTP(S) responses with a recognized
 JavaScript MIME essence. The browser applies the document's bounded
 `script-src-elem`/`script-src`/`default-src` policy before each request and
@@ -1195,9 +1203,11 @@ remain inert, and classic `nomodule` elements are skipped. Empty classic and
 module sources do not consume a source slot. Inline `type="module"` sources use
 the bounded phase-11w scheduling above. External modules, import maps and
 speculation rules remain unsupported. Module `defer` is ignored as required by
-HTML; module `async`, classic `async`/`defer`, and legacy `for`/`event`
-scheduling attributes fail when encountered. Rejecting unsupported scheduling
-rather than approximating it is an explicit restriction of this foundation.
+HTML; module `async`, external classic `async`/`defer`, and legacy `for`/`event`
+attributes fail when encountered. Rejecting unsupported scheduling
+rather than approximating it is an explicit restriction of this foundation;
+external classic scheduling is tracked under the
+[deferred scripting work](../plans/html-dom-deferred.md).
 Render-blocking stylesheet behavior and the broader HTML preparation/error-
 reporting algorithms are not claimed.
 

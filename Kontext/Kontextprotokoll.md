@@ -18454,3 +18454,36 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   Recherche; [Phase-4-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-4-complete.md),
   [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
   [Deferred-Register](../plans/html-dom-deferred.md).
+
+### KP-629 - Phase-5-Inline-Scheduling-Kompatibilitaet
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Die gestagten
+  Phase-4-Abschlussdokumente wurden als `25a7d114`
+  (`docs(html-dom): close bounded forms interaction phase`) committed; der
+  Format-Hook bestand.
+- Belegt durch Oracle-Read-only-Recherche und lokalen Spec-Cache: externe
+  classic `async`/`defer`-Semantik verlangt parallele Fetches, Parserfortsetzung,
+  passende Ausfuehrungsreihenfolge und Lifecycle-Integration. Der aktuelle
+  Browser-Broker verwendet parser-pausing, sequenzielle `script-request` IPC;
+  ein erst nach Parse gestarteter serieller Fetch aendert Standard-Fetch-Timing.
+  Der HTML-Cache `html` (`checkedAt` 2026-11-07) ist unter 30 Tage alt.
+- Ableitung/Arbeitsentscheidung: als guenstige, eng begrenzte Kompatibilitaets-
+  korrektur ignorieren eligible parser-inserted inline classic scripts ohne
+  `src` `async` und `defer`; sie bleiben an ihrer Parserposition. Externe
+  classic Schedulingattribute bleiben abgelehnt. `module async` sowie legacy
+  `for`/`event` bleiben abgelehnt; module `defer` bleibt ignoriert.
+  Externes `async`/`defer` ist in HDF-010 konkretisiert, nicht approximiert.
+- Review: Code review APPROVED; die Empfehlung, den Overview-Hinweis zu
+  praezisieren, wurde in `docs/README.md` umgesetzt.
+- Validierung: Solution-Build bestanden (0 Warnungen/0 Fehler), Browser-
+  Testprojekt bestanden (1,445 Tests), vollstaendige Solution-Test-Suite,
+  Formatverifikation und `git diff --check` bestanden. Script-Tests durchliefen
+  lokale und Prozessrenderer.
+- Status: Code und zugehoerige Guides/Backlog/Roadmap bleiben unstaged. Phase 5
+  ist in Arbeit; externe classic async/defer scheduling bleibt HDF-010.
+- Quelle: aktueller Chat, Oracle-Read-only-Recherche, `specs/cache/html.html`,
+  `specs/manifest.json`; [InlinePageScripts.cs](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [InlineScriptTests.cs](../tests/VisualWeb.Browser.Tests/InlineScriptTests.cs),
+  [Deferred-Register HDF-010](../plans/html-dom-deferred.md),
+  [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md).

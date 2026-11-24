@@ -147,6 +147,11 @@ market share; Phase 1 may adjust it when the inventory exposes better evidence.
         affected by the selected work; update support guides.
 
 5. **Phase 5: Common scripting and document lifecycle**
+   - **Progress:** Eligible parser-inserted inline classics without `src` now
+     ignore `async`/`defer` and retain parser-position execution. External
+     classic async/defer scheduling remains unsupported; no deferred fetching
+     or persistent scheduling was added (see HDF-010). This is one increment,
+     not phase completion.
    - **Objective:** Extend the existing opt-in script path only for scheduling
      and lifecycle behavior ranked as necessary for common sites.
    - **Files/Functions to Modify/Create:** `src/Apps/VisualWeb.PageRendering/`,

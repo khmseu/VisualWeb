@@ -27,7 +27,9 @@ modules during parsing and evaluates them after the parser and interactive
 readiness transition, before DOMContentLoaded; bounded top-level await shares
 the initial page-script deadline. The module `defer` attribute is ignored;
 module `async`, imports, external modules and module fetching remain
-unsupported. Both features require explicit opt-in; default rendering remains
+unsupported. Eligible inline classics ignore `async`/`defer` at parser
+position; external classic async/defer scheduling remains unsupported. Both
+features require explicit opt-in; default rendering remains
 script-free. Publication pins every successful parsed DOM for scroll/resize; at most one
 unpublished candidate is retained alongside it. Navigation/reload uses a fresh
 host; lost DOM requires explicit reload rather than repeating execution.

@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-628; Phases 1-4 complete at bounded scope, Phase 5 not started):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-629; Phases 1-4 complete at bounded scope, Phase 5 in progress):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -94,7 +94,24 @@ Phase 3 und die finale Validierung sind unter
 dokumentiert; Phase 4 und deren Abschlussgrenze sind unter
 [KP-623](./Kontextprotokoll.md#kp-623---phase-3-commit-und-phase-4-begonnen)
 bis [KP-628](./Kontextprotokoll.md#kp-628---phase-4-im-priorisierten-umfang-abgeschlossen)
-nachvollziehbar.
+nachvollziehbar. Die Abschlussdokumentation wurde als
+`25a7d114` (`docs(html-dom): close bounded forms interaction phase`)
+committed.
+
+Phase 5 hat mit einer kleinen Scheduling-Kompatibilitaetskorrektur begonnen:
+eligible parser-inserted inline classic scripts ohne `src` ignorieren `async`
+und `defer` und bleiben parser-blocking; externe classic `async`/`defer`
+Scheduling bleibt explizit unsupported und ist unter HDF-010 geparkt. Der
+Grund: paralleler Fetch ohne Parserblockierung und korrekte document-order-
+Ausfuehrung verlangt mehr als den vorhandenen Parser-Pause-Broker; ein erst
+nach Parsing gestarteter serialer Fetch waere eine irrefuehrende Annaeherung.
+Der lokale HTML-Cache wurde am 2026-11-07 geprueft. Implementierung und
+Dokumentation sind noch uncommitted. Solution-Build (0 Warnungen/0 Fehler),
+Browser-Testprojekt, vollstaendige Solution-Test-Suite,
+Formatverifikation und `git diff --check` bestanden. Siehe
+[HDF-010](../plans/html-dom-deferred.md),
+[Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+[KP-629](./Kontextprotokoll.md#kp-629---phase-5-inline-scheduling-kompatibilitaet).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

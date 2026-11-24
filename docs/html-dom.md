@@ -411,7 +411,13 @@ and element textContent through private primitive-only callbacks, not CLR nodes.
 With explicit page-script opt-in, PageRendering invokes a bounded callback
 when the parser completes each eligible classic script element. Inline and
 browser-brokered external classics execute in parser order before parsing
-continues, so later input is not yet in the DOM. This is a finite subset, not
+continues, so later input is not yet in the DOM. On eligible inline classics
+without `src`, `async` and `defer` have no effect, following HTML
+[script preparation](https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element)
+(local spec ID `html`); external classic `async`/`defer` scheduling is rejected.
+External scheduling remains tracked under the
+[deferred scripting work](../plans/html-dom-deferred.md).
+This is a finite subset, not
 the complete HTML script preparation, render-blocking stylesheet, scheduling
 or error-reporting algorithms; without opt-in, scripts remain inert.
 Loaded-page script hosts also expose readonly `document.URL` and

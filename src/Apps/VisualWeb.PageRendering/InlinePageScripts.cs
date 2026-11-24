@@ -26,6 +26,8 @@ public static class InlinePageScripts
     public static bool IsJavaScriptMimeType(string value) =>
         value is not null && ClassicTypes.Contains(value.Trim(' ', '\t', '\n', '\r', '\f'));
 
+    /// <summary>Collect supported inline classic sources in document order from an already parsed document.</summary>
+    /// <remarks>This post-parse utility does not reproduce parser-position visibility or scheduling.</remarks>
     public static IReadOnlyList<string> Collect(DomDocument document, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -45,11 +47,7 @@ public static class InlinePageScripts
             {
                 throw new PageNavigationException("External scripts are deferred; no script was fetched.");
             }
-            if (element.GetAttribute("async") is not null || element.GetAttribute("defer") is not null
-                || element.GetAttribute("for") is not null || element.GetAttribute("event") is not null)
-            {
-                throw new PageNavigationException("Script scheduling attributes are outside the post-parse inline subset.");
-            }
+            ValidateSchedulingAttributes(element, "classic", ignoreAsync: true, ignoreDefer: true);
             var nodes = element.ChildNodes.OfType<DomText>().ToArray();
             var length = nodes.Sum(node => (long)node.Data.Length);
             if (length == 0) { continue; }
@@ -151,9 +149,10 @@ public static class InlinePageScripts
             : ScriptKind.Inert;
     }
 
-    private static void ValidateSchedulingAttributes(DomElement element, string scriptKind, bool ignoreDefer = false)
+    private static void ValidateSchedulingAttributes(DomElement element, string scriptKind,
+        bool ignoreAsync = false, bool ignoreDefer = false)
     {
-        if (element.GetAttribute("async") is not null
+        if ((!ignoreAsync && element.GetAttribute("async") is not null)
             || (!ignoreDefer && element.GetAttribute("defer") is not null)
             || element.GetAttribute("for") is not null || element.GetAttribute("event") is not null)
         {
@@ -164,7 +163,8 @@ public static class InlinePageScripts
     private static string ReadClassicSource(DomElement element, BrowserUrl pageUrl, BrowserUrl? baseUrl,
         PageScriptResourceLoader? scriptLoader, CancellationToken cancellationToken)
     {
-        ValidateSchedulingAttributes(element, "classic");
+        var inline = element.GetAttribute("src") is null;
+        ValidateSchedulingAttributes(element, "classic", ignoreAsync: inline, ignoreDefer: inline);
         if (element.GetAttribute("src") is { } sourceUrl)
         {
             if (element.GetAttribute("integrity") is not null || element.GetAttribute("crossorigin") is not null

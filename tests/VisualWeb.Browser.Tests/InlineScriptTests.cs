@@ -1009,6 +1009,83 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task InlineClassicSchedulingAttributesDoNotDelayParserPositionExecution(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>start</title><body>
+            <script>let order=['first'];</script>
+            <script async>
+            if(document.readyState!=='loading'||document.getElementById('later'))throw Error('async delayed');
+            order.push('async');queueMicrotask(()=>order.push('microtask'));
+            </script>
+            <script defer>
+            if(document.readyState!=='loading'||document.getElementById('later'))throw Error('defer delayed');
+            order.push('defer');
+            </script>
+            <script async defer>
+            if(document.readyState!=='loading'||document.getElementById('later'))throw Error('both delayed');
+            order.push('both');
+            </script>
+            <p id="later">later</p>
+            <script>order.push(document.getElementById('later').textContent);document.title=order.join(',');</script>
+            """);
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+
+        Assert.Equal("first,async,microtask,defer,both,later", rendered.Title);
+    }
+
+    [Theory]
+    [InlineData(false, "async")]
+    [InlineData(false, "defer")]
+    [InlineData(false, "async defer")]
+    [InlineData(true, "async")]
+    [InlineData(true, "defer")]
+    [InlineData(true, "async defer")]
+    public async Task ExternalClassicSchedulingAttributesFailWithoutBrokerRequest(bool process, string attributes)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"),
+            $"<!doctype html><script src='entry.js' {attributes}></script>", 200, []);
+        var requests = 0;
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(page, Viewport, (_, _) =>
+        {
+            requests++;
+            return Task.FromResult("");
+        }, Cancellation));
+
+        Assert.Contains("Scheduling attributes", error.Message);
+        Assert.Equal(0, requests);
+    }
+
+    [Theory]
+    [InlineData(false, "async for='window'")]
+    [InlineData(false, "defer event='onload'")]
+    [InlineData(false, "type='module' async")]
+    [InlineData(true, "async for='window'")]
+    [InlineData(true, "defer event='onload'")]
+    [InlineData(true, "type='module' async")]
+    public async Task UnsupportedInlineSchedulingAttributesStillFail(bool process, string attributes)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(
+            Page($"<!doctype html><script {attributes}>document.title='bad';</script>"), Viewport, Cancellation));
+
+        Assert.Contains("Scheduling attributes", error.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ExternalClassicScriptsPauseParsingAndUseTheEffectiveBase(bool process)
     {
         using IPageRenderer renderer = process
@@ -1236,6 +1313,9 @@ public sealed class InlineScriptTests
     [InlineData(" type=' \tTEXT/JAVASCRIPT\r\n '")]
     [InlineData(" type='application/ecmascript'")]
     [InlineData(" language='JavaScript1.5'")]
+    [InlineData(" async")]
+    [InlineData(" defer")]
+    [InlineData(" async defer")]
     public void ClassicTypeAndLegacyLanguageSelectionUsesHtmlRules(string attributes)
     {
         var parsed = HtmlParser.Parse("<!doctype html><script" + attributes + ">document.title='classic';</script>",
@@ -1264,8 +1344,10 @@ public sealed class InlineScriptTests
     [InlineData(" type='module'")]
     [InlineData(" type='IMPORTMAP'")]
     [InlineData(" type='speculationrules'")]
-    [InlineData(" async")]
-    [InlineData(" defer")]
+    [InlineData(" src='' async")]
+    [InlineData(" src='' defer")]
+    [InlineData(" async for='window'")]
+    [InlineData(" defer event='onload'")]
     [InlineData(" for='window' event='onload'")]
     public void DeferredExecutableFeaturesFailDuringWholeDocumentPreflight(string attributes)
     {
