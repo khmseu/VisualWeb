@@ -210,6 +210,18 @@ market share; Phase 1 may adjust it when the inventory exposes better evidence.
         updated reason and prerequisite.
 
 7. **Phase 7: Integrated compatibility and support accounting**
+   - **Progress:** A new offline local/process Browser regression combines
+     table parsing, opt-in `DOMContentLoaded` DOM queries/`innerHTML`, mutated
+     form-control snapshots, and retained resize without script re-execution.
+     Existing focused suites continue to cover each corrected failure and the
+     pinned HTML tokenizer/tree datasets. All 14 solution test projects pass;
+     the coarse HTML/DOM estimates remain unchanged.
+   - **Completion boundary:** The seven-phase prioritized roadmap is complete
+     at its documented practical-support scope. It does not claim full HTML or
+     DOM conformance. The deferred register, including HDF-013 through
+     HDF-015, remains the source of truth for postponed behavior. See the
+     [Phase 7 report](whatwg-html-dom-completion-roadmap-phase-7-complete.md)
+     and [roadmap completion report](whatwg-html-dom-completion-roadmap-complete.md).
    - **Objective:** Verify the prioritized target end to end and leave a
      reliable record of both supported and postponed behavior.
    - **Files/Functions to Modify/Create:** Test projects for touched

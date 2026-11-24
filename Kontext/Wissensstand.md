@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-633; Phases 1-6 complete at bounded scope, Phase 7 remains):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -127,6 +127,15 @@ Mehrknotenmutation HDF-015. Siehe
 [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
 [KP-629](./Kontextprotokoll.md#kp-629---phase-5-inline-scheduling-kompatibilitaet)
 bis [KP-633](./Kontextprotokoll.md#kp-633---phase-6-hidden-validierung-abgeschlossen).
+Phase 7 hat eine offline lokale/Prozess-Browserregression hinzugefuegt, die
+Tabellenparsing, `DOMContentLoaded`-DOM-Abfragen/`innerHTML`, geaenderte
+Formular-Snapshots und retained resize kombiniert. Solution-Build,
+Formatverifikation und alle 17.788 Tests aus 14 Testprojekten bestehen. Die
+HTML-/DOM-Schaetzwerte wurden nicht aus Testzahlen abgeleitet oder geaendert;
+die veroeffentlichten Supportgrenzen und Deferred-IDs bleiben massgeblich.
+Siehe [Phase-7-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-7-complete.md),
+[Gesamtbericht](../plans/whatwg-html-dom-completion-roadmap-complete.md) und
+[KP-634](./Kontextprotokoll.md#kp-634---phase-7-integrierte-kompatibilitaet).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

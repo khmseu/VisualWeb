@@ -18592,3 +18592,31 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [Phase-6-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-6-complete.md),
   [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
   [HDF-014/HDF-015](../plans/html-dom-deferred.md).
+
+### KP-634 - Phase-7-integrierte-Kompatibilitaet
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „continue“ nach Commit `ac44c7c5`; damit wurde die Fortsetzung
+  der genehmigten Roadmap in Phase 7 aufgenommen.
+- Belegt: Die neue lokale/Prozess-Regression kombiniert statische
+  Tabellenbaumkonstruktion, opt-in DOMContentLoaded-Queries und
+  `innerHTML`/Attributmutation, Form-Control-Snapshot und retained resize.
+  Sie laedt keine Netzwerkressourcen und bestaetigt, dass der Lifecycle-Code
+  bei retained resize nicht erneut ausgefuehrt wird. Das Submit-Control wird
+  gemaess existierendem Renderer-Datenmodell als `button` repraesentiert.
+- Belegt: `dotnet build VisualWeb.slnx` bestand mit 0 Warnungen/0 Fehlern;
+  die neue Regression bestand in lokalen und Prozessrenderern; der
+  serialisierte Solution-Testlauf bestand mit 17.788 Tests in 14 Projekten;
+  `dotnet format ... --verify-no-changes` bestand. Die HTML-/DOM-
+  Schaetzwerte blieben unveraendert; der lokale `html`-/`dom`-Cache war am
+  2026-11-07 geprueft worden und am 2026-11-24 innerhalb der 30-Tage-Frist.
+- Status: Phase 7 und die siebenphasige Roadmap sind auf der genehmigten
+  bounded-support-Grenze abgeschlossen. Dies ist keine Vollkonformitaets-
+  behauptung. HDF-013 bis HDF-015 und die uebrigen Deferred-Eintraege bleiben
+  wiederaufnehmbar dokumentiert. Die Phase-7-Aenderungen sind noch nicht
+  committed.
+- Quelle: aktueller Chat; `InlineScriptTests.ParsedPageLifecycleMutationsFeedFormSnapshotAcrossRenderers`;
+  [Phase-7-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-7-complete.md),
+  [Gesamtbericht](../plans/whatwg-html-dom-completion-roadmap-complete.md),
+  [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [HTML/DOM Deferred](../plans/html-dom-deferred.md).

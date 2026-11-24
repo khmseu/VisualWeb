@@ -174,6 +174,10 @@ Phase-11d cases cover opt-in inline source classification/preflight and exact
 budgets, title/style mutations reaching pixels, fresh navigation contexts,
 committed DOM retention on resize/failed candidates, transactional script errors,
 lost-worker reload requirements and actual confined V8 deadline recovery.
+`ParsedPageLifecycleMutationsFeedFormSnapshotAcrossRenderers` combines static
+table parsing, `DOMContentLoaded` DOM queries/`innerHTML` and attribute changes,
+and GET-form control snapshots without submitting or making a request in both
+local and process rendering; retained resize verifies the resulting page state.
 The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
 budgets, strict JSON, opacity, truncation and cancellation, plus v6 request-only
 linked stylesheet count/character/URL/UTF-8 JSON bounds, v5 link rectangles,

@@ -583,6 +583,13 @@ are outside it. Additional tests verify mutations, unsupported failures,
 cancellation and exact limits. This is finite evidence, not a claim to
 implement all of HTML or DOM.
 
+The browser suite also runs an offline local/process integration fixture that
+combines table parsing, opt-in `DOMContentLoaded` DOM queries and `innerHTML`
+mutation, form-control snapshot collection, and retained resize. It verifies
+that script changes are reflected in the form snapshot without rerunning the
+script. This is evidence for composition of the bounded subsets, not broader
+form or HTML conformance.
+
 ```sh
 dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
 dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj

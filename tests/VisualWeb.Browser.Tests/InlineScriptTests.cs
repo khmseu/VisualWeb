@@ -2,6 +2,7 @@ using VisualWeb.Core.Url;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Html;
 using VisualWeb.Engine.Scripting;
+using VisualWeb.Ipc.Contracts;
 using Xunit;
 
 namespace VisualWeb.Browser.Tests;
@@ -96,6 +97,56 @@ public sealed class InlineScriptTests
         var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
         Assert.Equal(rendered.Title, retained.Title);
         Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ParsedPageLifecycleMutationsFeedFormSnapshotAcrossRenderers(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Before</title>
+            <table><tbody><tr><td id=cell>Original cell</td></tr></tbody></table>
+            <form action="https://example.test/search">
+                <input id=query name=q value=before>
+                <button id=submit type=submit name=go value=yes>Before</button>
+            </form>
+            <script>
+            let runs=0;
+            document.addEventListener('DOMContentLoaded',()=>{
+                runs++;
+                const cell=document.getElementById('cell');
+                cell.innerHTML='<span>Updated cell</span>';
+                document.getElementById('query').setAttribute('value','from-script');
+                document.getElementById('submit').innerHTML='Send updated';
+                if(document.querySelectorAll('table tr').length!==1
+                    ||document.querySelector('#cell span').textContent!=='Updated cell')
+                    throw Error('parsed table mutation');
+                document.title=document.querySelector('#cell span').textContent+':'
+                    +document.getElementById('query').getAttribute('value')+':'+runs;
+            });
+            </script>
+            """);
+
+        var rendered = await renderer.RenderAsync(page, new(200, 160, 1), Cancellation);
+
+        Assert.Equal("Updated cell:from-script:1", rendered.Title);
+        Assert.Equal([new PageForm("https://example.test/search", null)], rendered.Forms);
+        Assert.Equal(["text", "button"], rendered.FormControls.Select(control => control.Kind));
+        Assert.Equal([0, 0], rendered.FormControls.Select(control => control.Form));
+        Assert.Equal(["q", "go"], rendered.FormControls.Select(control => control.Name));
+        Assert.Equal(["from-script", "yes"], rendered.FormControls.Select(control => control.Value));
+        Assert.Equal(["", "Send updated"], rendered.FormControls.Select(control => control.Label));
+        Assert.All(rendered.FormControls, control => Assert.NotNull(control.Rect));
+
+        renderer.CommitDocument(page.DocumentId);
+        var retained = await renderer.RenderRetainedAsync(page, new(220, 160, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(rendered.Forms, retained.Forms);
+        Assert.Equal(rendered.FormControls, retained.FormControls);
     }
 
     [Theory]

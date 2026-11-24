@@ -603,6 +603,11 @@ outside the supported scope.
 The prioritized common-feature plan and revisit-ready list of postponed HTML/DOM
 gaps are tracked in the [HTML/DOM completion roadmap](whatwg-html-dom-completion-roadmap.md)
 and [deferred register](html-dom-deferred.md).
+The final integrated check combines table parsing, opt-in script DOM mutation,
+form snapshot collection and retained resize in local and process rendering.
+Phase 7 closes this bounded support-accounting pass without changing the rough
+HTML/DOM estimates or claiming full conformance; see the
+[roadmap completion report](whatwg-html-dom-completion-roadmap-complete.md).
 
 ### 5. General CSS, layout, and painting
 
