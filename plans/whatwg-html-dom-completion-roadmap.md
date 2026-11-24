@@ -150,8 +150,14 @@ market share; Phase 1 may adjust it when the inventory exposes better evidence.
    - **Progress:** Eligible parser-inserted inline classics without `src` now
      ignore `async`/`defer` and retain parser-position execution. External
      classic async/defer scheduling remains unsupported; no deferred fetching
-     or persistent scheduling was added (see HDF-010). This is one increment,
-     not phase completion.
+     or persistent scheduling was added (see HDF-010). Implemented in
+     `42059666`.
+   - **Completion boundary:** Phase 5 is complete for the prioritized bounded
+     script/lifecycle subset: parser-position classic execution, finite
+     readiness/events/microtasks and import-free inline modules remain opt-in.
+     External classic async/defer, module loading/imports and a persistent
+     HTML event loop remain deferred; no full HTML scheduling conformance is
+     claimed.
    - **Objective:** Extend the existing opt-in script path only for scheduling
      and lifecycle behavior ranked as necessary for common sites.
    - **Files/Functions to Modify/Create:** `src/Apps/VisualWeb.PageRendering/`,

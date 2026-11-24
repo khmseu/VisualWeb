@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-629; Phases 1-4 complete at bounded scope, Phase 5 in progress):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-630; Phases 1-5 complete at bounded scope, Phase 6 not started):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -98,20 +98,22 @@ nachvollziehbar. Die Abschlussdokumentation wurde als
 `25a7d114` (`docs(html-dom): close bounded forms interaction phase`)
 committed.
 
-Phase 5 hat mit einer kleinen Scheduling-Kompatibilitaetskorrektur begonnen:
-eligible parser-inserted inline classic scripts ohne `src` ignorieren `async`
-und `defer` und bleiben parser-blocking; externe classic `async`/`defer`
-Scheduling bleibt explizit unsupported und ist unter HDF-010 geparkt. Der
-Grund: paralleler Fetch ohne Parserblockierung und korrekte document-order-
-Ausfuehrung verlangt mehr als den vorhandenen Parser-Pause-Broker; ein erst
-nach Parsing gestarteter serialer Fetch waere eine irrefuehrende Annaeherung.
-Der lokale HTML-Cache wurde am 2026-11-07 geprueft. Implementierung und
-Dokumentation sind noch uncommitted. Solution-Build (0 Warnungen/0 Fehler),
-Browser-Testprojekt, vollstaendige Solution-Test-Suite,
-Formatverifikation und `git diff --check` bestanden. Siehe
+Phase 5 ist im priorisierten bounded Umfang abgeschlossen. Inline classic
+scripts ohne `src` ignorieren `async`/`defer` und bleiben parser-blocking,
+implementiert in Commit `42059666` (`fix(scripting): ignore inline classic
+scheduling flags`). Externe classic `async`/`defer` scheduling bleibt
+unsupported und unter HDF-010 geparkt: paralleler Fetch ohne Parserblockierung
+und korrekte document-order-Ausfuehrung verlangt mehr als den vorhandenen
+Parser-Pause-Broker; ein erst nach Parsing gestarteter serialer Fetch waere
+eine irrefuehrende Annaeherung. Der lokale HTML-Cache wurde am 2026-11-07
+geprueft. Solution-Build (0 Warnungen/0 Fehler), Browser-Testprojekt,
+vollstaendige Solution-Test-Suite, Formatverifikation und `git diff --check`
+bestanden. Die Abschlussdokumentation bleibt noch uncommitted; Phase 6 hat
+nicht begonnen. Siehe [Phase-5-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-5-complete.md),
 [HDF-010](../plans/html-dom-deferred.md),
 [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
-[KP-629](./Kontextprotokoll.md#kp-629---phase-5-inline-scheduling-kompatibilitaet).
+[KP-629](./Kontextprotokoll.md#kp-629---phase-5-inline-scheduling-kompatibilitaet)
+und [KP-630](./Kontextprotokoll.md#kp-630---phase-5-im-bounded-umfang-abgeschlossen).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

@@ -18487,3 +18487,35 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [InlineScriptTests.cs](../tests/VisualWeb.Browser.Tests/InlineScriptTests.cs),
   [Deferred-Register HDF-010](../plans/html-dom-deferred.md),
   [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md).
+
+### KP-630 - Phase 5 im bounded Umfang abgeschlossen
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Der Phase-5-Code und die
+  guide-/support-/backlog-Aenderungen wurden nach Staging als `42059666`
+  (`fix(scripting): ignore inline classic scheduling flags`) committed; der
+  Format-Hook bestand.
+- Abschlussgrenze (Ableitung aus der Nutzerprioritaet und dem approved
+  Roadmap-Ziel): Bereits vorhandene parser-position classics, finite
+  document readiness/events/microtasks und import-free inline modules bilden
+  den priorisierten opt-in lifecycle-Subset. Neu korrigiert ist die no-op
+  Semantik von inline classic `async`/`defer`. Phase 5 schliesst an dieser
+  Grenze; externe classic async/defer fetching, module imports/graph und
+  persistent HTML event loop bleiben spaeter.
+- Belegt: Externes `defer`/`async` korrekt zu implementieren benoetigt
+  parallelen broker fetch ohne Parserblockierung und passende Ordnung/
+  Lifecycle-Einbindung. Der aktuelle Broker ist ein parser-pause,
+  sequenzieller `script-request` IPC-Pfad; serielle Nach-Parse-Fetches
+  veraenderten das Fetch-Timing. HDF-010 enthaelt nun diese genaue Luecke und
+  Wiederaufnahmebedingung.
+- Review: Code review APPROVED; die Empfehlung fuer einen expliziten
+  Overview-Supporthinweis wurde umgesetzt.
+- Validierung: Solution build 0 Warnungen/0 Fehler; Browser-Testprojekt
+  1,445 Tests bestanden; volle Solution-Test-Suite, Formatverifikation und
+  `git diff --check` bestanden. Tests umfassen lokale und Prozessrenderer.
+- Status: Code commit `42059666` ist abgeschlossen. Phase-5-Abschlussbericht,
+  Roadmap-/Kontextabschluss sind noch uncommitted; Phase 6 hat nicht begonnen.
+- Quelle: Commit `42059666`, Reviewausgabe, Oracle-Read-only-Recherche,
+  [Phase-5-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-5-complete.md),
+  [HDF-010](../plans/html-dom-deferred.md),
+  [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md).
