@@ -35,6 +35,63 @@ public sealed class AttributeReflectionTests
     }
 
     [Fact]
+    public void HiddenGetterReflectsLivePresenceAndUntilFoundState()
+    {
+        using var host = new V8ScriptHost(document: Document());
+        Assert.True(host.Evaluate("""
+            (()=>{let element=document.createElement('div');
+                let ok=element.hidden===false;
+                element.setAttribute('hidden','');ok=ok&&element.hidden===true;
+                element.setAttribute('hidden','until-found');ok=ok&&element.hidden==='until-found';
+                element.setAttribute('hidden','UNTIL-FOUND');ok=ok&&element.hidden==='until-found';
+                element.setAttribute('hidden','until-found ');ok=ok&&element.hidden===true;
+                element.removeAttribute('hidden');
+                element.setAttribute('hidden','custom');ok=ok&&element.hidden===true;
+                return ok&&element.hidden===true&&!element.isConnected})()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void HiddenSetterHandlesNullableBooleanNumberAndStringValues()
+    {
+        using var host = new V8ScriptHost(document: Document());
+        Assert.True(host.Evaluate("""
+            (()=>{let element=document.createElement('div'),ok=true;
+                element.hidden=true;ok=ok&&element.getAttribute('hidden')===''&&element.hidden===true;
+                element.hidden=false;ok=ok&&!element.hasAttribute('hidden')&&element.hidden===false;
+                element.hidden=0;ok=ok&&!element.hasAttribute('hidden');
+                element.hidden=-0;ok=ok&&!element.hasAttribute('hidden');
+                element.hidden=NaN;ok=ok&&!element.hasAttribute('hidden');
+                element.hidden=1;ok=ok&&element.getAttribute('hidden')==='';
+                element.hidden=Infinity;ok=ok&&element.getAttribute('hidden')==='';
+                element.hidden='';ok=ok&&!element.hasAttribute('hidden');
+                element.hidden='until-found';ok=ok&&element.getAttribute('hidden')==='until-found';
+                element.hidden='UNTIL-FOUND';ok=ok&&element.getAttribute('hidden')==='until-found';
+                element.hidden='other';ok=ok&&element.getAttribute('hidden')==='';
+                element.hidden=null;ok=ok&&!element.hasAttribute('hidden');
+                element.hidden=undefined;ok=ok&&!element.hasAttribute('hidden');
+                let converted=false;
+                element.hidden={toString(){converted=true;return 'Until-Found'}};
+                let symbol=false;try{element.hidden=Symbol()}catch(e){symbol=e instanceof TypeError}
+                return ok&&converted&&symbol&&element.hidden==='until-found';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void HiddenReceiverBrandPrecedesConversionAndGetterBranding()
+    {
+        using var host = new V8ScriptHost(document: Document());
+        Assert.True(host.Evaluate("""
+            (()=>{let converted=false,descriptor=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.body),'hidden');
+                let value={toString(){converted=true;return 'until-found'}},badGetter=false,badSetter=false;
+                try{descriptor.get.call({})}catch(e){badGetter=e instanceof TypeError}
+                try{descriptor.set.call({},value)}catch(e){badSetter=e instanceof TypeError}
+                return badGetter&&badSetter&&!converted&&!document.body.hasAttribute('hidden')})()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void TogglePreservesValuesNormalizesNamesAndUsesOptionalBooleanForce()
     {
         using var host = new V8ScriptHost(document: Document());
@@ -105,7 +162,10 @@ public sealed class AttributeReflectionTests
         Assert.True(host.Evaluate("""
             (()=>{let body=document.body,failed=false;
                 try{body.toggleAttribute('new')}catch(e){failed=e instanceof TypeError}
+                let hiddenFailed=false;try{body.hidden=true}catch(e){hiddenFailed=e instanceof TypeError}
                 let ok=failed&&!body.hasAttribute('new')&&!body.toggleAttribute('missing',false)
+                    &&hiddenFailed&&!body.hidden
+                    &&(body.hidden=false)===false
                     &&body.toggleAttribute('a0',true)&&body.getAttribute('a0')==='value'
                     &&!body.toggleAttribute('a0',false)&&body.toggleAttribute('new');
                 return ok&&body.getAttribute('new')===''})()
@@ -124,7 +184,8 @@ public sealed class AttributeReflectionTests
             (()=>{let id=false,toggle=false;
                 try{body.id='abcd'}catch(e){id=e instanceof TypeError}
                 try{body.toggleAttribute('x')}catch(e){toggle=e instanceof TypeError}
-                return id&&toggle&&body.id==='abc'&&!body.hasAttribute('x')})()
+                let hidden=false;try{body.hidden=true}catch(e){hidden=e instanceof TypeError}
+                return id&&toggle&&hidden&&body.id==='abc'&&!body.hasAttribute('x')&&body.hidden===false})()
             """, Cancellation).Boolean);
         Assert.Equal("abc", document.Body.GetAttribute("id"));
     }

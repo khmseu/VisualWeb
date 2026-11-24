@@ -481,9 +481,18 @@ continues storing ordinary raw class attributes.
 Phase 11k exposes bounded contains/isSameNode/getRootNode, parentElement,
 hasChildNodes and element-only child/sibling navigation over these live trees.
 No shadow DOM or live child collection is implied.
-Phase 11l adds native checked ToggleAttribute and script id/toggleAttribute
-bindings. Ordered attributes retain replacement position and append on
-removal/readdition; the bridge preserves existing storage preflight.
+Phase 11l adds native checked ToggleAttribute, script id/toggleAttribute, and
+the bounded `HTMLElement.hidden` reflection. Its getter reports hidden state
+as `false`, `true`, or `"until-found"`; its nullable
+`(boolean or unrestricted double or DOMString)` setter follows the cached
+HTML conversion rules and reuses attribute limits.
+This does not add `beforematch`, ancestor reveal, or visible
+`hidden=until-found` layout. Ordered attributes retain replacement position
+and append on removal/readdition; the bridge preserves existing storage
+preflight. See HTML
+[`HTMLElement.hidden`](https://html.spec.whatwg.org/multipage/interaction.html#dom-hidden)
+and [hidden attribute states](https://html.spec.whatwg.org/multipage/interaction.html#the-hidden-attribute)
+(local ID `html`).
 Phase 11m exposes CharacterData/nodeValue bindings using native UTF-16
 substring/replacement primitives. No observer, live-range or processing-
 instruction pseudoattribute reactions are implied.

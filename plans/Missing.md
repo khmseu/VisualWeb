@@ -583,6 +583,9 @@ The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, parser-inserted form-owner state,
 form-associated custom elements, custom-element reactions, and other browser
 APIs; the browser-shell form state is a separate bounded shell-owned subset.
+The opted-in script facade now includes bounded `HTMLElement.hidden`
+reflection, but not the `hidden=until-found` reveal lifecycle or its
+`beforematch` behavior.
 Parser template construction remains a narrow static subset: table/select
 algorithms beyond the documented bounded combinations, foreign content,
 plugin/resource behavior and broad script bindings are deferred. Only the

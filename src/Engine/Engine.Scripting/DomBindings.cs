@@ -125,6 +125,8 @@ internal sealed class DomBindings : IDisposable
                 "attribute-set" => SetAttribute(Element(handle), name, value),
                 "attribute-remove" => RemoveAttribute(Element(handle), name),
                 "attribute-toggle" => ToggleAttribute(Element(handle), name, value),
+                "hidden-get" => Observe(Hidden(handle))!,
+                "hidden-set-string" => SetHiddenString(Element(handle), value),
                 "hyperlink-href-get" => HyperlinkHref(handle),
                 "hyperlink-href-set" => SetHyperlinkHref(handle, value),
                 "hyperlink-url-get" => HyperlinkUrlComponent(handle, name),
@@ -616,6 +618,16 @@ internal sealed class DomBindings : IDisposable
         element.SetAttribute(name, value);
         return "";
     }
+    private string Hidden(int handle)
+    {
+        var value = Element(handle).GetAttribute("hidden");
+        return value is null ? "false" : AsciiEqualsIgnoreCase(value, "until-found") ? "until-found" : "true";
+    }
+    private static string SetHiddenString(DomElement element, string value)
+    {
+        if (AsciiEqualsIgnoreCase(value, "until-found")) { return SetAttribute(element, "hidden", "until-found"); }
+        return value.Length == 0 ? RemoveAttribute(element, "hidden") : SetAttribute(element, "hidden", "");
+    }
     private string AttributeNames(DomElement element)
     {
         if (element.Attributes.Count > MaxAttributes)
@@ -667,6 +679,17 @@ internal sealed class DomBindings : IDisposable
         {
             var c = right[i];
             if (left[i] != (c is >= 'A' and <= 'Z' ? c + 32 : c)) { return false; }
+        }
+        return true;
+    }
+    private static bool AsciiEqualsIgnoreCase(string left, string right)
+    {
+        if (left.Length != right.Length) { return false; }
+        for (var i = 0; i < left.Length; i++)
+        {
+            var leftChar = left[i] is >= 'A' and <= 'Z' ? left[i] + 32 : left[i];
+            var rightChar = right[i] is >= 'A' and <= 'Z' ? right[i] + 32 : right[i];
+            if (leftChar != rightChar) { return false; }
         }
         return true;
     }
@@ -1202,6 +1225,24 @@ internal sealed class DomBindings : IDisposable
             define(prototype, 'id', {enumerable: true,
                 get() {return call('attribute-get', elementBrand(this), '', -1, -1, 'id') ?? '';},
                 set(value) {const id = elementBrand(this);call('attribute-set', id, `${value}`, -1, -1, 'id');}
+            });
+            define(prototype, 'hidden', {enumerable: true,
+                get() {
+                    const state = call('hidden-get', elementBrand(this), '', -1, -1, 'hidden');
+                    return state === 'until-found' ? state : state === 'true';
+                },
+                set(value) {
+                    const id = elementBrand(this);
+                    if (value === null || value === undefined || value === false || value === 0 || value !== value || value === '') {
+                        call('attribute-remove', id, '', -1, -1, 'hidden');
+                    } else if (typeof value === 'string') {
+                        call('hidden-set-string', id, value, -1, -1, 'hidden');
+                    } else if (typeof value === 'boolean' || typeof value === 'number') {
+                        call('attribute-set', id, '', -1, -1, 'hidden');
+                    } else {
+                        call('hidden-set-string', id, `${value}`, -1, -1, 'hidden');
+                    }
+                }
             });
             installClasses(prototype, elementBrand, call);
             define(basePrototype, 'target', {enumerable: true,

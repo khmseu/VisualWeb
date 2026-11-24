@@ -18519,3 +18519,76 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [Phase-5-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-5-complete.md),
   [HDF-010](../plans/html-dom-deferred.md),
   [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md).
+
+### KP-631 - Phase-5-Closeout-Commit und Phase 6 begonnen
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Die gestagten
+  Phase-5-Abschlussdokumente wurden als `aa924eac`
+  (`docs(html-dom): close bounded scripting lifecycle phase`) committed; der
+  Pre-Commit-Format-Hook bestand.
+- Status: Phases 1-5 sind im priorisierten bounded Umfang geschlossen.
+  Phase 6 beginnt mit einer fokussierten Suche nach einem gaengigen,
+  niedrigaufwaendigen HTML/DOM-Inkrement. Die Auswahl/Read-only-Recherche
+  laeuft; Codeimplementierung hat nicht begonnen.
+- Quelle: aktueller Chat, Commit `aa924eac`, [Phase-6-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [Phase-5-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-5-complete.md).
+
+### KP-632 - Phase-6-`hidden`-Reflexion ausgewaehlt
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzeranforderung: gaengige Browser-/Website-Verwendung priorisieren,
+  Funktionen mit geringem Zusatzaufwand aufnehmen und uebrige Luecken
+  wiederaufnehmbar dokumentieren. Die generelle Prioritaet ist genehmigt; die
+  konkrete Feature-Auswahl ist eine abgeleitete Arbeitsentscheidung, keine
+  separat bestaetigte Nutzeranforderung.
+- Belegt: Die lokale HTML-IDL deklariert `HTMLElement.hidden` als nullable
+  `(boolean or unrestricted double or DOMString)`; Getter/Setter sind in
+  `specs/cache/html.html` unter `#dom-hidden` dokumentiert. Die lokale
+  Web-IDL-Unionkonversion steht unter `specs/cache/webidl.html#es-to-union`;
+  beide Cacheeintraege sind laut Manifest am 2026-11-07 geprueft worden. Die
+  bestehende primitive Attributbruecke kann die Reflexion und
+  Storage-/Callback-Limits wiederverwenden. Der Layoutpfad behandelt
+  `hidden=until-found` weiterhin fail-closed.
+- Implementiert: Opt-in Scriptfassaden reflektieren den HTML-Getterzustand
+  (`false`, `true`, `"until-found"`) und die begrenzten Setterregeln inklusive
+  nullable, Boolean-, Zahlen- und Stringzweigen; es gibt keinen neuen
+  Renderer-/IPC-/Trustpfad. Gezielt bestaetigt: 18
+  `AttributeReflectionTests` sowie zwei lokale/Prozess-Faelle der
+  Browser-Integration.
+- Auswahlgruende: Die Eigenschaft wird zum gaengigen Ein-/Ausblenden genutzt
+  und benoetigt nur die vorhandene DOM-Attributbruecke. `outerHTML` und
+  `insertAdjacentHTML()` wurden nach Code-/Spec-Pruefung nicht als gleich
+  niedrigaufwaendig gewaehlt: Parent-Kontext-Parsing und atomare
+  Mehrknoten-Replace/Insert-Semantik sind nicht durch `innerHTML` abgedeckt.
+- Zurueckgestellt: `hidden=until-found`-Reveal/`beforematch` ist HDF-014;
+  Parent-Kontext-Markupmutation ist HDF-015. Beide Eintraege enthalten
+  Spezifikationsstelle, Grenze, Grund und Wiederaufnahmebedingung.
+- Validierungsstatus: Betroffene gezielte Tests bestehen; Solution-Build,
+  komplette Scripting-/Browserprojekte, volle Solution-Tests und
+  Formatverifikation stehen noch aus.
+- Quelle: Oracle Read-only-Recherche im aktuellen Chat; lokale
+  `html`-/`webidl`-Caches; [Phase-6-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [HDF-014/HDF-015](../plans/html-dom-deferred.md), Code- und Testdiff dieser
+  Fortsetzung.
+
+### KP-633 - Phase-6-`hidden`-Validierung abgeschlossen
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Belegt: Solution-Build (0 Warnungen/0 Fehler), 407
+  `Engine.Scripting.Tests`, 1.447 `VisualWeb.Browser.Tests`, die
+  Solution-Test-Suite mit `-m:1`, Formatverifikation und `git diff --check`
+  bestanden. Lokaler und required-confined V8Smoke bestanden. Der erste
+  parallelisierte Solution-Volltestlauf hatte zwei V8-Deadlinefehler; beide
+  betroffenen Tests bestanden isoliert und erneut im seriellen Volltest.
+- Belegt: Die neue `hidden=until-found`-Fail-closed-Browserregression besteht
+  lokal und im Prozessrenderer. HDF-014/HDF-015 bleiben fuer Reveal/
+  `beforematch` und parent-context-Markupmutation offen.
+- Status: Phase 6 ist im priorisierten Umfang abgeschlossen; Phase 7
+  (integrierte Kompatibilitaet und Supportabrechnung) bleibt als naechster
+  Roadmap-Schritt. Kein Commit in dieser Fortsetzung: beim Staging-Check waren
+  keine Dateien staged; die Arbeitsdateien bleiben uncommitted.
+- Quelle: Build-/Test-/V8Smoke-/Format-/Diff-Check-Ausgaben dieser Fortsetzung;
+  [Phase-6-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-6-complete.md),
+  [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
+  [HDF-014/HDF-015](../plans/html-dom-deferred.md).

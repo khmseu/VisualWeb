@@ -263,10 +263,10 @@ public sealed class HiddenRenderingTests
             <button name=send value=yes>Shown<span id=first hidden> reveal</span><span id=second> secret</span></button>
             <script hidden>
             let first=document.getElementById('first'), second=document.getElementById('second');
-            if(first.hasAttribute('hidden')) {
-                first.removeAttribute('hidden'); second.setAttribute('hidden',''); document.title='once';
+            if(first.hidden===true) {
+                first.hidden=false; second.hidden=true; document.title='once';
             } else {
-                first.setAttribute('hidden',''); second.removeAttribute('hidden'); document.title='reran';
+                first.hidden=true; second.hidden=false; document.title='reran';
             }
             </script>
             """);
@@ -281,6 +281,23 @@ public sealed class HiddenRenderingTests
         Assert.Equal("once", retained.Title);
         Assert.Equal(button.Label, Assert.Single(retained.FormControls).Label);
         Assert.Equal(button.Value, Assert.Single(retained.FormControls).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ScriptedUntilFoundStateStillFailsClosedWithoutReveal(bool process)
+    {
+        var page = Document("""
+            <!doctype html><style>*{margin:0}</style>
+            <button>Shown<span id=target>Secret</span></button>
+            <script>document.getElementById('target').hidden='UNTIL-FOUND'</script>
+            """);
+        using var renderer = Renderer(process, scripts: true);
+        var exception = process
+            ? (Exception)await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(page, new(200, 80, 1), Cancellation))
+            : await Assert.ThrowsAsync<UnsupportedLayoutException>(() => renderer.RenderAsync(page, new(200, 80, 1), Cancellation));
+        Assert.Contains("until-found", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

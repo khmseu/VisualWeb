@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-630; Phases 1-5 complete at bounded scope, Phase 6 not started):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-633; Phases 1-6 complete at bounded scope, Phase 7 remains):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -32,7 +32,7 @@ Der Initialrang priorisiert (1) gewoehnliche Dokument-Tree-Construction/
 Recovery, (2) Fragment-/Markup-Verhalten, (3) gaengige DOM-Abfragen/
 Mutationen, (4) Formulare/Interaktionen und (5) Script-/Dokumentlebenszyklus;
 kleine angrenzende Parser-/DOM-Erweiterungen koennen in den Umsetzungsphasen
-mitgenommen werden. Fuer 13 Deferred-Kategorien sind Ist-Grenzen, Begruendung,
+mitgenommen werden. Fuer 15 Deferred-Kategorien sind Ist-Grenzen, Begruendung,
 Wiederaufnahmebedingungen, wahrscheinliche Owner/Prerequisites und gepruefte
 Code-/Testhinweise festgehalten. Der Register bleibt verfeinerbar und nicht
 telemetriegestuetzt. [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md)
@@ -108,12 +108,25 @@ Parser-Pause-Broker; ein erst nach Parsing gestarteter serialer Fetch waere
 eine irrefuehrende Annaeherung. Der lokale HTML-Cache wurde am 2026-11-07
 geprueft. Solution-Build (0 Warnungen/0 Fehler), Browser-Testprojekt,
 vollstaendige Solution-Test-Suite, Formatverifikation und `git diff --check`
-bestanden. Die Abschlussdokumentation bleibt noch uncommitted; Phase 6 hat
-nicht begonnen. Siehe [Phase-5-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-5-complete.md),
-[HDF-010](../plans/html-dom-deferred.md),
+bestanden. Die Abschlussdokumentation wurde als `aa924eac`
+(`docs(html-dom): close bounded scripting lifecycle phase`) committed. Phase 6
+ist im priorisierten Umfang mit der script-opt-in `HTMLElement.hidden`-
+Reflexion abgeschlossen. Der Getter reflektiert `false`, `true` oder
+`"until-found"`; der nullable Setter folgt den Boolean-/Zahlen-/Stringzweigen
+und verwendet die vorhandenen Attributlimits. Lokale und required-confined
+V8Smoke, Solution-Build, Scripting-/Browser-Tests, serialisierte
+Solution-Volltests, Formatverifikation und Diff-Check bestanden. Ein
+parallelisierter Solution-Testlauf hatte zwei V8-Deadlinefehler; beide
+betroffenen Faelle bestanden isoliert und im seriellen Volltest.
+`hidden=until-found` reveal bleibt HDF-014; `outerHTML` und
+`insertAdjacentHTML()` bleiben wegen Parent-Kontext-Parsing und atomarer
+Mehrknotenmutation HDF-015. Siehe
+[Phase-5-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-5-complete.md),
+[Phase-6-Bericht](../plans/whatwg-html-dom-completion-roadmap-phase-6-complete.md),
+[HDF-010/HDF-014/HDF-015](../plans/html-dom-deferred.md),
 [Phase-5-Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
 [KP-629](./Kontextprotokoll.md#kp-629---phase-5-inline-scheduling-kompatibilitaet)
-und [KP-630](./Kontextprotokoll.md#kp-630---phase-5-im-bounded-umfang-abgeschlossen).
+bis [KP-633](./Kontextprotokoll.md#kp-633---phase-6-hidden-validierung-abgeschlossen).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

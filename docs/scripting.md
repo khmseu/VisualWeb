@@ -843,7 +843,7 @@ Sources: cached `dom`,
 [replace data](https://dom.spec.whatwg.org/#concept-cd-replace) and
 [nodeValue](https://dom.spec.whatwg.org/#dom-node-nodevalue).
 
-## Reflected ID and attribute toggling (phase 11l)
+## Reflected ID, hidden state and attribute toggling (phase 11l)
 
 Bound HTML Element wrappers expose reflected `id` and `toggleAttribute(name,
 force?)`. An absent ID reads as the empty string; writes use DOMString
@@ -861,19 +861,39 @@ including validation for forced no-ops. Invalid names produce the existing
 native-bridge TypeError diagnostic, not yet a DOMException. Conversion effects
 precede the live attribute read; extra arguments are ignored.
 
+The opt-in loaded-page facade exposes bounded `HTMLElement.hidden` on current
+HTML Element facades. Its getter returns `false` when absent, the string
+`"until-found"` in that attribute state (ASCII-case-insensitive), and `true`
+for other present values. Its nullable `(boolean or unrestricted double or
+DOMString)` setter
+removes the attribute for `null`/`undefined`, `false`, numeric zero/NaN, or
+the empty string; an ASCII-case-insensitive `"until-found"` string stores the
+canonical keyword; other values set an empty attribute. String conversion
+happens after the receiver brand check, and Symbol conversion errors propagate.
+Writes use the same attribute-storage, callback, cancellation and ownership
+limits as other reflected attributes. This does not implement `beforematch`,
+ancestor reveal, or `hidden=until-found` layout; visible until-found content
+still fails explicitly under the existing layout boundary.
+
 The C# DOM also exposes checked `DomElement.ToggleAttribute`. Attribute
 storage now uses an ordered dictionary: replacement preserves position,
 while removal/readdition appends at the end instead of recycling a removed
 dictionary slot. This applies consistently to native and script mutations.
 The bridge reuses the existing **128-attribute / 65,536 aggregate stored
-name/value character** preflight for new toggle attributes and ID writes.
-Forced no-ops and removals remain available at capacity; rejected additions
-do not partially write. Shared DOM call/text limits, receiver ownership and
-host cancellation/deadlines remain unchanged. No new CLR callback, script
-scheduling, boolean-attribute-specific behavior or custom-element reactions
-are added. Final lifecycle mutations feed selectors/paint and retained resize.
+name/value character** preflight for new toggle attributes, ID writes and
+`hidden` writes. Forced no-ops and removals remain available at capacity;
+rejected additions do not partially write. Shared DOM call/text limits,
+receiver ownership and host cancellation/deadlines remain unchanged. No new
+CLR callback, script scheduling, other boolean-attribute-specific behavior or
+custom-element reactions are added. Final lifecycle mutations feed
+selectors/paint and retained resize.
 Source: cached `dom`, [id](https://dom.spec.whatwg.org/#dom-element-id) and
-[toggleAttribute](https://dom.spec.whatwg.org/#dom-element-toggleattribute).
+[toggleAttribute](https://dom.spec.whatwg.org/#dom-element-toggleattribute);
+cached `html`, [`HTMLElement.hidden`](https://html.spec.whatwg.org/multipage/interaction.html#dom-hidden)
+and [hidden attribute states](https://html.spec.whatwg.org/multipage/interaction.html#the-hidden-attribute)
+(local ID `html`); cached Web IDL
+[union conversion](https://webidl.spec.whatwg.org/#es-to-union) (local ID
+`webidl`).
 
 ## Bounded tree inspection (phase 11k)
 

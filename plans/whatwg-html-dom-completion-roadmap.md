@@ -180,6 +180,18 @@ market share; Phase 1 may adjust it when the inventory exposes better evidence.
         cases; update the scripting and HTML/DOM guides.
 
 6. **Phase 6: Low-cost adjacent features**
+   - **Progress:** Reassessment selected the commonly used, opt-in
+     `HTMLElement.hidden` reflection because it reuses the primitive attribute
+     bridge, existing storage budgets, and current hidden rendering behavior.
+     The `hidden=until-found` reveal lifecycle remains HDF-014; parent-context
+     `outerHTML` and `insertAdjacentHTML()` remain HDF-015.
+     **Complete at this bounded scope:** getter/setter semantics, conversion
+     order, attribute limits, local/process rendering and fail-closed
+     `until-found` behavior are documented and tested. Solution build,
+     serialized solution tests, format verification, and local/required-
+     confinement V8Smoke passed. The parallel solution test run had two
+     deadline timeouts; both cases passed in isolation and in the serialized
+     rerun. See the [Phase 6 report](whatwg-html-dom-completion-roadmap-phase-6-complete.md).
    - **Objective:** Add remaining nearby features from the inventory when they
      reuse implemented mechanisms and do not widen trust or platform
      boundaries.
