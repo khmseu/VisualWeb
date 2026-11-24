@@ -110,17 +110,15 @@ try
                     if (scriptedRenderer is null || !scriptedRenderer.HasDocument(request.DocumentId))
                     { throw new PageNavigationException("Retained document was lost; reload explicitly rather than rerunning scripts."); }
                     scriptedRenderer.CommitDocument(request.DocumentId);
-                    var eventType = request.LinkEventType switch
-                    {
-                        "click" => PageLinkEventType.Click,
-                        "auxclick" => PageLinkEventType.AuxClick,
-                        _ => throw new IpcProtocolException("Invalid renderer link event type.")
-                    };
-                    var allowed = request.FocusTargetId > 0
-                        ? scriptedRenderer.DispatchLinkTargetEvent(request.DocumentId, request.FocusTargetId, eventType,
-                            CancellationToken.None)
-                        : scriptedRenderer.DispatchLinkEvent(request.DocumentId, request.LinkIndex, request.Url!,
-                            eventType, CancellationToken.None);
+                    var allowed = request.LinkEventType == "button-click"
+                        ? scriptedRenderer.DispatchButtonClick(request.DocumentId, request.FocusTargetId, CancellationToken.None)
+                        : request.FocusTargetId > 0
+                            ? scriptedRenderer.DispatchLinkTargetEvent(request.DocumentId, request.FocusTargetId,
+                                request.LinkEventType == "click" ? PageLinkEventType.Click : PageLinkEventType.AuxClick,
+                                CancellationToken.None)
+                            : scriptedRenderer.DispatchLinkEvent(request.DocumentId, request.LinkIndex, request.Url!,
+                                request.LinkEventType == "click" ? PageLinkEventType.Click : PageLinkEventType.AuxClick,
+                                CancellationToken.None);
                     channel.WriteAsync(new() { Kind = "click-result", Id = request.Id, DefaultPrevented = !allowed }).GetAwaiter().GetResult();
                 }
                 catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception))

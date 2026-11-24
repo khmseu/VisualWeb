@@ -206,6 +206,12 @@ public interface IPageRenderer : IDisposable
     Task<bool> DispatchLinkTargetEventAsync(Guid documentId, int focusTargetId, PageLinkEventType eventType,
         CancellationToken cancellationToken) =>
         throw new NotSupportedException("This renderer does not dispatch identified page link events.");
+    /// <summary>Dispatch a trusted plain click Event at a rendered, enabled type=button control.</summary>
+    /// <remarks>Specs: html, dom; <see href="https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element">button</see>
+    /// and <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.
+    /// The opaque identity is scoped to the committed document; no DOM object crosses IPC.</remarks>
+    Task<bool> DispatchButtonClickAsync(Guid documentId, int focusTargetId, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("This renderer does not dispatch button clicks.");
     /// <summary>Dispatch one trusted focus/blur event at a committed renderer-local focus target.</summary>
     /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.
     /// The target ID is an opaque bounded identity scoped to the retained document; no DOM object crosses IPC.</remarks>

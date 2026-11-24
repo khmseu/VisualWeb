@@ -466,6 +466,30 @@ public sealed class ProcessPageRenderer : IPageRenderer
             ? packet.Message.DefaultPrevented is false
             : throw new IpcProtocolException("Renderer click reply has the wrong kind.")).ConfigureAwait(false);
     }
+    public async Task<bool> DispatchButtonClickAsync(Guid documentId, int focusTargetId, CancellationToken cancellationToken)
+    {
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (!executeInlineScripts) { throw new PageNavigationException("Page button events require the inline-script opt-in."); }
+            if (documentId == Guid.Empty || documentId != committedDocumentId)
+            { throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly."); }
+        }
+        var request = new RendererMessage
+        {
+            Kind = "click",
+            Id = 1,
+            DocumentId = documentId,
+            ExecuteInlineScripts = true,
+            FocusTargetId = focusTargetId,
+            LinkEventType = "button-click"
+        };
+        try { RendererProtocol.Validate(request, 0); }
+        catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+        return await ExchangeAsync(request, drain: true, cancellationToken, packet => packet.Message.Kind == "click-result"
+            ? packet.Message.DefaultPrevented is false
+            : throw new IpcProtocolException("Renderer click reply has the wrong kind.")).ConfigureAwait(false);
+    }
     /// <summary>Send a data-only trusted focus/blur request to the worker owning the committed document.</summary>
     public async Task DispatchPageFocusEventAsync(Guid documentId, int focusTargetId, PageFocusEventType eventType,
         CancellationToken cancellationToken)

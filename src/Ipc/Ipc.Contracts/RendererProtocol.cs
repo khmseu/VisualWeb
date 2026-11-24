@@ -576,7 +576,7 @@ public static class RendererProtocol
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 50;
+    public const int Version = 51;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -649,8 +649,9 @@ public static class RendererProtocol
             || (message.Kind != RenderKind && (message.CommittedDocumentId != Guid.Empty || message.ReuseDocument)))
         { throw new IpcProtocolException("Document policy fields belong only to render or click requests."); }
         if ((message.Kind != ClickKind && (message.LinkIndex != 0 || message.LinkEventType is not null))
-            || (message.Kind == ClickKind && (message.LinkEventType is not (ClickEventType or AuxClickEventType)
+            || (message.Kind == ClickKind && (message.LinkEventType is not (ClickEventType or AuxClickEventType or "button-click")
                 || message.FocusTargetId is < 0 or > MaxFocusTargetIdsPerDocument
+                || message.LinkEventType == "button-click" && message.FocusTargetId == 0
                 || message.FocusTargetId > 0 && (message.LinkIndex != 0 || message.Url is not null)))
             || (message.Kind is not (ClickKind or FocusKind)
                 && (message.FocusTargetId != 0 || message.FocusEventType is not null))

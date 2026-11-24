@@ -18314,3 +18314,76 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML/DOM-Guide](../docs/html-dom.md),
   [HtmlFragmentSerializer](../src/Engine/Engine.Html/HtmlFragmentSerializer.cs),
   [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs).
+
+### KP-623 - Phase-3-Commit und Phase-4 begonnen
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit staged files, then continue“. Die gestagten,
+  vollvalidierten Phase-3-Aenderungen wurden als `f0a502b5`
+  (`feat(scripting): add bounded Element.innerHTML`) committed. Der
+  Pre-Commit-Formatierungshook war erfolgreich.
+- Belegt: `git status` zeigt nach dem Commit einen sauberen Worktree auf
+  `main`, vier Commits vor `origin/main`.
+- Phase 4 der genehmigten
+  [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md#phase-4-common-html-elements-forms-and-interactions)
+  beginnt mit der Auswahl eines konkreten haeufigen Form-/Interaktionsverhaltens
+  aus den vorhandenen Guides, Implementierungen und Tests.
+- Quelle: aktueller Chat; Commit `f0a502b5`; Build-, Test-, Format- und
+  Review-Ausgaben; [Phase-3-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-3-complete.md).
+
+### KP-624 - Phase-4-Button-Click-Scope gewaehlt
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Nutzeranforderung: gaengige Browser-/Website-Funktionen priorisieren,
+  guenstige Nachbarfeatures mitnehmen und den Rest nachvollziehbar vertagen;
+  die siebenphasige Roadmap ist genehmigt. „Commit staged files, then
+  continue“ autorisiert die Fortsetzung nach Phase 3.
+- Belegt: `PageForms.Kind` bildet `button type=button` und `input type=button`
+  als `inert` Controls mit Focus-Target-IDs ab. `BrowserController` konsumiert
+  Enter/Space ohne Page-Event; Pointeraktivierung dieser Controls fuehrt nicht
+  zu Eventdispatch. Die bestehende trusted click-Pipeline validiert derzeit
+  gerenderte Links und kann retained repaint, Listenerbudgets und data-only
+  Renderer/IPC-Ziele wiederverwenden.
+- Ableitung/Umsetzungswahl: Als eng begrenzter Phase-4-Schritt werden
+  enabled type=button Controls bei Pointer, Enter und Space fuer opted-in
+  Seitenskripte trusted plain `click` Events ausloesen, einschliesslich
+  Controls ausserhalb eines Formulars. Listener-Mutationen werden ueber
+  retained repaint sichtbar. Static/script-disabled Seiten bleiben eventfrei;
+  disabled, Submit/Reset-Default, Navigation, `onclick` und PointerEvent-
+  Metadaten werden nicht erweitert. Das konkrete Verhalten bleibt eine
+  Implementierungswahl innerhalb der genehmigten Phase, keine neue allgemeine
+  HTML-Konformitaetszusage.
+- Standards: Lokale `html`-/`dom`-Caches haben `checkedAt` 2026-11-07 und sind
+  am 2026-11-24 innerhalb der 30-Tage-Frist. Verwendet werden die HTML-
+  Button-Element-/Aktivierungsabschnitte und DOM Event Dispatch; keine neuen
+  Standard-IDs sind erforderlich.
+- Quelle: Oracle-Read-only-Recherche, gelesene Browser-/PageRendering-/
+  Scripting-Implementierungen und Tests, lokale Spec-Manifest-Eintraege
+  `html`/`dom`, genehmigte Phase-4-Roadmap.
+
+### KP-625 - Begrenzte Type-Button-Klickaktivierung
+
+- Dokumentiert am: 2026-11-24, Europe/Berlin (UTC+01:00).
+- Umsetzung: Enabled `button type=button` und `input type=button` dispatchen
+  bei opted-in Pointer-, Enter- und Space-Aktivierung ein trusted, bubbling,
+  cancelable plain `click` Event; der rendererlokale Host bleibt erhalten und
+  Listener-Mutationen werden ohne erneute Skriptausfuehrung neu gezeichnet.
+  IPC v51 uebertraegt nur einen begrenzten Target-Identifier und einen
+  Button-Click-Typ; der Renderer validiert verbundenes, gerendertes,
+  aktiviertes und weiterhin korrekt typisiertes Ziel erneut.
+- Grenzen: Static Mode bleibt eventfrei; kein `onclick`, PointerEvent,
+  Tastaturevent oder Submit-/Reset-Click. Type-Button bleibt nicht
+  submittierbar, auch ausserhalb von Formularen nutzbar und ohne
+  Navigationsdefault. Bestehende Event- und DOM-Budgets gelten gemeinsam.
+- Evidenz: Neue `ButtonClickEventTests`, Shell- und IPC-Regressionen; der
+  erste TDD-Lauf scheiterte erwartungsgemaess am fehlenden API. Der gezielte
+  Browserlauf bestand 447 Tests, IPC nach Aktualisierung der Protokollversion
+  202 Tests. Ein erster Solution-Lauf scheiterte an drei noch auf Version 50
+  festgelegten IPC-Tests; diese wurden auf 51 aktualisiert. Der erste
+  Format-Check meldete vier Leerraumfehler, die korrigiert wurden. Der
+  abschliessende Solution-Build bestand mit 0 Warnungen/Fehlern; der
+  vollstaendige `dotnet test VisualWeb.slnx --no-build`-Lauf, die erneute
+  Formatverifikation und `git diff --check` bestanden. Im Browser-Testlauf
+  wurden 1426 Tests bestanden; einzelne plattformspezifische Drucktests
+  meldeten zur Laufzeit Skip.
+  Phase 4 bleibt in Arbeit; dies ist kein Phasenabschluss und kein Commit.

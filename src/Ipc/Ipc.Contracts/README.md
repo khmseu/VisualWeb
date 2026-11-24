@@ -1,6 +1,6 @@
 # Ipc.Contracts
 
-Version-50 data-only hello/render/frame/error messages, confirmed sandbox
+Version-51 data-only hello/render/frame/error messages, confirmed sandbox
 profile handshake and exact
 viewport/text/frame budgets. No DOM, V8, native handles or broker capabilities.
 Each private channel serves one tab with monotonically increasing request IDs.
@@ -29,7 +29,7 @@ and error are mutually exclusive and restricted to submit buttons. Target errors
 remain separate from other form errors.
 
 These are internal contracts, not a web standard. See the
-[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v50).
+[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v51).
 Every control requires nullable `Dirname` metadata. Non-null names must be
 nonempty, at most 8192 UTF-16 code units, and restricted to text/search/email/tel/url/password
 or textarea; their JSON counts toward the aggregate form budget. The renderer
@@ -63,4 +63,5 @@ Version 48 adds unique bounded opaque per-document focus-target identities for
 links and eligible controls plus strictly scoped trusted focus/blur requests.
 These IDs are not DOM identifiers or handles; focus replies contain no page data.
 The browser and worker validate identity uniqueness and the aggregate target
-limit. See the [protocol limits](../../../docs/renderer-processes.md#private-stream-protocol-v50).
+limit. Version 51 adds a button-click discriminator requiring a nonzero target ID,
+without link URL or index. See the [protocol limits](../../../docs/renderer-processes.md#private-stream-protocol-v51).

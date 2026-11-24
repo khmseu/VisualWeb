@@ -37,7 +37,9 @@ document). Browser focus events target existing rendered links and visible
 enabled supported controls; they are plain Events with non-bubbling,
 non-cancelable, composed flags, not `FocusEvent` instances. Stable opaque
 per-document target IDs are data-only and are not DOM identifiers. Failures
-invalidate the host, and replacement/disposal releases it. Link events remain
+invalidate the host, and replacement/disposal releases it. Enabled rendered
+`type=button` controls also receive a trusted click after renderer-local
+connection, current type and disabled-state validation. Link and button events remain
 plain Events without PointerEvent metadata.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
@@ -79,7 +81,7 @@ IPC v47 adds the horizontal offset and bounded root scroll width. IPC v48 adds
 unique bounded focus-target IDs to rendered links and eligible controls and
 strictly scoped focus/blur requests; IPC v50 carries inherited about-base input
 and renderer-computed document-base output as bounded URL strings; no DOM
-handles cross the channel.
+handles cross the channel. IPC v51 adds a type=button click discriminator.
 `_blank` opens a new tab; `_self`,
 `_parent`, and `_top` use the current tab, including the first `<base target>`
 fallback. Other ASCII names are preserved as current-window browsing-context

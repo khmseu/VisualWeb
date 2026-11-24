@@ -20,7 +20,7 @@ and event loops remain deferred. Phase 11f optionally installs bounded native
 queueMicrotask with Promise FIFO ordering and verified per-script checkpoints.
 One execution shares its deadline/DOM budget across all callbacks; task failures
 invalidate the host. Inline pages enable it under the existing script opt-in,
-then retain the idle host only for trusted link-click dispatch
+then retain the idle host for bounded trusted page-event dispatch, including type=button clicks
 (`DispatchTrustedClick`). Persistent event loops/rejection reporting remain deferred.
 Phase 11g optionally installs native Event/EventTarget and synthetic Node/
 document dispatch with snapshotted propagation paths, listener identity/once/

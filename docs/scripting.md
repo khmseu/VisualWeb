@@ -183,7 +183,7 @@ their minimal null-root prototypes rather than becoming EventTarget instances.
 Legacy initEvent, timeStamp, CustomEvent/specialized events, automatic
 load/input events, `on*` handlers, default actions, Window,
 AbortSignal and a persistent event loop are deferred. Opted-in pages retain
-their document host/listeners only for the browser-owned link-click dispatch
+their document host/listeners only for the bounded browser-owned page-event dispatch
 below; retained resize/scroll runs no events.
 
 ## Retained link-click dispatch (pass 5)
@@ -235,8 +235,21 @@ Static mode creates no host and link activation is unchanged. Opted-in middle
 activation dispatches a trusted bubbling, cancelable plain `auxclick` Event before
 its active-new-tab default; this is a bounded hook, not PointerEvent conformance.
 Limitations: no MouseEvent/PointerEvent fields or pointer metadata, `on*` handlers,
-form/control default actions, general input dispatch or HTML event loop/task
+submit/reset click dispatch, general input dispatch or HTML event loop/task
 scheduling.
+
+## Type=button activation
+
+For opted-in pages, primary pointer activation and focused Enter/Space dispatch
+one trusted bubbling, cancelable plain `click` Event on enabled rendered
+`button type=button` and `input type=button`, whether or not associated with a
+form. The renderer revalidates the committed target's identity, connection,
+current type and disabled/fieldset state before dispatch. It uses the same
+per-document event limit, per-task deadlines and DOM/listener/microtask budgets
+and transactional retained repaint as link clicks, with blur/focus before click.
+Canceled or uncanceled events never submit, reset, navigate, or serialize the
+button. Script-disabled pages dispatch nothing. No `onclick`, PointerEvent,
+keyboard event synthesis, or submit/reset click behavior is implied.
 
 ## Focused-link click dispatch (pass 6)
 
@@ -309,7 +322,7 @@ invalidate the host; a failure before completion publishes no candidate and
 preserves the committed page. Event listeners that attempt to enqueue beyond
 the microtask quota report a resource-limit failure, not a masked listener error.
 All final DOM/title/style changes feed paint; successful resize retains the
-DOM (and, for link clicks only, the idle host/listeners), never pending jobs,
+DOM (and, for bounded page events, the idle host/listeners), never pending jobs,
 and does not repeat readiness events.
 
 Even an opted-in page with zero eligible sources creates a host and
@@ -1165,7 +1178,7 @@ resource scheduling.
 
 After parsing, the finite lifecycle transitions to `interactive`, evaluates
 queued import-free modules, dispatches DOMContentLoaded, and completes its
-checkpoints. The idle host stays with that renderer-local document for link-click
+checkpoints. The idle host stays with that renderer-local document for bounded page-event
 dispatch (see below); it runs nothing else. Stylesheets are collected from the
 mutated DOM, and style/layout/display lists/pixels are computed afresh. Live
 title changes become the page/tab/window title; a script may change an embedded

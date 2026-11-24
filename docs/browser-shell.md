@@ -119,7 +119,7 @@ The native window title retains the same warning alongside the active page title
 | Up/Down in a focused textarea                                                                                                                             | Move the caret between visible wrapped lines, preserving its preferred column                                                                                                                                                                                                                            |
 | Space in a focused checkbox toggles it; Enter or Space on a focused submit control; primary click on a submit control                                     | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line                                                                                                                                                                                                                      |
 | Enter or Space, or primary click on a focused/visible reset control                                                                                       | Restore the owning form's initial values and checked states without navigation or submission validation                                                                                                                                                                                                  |
-| Space on a focused inert button                                                                                                                           | No action; inert buttons never submit or navigate                                                                                                                                                                                                                                                        |
+| Enter/Space on a focused type=button; primary press/release on the same button                                                                            | Opted-in scripts receive a trusted plain click; no submission or navigation                                                                                                                                                                                                                              |
 | Primary left click on non-link page text                                                                                                                  | Select the shaped text cluster under the pointer and give the page keyboard focus                                                                                                                                                                                                                        |
 | Double-click on visible non-link page text                                                                                                                | Select the same-line word containing the shaped cluster under the pointer                                                                                                                                                                                                                                |
 | Triple-click on visible non-link page text                                                                                                                | Select all visible shaped text clusters on the visual line under the pointer                                                                                                                                                                                                                             |
@@ -617,8 +617,11 @@ type="button">` and `<button type="button">` are likewise non-submittable inert
 controls: they are reported with kind `inert`, use their `value` or text content as
 their label respectively, are focusable by pointer and Tab, and are painted by the
 shell overlay. Activation never submits or navigates, and these controls do not
-contribute GET entries or implicit-submission button counts. They have no scripting
-or `onclick`; the input variant has no default label. `type=image`/`file`
+contribute GET entries or implicit-submission button counts. With script opt-in,
+primary press/release on the same enabled button, Enter or Space dispatches one
+trusted bubbling cancelable plain `click` Event; listener mutations repaint the
+retained document. Static pages dispatch no event. There is no `onclick`, and
+the input variant has no default label. `type=image`/`file`
 remain unsupported.
 
 Visible failures, without navigation and keeping the committed page: a form with
@@ -879,7 +882,7 @@ but inserted script elements never execute.
 Phase 11f enables finite native Promise/queueMicrotask checkpoints between
 classic scripts and before paint, sharing task deadlines and DOM/queue budgets.
 Callback failure rejects navigation; retained resize never reruns jobs.
-There is no HTML event loop; only the link-click host retention below persists.
+There is no HTML event loop; only bounded page-event host retention below persists.
 Phase 11g also enables bounded synchronous synthetic Event/EventTarget dispatch
 and Node/document capture/target/bubble listeners. Caught listener failures
 still reject navigation. No automatic input/load events or `on*` handlers run.
@@ -943,6 +946,10 @@ opted-in Ctrl+primary background-tab activation. Pass 8 adds opted-in middle-poi
 `auxclick` before the active-new-tab default; cancellation prevents tab creation.
 Both types use plain Events without PointerEvent metadata. See the
 [scripting guide](scripting.md#focused-link-click-dispatch-pass-6).
+Phase 4 adds the same plain click for enabled rendered `type=button` controls,
+including outside forms, using a distinct data-only IPC request. Focus blur/focus
+events precede pointer clicks; stale, disabled or changed targets are rejected.
+No submit/reset click behavior or type=button default action is added.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

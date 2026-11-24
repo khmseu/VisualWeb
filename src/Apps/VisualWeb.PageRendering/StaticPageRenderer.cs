@@ -29,6 +29,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         public V8ScriptHost? Host { get; private set; } = host;
         /// <summary>Anchor elements and destinations of the latest successful render, in link-target order.</summary>
         public IReadOnlyList<(DomElement Anchor, string Url)> Links { get; set; } = [];
+        public HashSet<int> Buttons { get; set; } = [];
         public Dictionary<DomElement, int> FocusTargetIds { get; } =
             new((IEqualityComparer<DomElement>)ReferenceEqualityComparer.Instance);
         public Dictionary<int, DomElement> FocusTargets { get; } = [];
@@ -167,6 +168,8 @@ public sealed class StaticPageRenderer : IPageRenderer
     public Task<bool> DispatchLinkTargetEventAsync(Guid documentId, int focusTargetId, PageLinkEventType eventType,
         CancellationToken cancellationToken) =>
         Task.FromResult(DispatchLinkTargetEvent(documentId, focusTargetId, eventType, cancellationToken));
+    public Task<bool> DispatchButtonClickAsync(Guid documentId, int focusTargetId, CancellationToken cancellationToken) =>
+        Task.FromResult(DispatchButtonClick(documentId, focusTargetId, cancellationToken));
     public Task DispatchPageFocusEventAsync(Guid documentId, int focusTargetId, PageFocusEventType eventType,
         CancellationToken cancellationToken)
     {
@@ -220,6 +223,26 @@ public sealed class StaticPageRenderer : IPageRenderer
         if (!target.IsConnected || target.OwnerDocument != state.Parsed.Document)
         { throw new PageNavigationException("Clicked link no longer matches the retained document; no event was dispatched."); }
         return DispatchLinkTargetEvent(state, host, target, eventType, cancellationToken);
+    }
+    /// <summary>Dispatch a trusted click at a current rendered type=button on the renderer's owning thread.</summary>
+    /// <remarks>Specs: html, dom; <see href="https://html.spec.whatwg.org/multipage/form-elements.html#the-button-element">button</see>
+    /// and <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.</remarks>
+    public bool DispatchButtonClick(Guid documentId, int focusTargetId, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!executeInlineScripts) { throw new PageNavigationException("Page button events require the inline-script opt-in."); }
+        var state = committed?.Source.DocumentId == documentId ? committed
+            : throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly.");
+        if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
+        var host = state.Host ?? throw new PageNavigationException("Retained page script host is unavailable; reload explicitly.");
+        if (!state.Buttons.Contains(focusTargetId) || !state.FocusTargets.TryGetValue(focusTargetId, out var target)
+            || !target.IsConnected || target.OwnerDocument != state.Parsed.Document
+            || target.GetAttribute("disabled") is not null || PageForms.IsDisabledByFieldset(target)
+            || !(target.LocalName == "button" && DomFormControls.ButtonType(target) == "button"
+                || target.LocalName == "input" && DomFormControls.InputType(target) == "button"))
+        { throw new PageNavigationException("Clicked button no longer matches an enabled retained rendered button."); }
+        return DispatchLinkTargetEvent(state, host, target, PageLinkEventType.Click, cancellationToken);
     }
     private static bool DispatchLinkTargetEvent(DocumentState state, V8ScriptHost host, DomElement target,
         PageLinkEventType eventType, CancellationToken cancellationToken)
@@ -354,6 +377,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         cancellationToken.ThrowIfCancellationRequested();
         // Publication is the final non-throwing step: link identities and candidate ownership change together.
         state.Links = anchors.Zip(links, (anchor, link) => (anchor, link.Url)).ToArray();
+        state.Buttons = controls.Where(control => control.Kind == "inert" && control.FocusTargetId > 0)
+            .Select(control => control.FocusTargetId).ToHashSet();
         if (!reuseDocument)
         {
             var replaced = candidate;

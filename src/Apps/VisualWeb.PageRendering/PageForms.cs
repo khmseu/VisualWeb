@@ -633,7 +633,7 @@ internal static class PageForms
     private static string NormalizeTextArea(string value) =>
         value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 
-    private static bool IsDisabledByFieldset(DomElement element)
+    internal static bool IsDisabledByFieldset(DomElement element)
     {
         foreach (var fieldset in Ancestors(element))
         {

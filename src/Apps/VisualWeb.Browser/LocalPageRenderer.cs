@@ -61,6 +61,9 @@ internal sealed class LocalPageRenderer : IPageRenderer
         PageLinkEventType eventType, CancellationToken cancellationToken) =>
         Invoke(renderer => renderer.DispatchLinkTargetEvent(documentId, focusTargetId, eventType, cancellationToken));
 
+    public Task<bool> DispatchButtonClickAsync(Guid documentId, int focusTargetId, CancellationToken cancellationToken) =>
+        Invoke(renderer => renderer.DispatchButtonClick(documentId, focusTargetId, cancellationToken));
+
     public Task DispatchPageFocusEventAsync(Guid documentId, int focusTargetId,
         PageFocusEventType eventType, CancellationToken cancellationToken) =>
         Invoke(renderer =>

@@ -13,6 +13,49 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void TypeButtonPointerAndKeyboardDispatchOnlyOnActivation(bool process)
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, executeInlineScripts: true,
+            rendererPath: process ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null,
+            pageTransportFactory: () => new NavigationHandler(_ => Html("""
+                <!doctype html><title>Start</title><style>*{margin:0}</style><button type=button>Push</button>
+                <script>let n=0;document.addEventListener('click',()=>document.title='click'+(++n));</script>
+                """)));
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        var rect = Assert.Single(shell.Controller.Page(tab.Id)!.FormControls).Rect!;
+        var x = (float)(rect.X + rect.Width / 2);
+        var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+        var native = system.Items[0];
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y + 40));
+        shell.Tick();
+        Assert.Equal("Start", tab.Title);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Tick();
+        Assert.Equal("Start", tab.Title);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        Wait(() => tab.Title == "click1");
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait(() => tab.Title == "click2");
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Space, 0, 0, true, false));
+        Wait(() => tab.Title == "click3");
+        Assert.Null(tab.Error);
+        Assert.Single(tab.History.Entries);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && tab.Error is null && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status}");
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ShellPassesExplicitStyleFacesIntoLocalAndWorkerRenderers(bool process)
     {
         using var system = new Windows();

@@ -86,7 +86,8 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(50, RendererProtocol.Version);
+        Assert.Equal(51, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 50 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
@@ -928,7 +929,7 @@ public sealed class ProtocolTests
     public void EffectiveBaseFieldIsRequiredOnlyForFrameReplies()
     {
         var hello = JsonSerializer.Deserialize<RendererMessage>(
-            """{"Version":50,"Kind":"hello","Id":0}""")!;
+            """{"Version":51,"Kind":"hello","Id":0}""")!;
         RendererProtocol.Validate(hello, 0);
 
         var json = JsonNode.Parse(JsonSerializer.Serialize(LinkFrame))!.AsObject();
@@ -940,7 +941,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(50, RendererProtocol.Version);
+        Assert.Equal(51, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -1078,6 +1079,8 @@ public sealed class ProtocolTests
         RendererProtocol.Validate(Click with { LinkIndex = RendererProtocol.MaxLinkTargets - 1 }, 0);
         var auxClick = Click with { LinkEventType = "auxclick" };
         RendererProtocol.Validate(auxClick, 0);
+        var buttonClick = Click with { LinkIndex = 0, Url = null, FocusTargetId = 1, LinkEventType = "button-click" };
+        RendererProtocol.Validate(buttonClick, 0);
         RendererProtocol.Validate(new() { Kind = "click-result", Id = 2, DefaultPrevented = true }, 0);
         RendererProtocol.Validate(new() { Kind = "click-result", Id = 2, DefaultPrevented = false }, 0);
         foreach (var invalid in new[]
@@ -1089,6 +1092,10 @@ public sealed class ProtocolTests
             Click with { LinkIndex = RendererProtocol.MaxLinkTargets },
             Click with { LinkEventType = null },
             Click with { LinkEventType = "contextmenu" },
+            buttonClick with { FocusTargetId = 0 },
+            buttonClick with { Url = "https://example.com/" },
+            buttonClick with { LinkIndex = 1 },
+            buttonClick with { FocusTargetId = RendererProtocol.MaxFocusTargetIdsPerDocument + 1 },
             Request with { LinkEventType = "auxclick" },
             Click with { Url = null },
             Click with { Url = "" },

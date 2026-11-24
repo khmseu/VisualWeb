@@ -82,7 +82,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v50
+## Private stream protocol v51
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -111,7 +111,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound                                                            |                                                     Value |
 | ---------------------------------------------------------------- | --------------------------------------------------------: |
-| Protocol version                                                 |           50, explicitly present; v1 through v49 rejected |
+| Protocol version                                                 |           51, explicitly present; v1 through v50 rejected |
 | Metadata bytes                                                   |                                                    32 MiB |
 | JSON nesting                                                     |                                                        16 |
 | Decoded HTML UTF-16 characters                                   |                                                      4 Mi |
@@ -199,6 +199,11 @@ page-created `about:blank` fallback. It remains separate from the CSP-approved
 parser-script mutations. Both fields are scoped to their render-request/frame
 message kinds and contain URL strings only; DOM, origin identity, CSP policy,
 and fetch capabilities remain browser/renderer-local.
+
+Version 51 adds `button-click` as a click request discriminator, requiring a
+bounded nonzero focus-target ID and forbidding link index/URL. The worker
+revalidates that the committed rendered target is connected, enabled, and
+currently a type=button control; only the cancellation flag returns.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require

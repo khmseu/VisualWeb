@@ -43,6 +43,8 @@ public sealed class DevelopmentShell : IDisposable
         internal bool PendingLinkActivation { get; set; }
         internal bool PendingLinkDragged { get; set; }
         internal int PendingLinkIndex { get; set; } = -1;
+        internal int PendingButtonTargetId { get; set; }
+        internal BrowserPage? PendingButtonPage { get; set; }
         internal TabId? PendingLinkTab { get; set; }
         internal double PendingLinkX { get; set; }
         internal double PendingLinkY { get; set; }
@@ -274,6 +276,8 @@ public sealed class DevelopmentShell : IDisposable
                 view.PendingLinkActivation = false;
                 view.PendingLinkDragged = false;
                 view.PendingLinkIndex = -1;
+                view.PendingButtonTargetId = 0;
+                view.PendingButtonPage = null;
                 view.PendingLinkTab = null;
                 view.PendingLinkViewport = null;
                 view.HoveredLink = -1;
@@ -401,6 +405,8 @@ public sealed class DevelopmentShell : IDisposable
         view.PendingLinkDragged = false;
         view.PendingLinkTab = null;
         view.PendingLinkIndex = -1;
+        view.PendingButtonTargetId = 0;
+        view.PendingButtonPage = null;
         view.PendingLinkViewport = null;
         view.SelectingText = false;
         view.DraggingScrollbar = false;
@@ -500,6 +506,19 @@ public sealed class DevelopmentShell : IDisposable
         if (pointer.ClickCount >= 2 && !overControl && linkIndex < 0
             && Controller.SelectTextWord(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
         Controller.ClearSelectedText(pageTab.Id);
+        var button = page?.FormControls.LastOrDefault(control => control.Rect?.Contains(pointer.X, pageY) == true
+            || control.LabelRects.Any(rect => rect.Contains(pointer.X, pageY)));
+        if (button is { Kind: "inert", Disabled: false } && button.Rect?.Contains(pointer.X, pageY) == true)
+        {
+            view.PendingLinkActivation = true;
+            view.PendingButtonTargetId = button.FocusTargetId;
+            view.PendingButtonPage = page;
+            view.PendingLinkTab = pageTab.Id;
+            view.PendingLinkX = pointer.X;
+            view.PendingLinkY = pointer.Y;
+            view.PendingLinkViewport = pageViewport;
+            return;
+        }
         if (linkIndex >= 0)
         {
             view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);
@@ -572,24 +591,33 @@ public sealed class DevelopmentShell : IDisposable
         if (view.PendingLinkActivation)
         {
             var pendingLinkIndex = view.PendingLinkIndex;
+            var pendingButtonTargetId = view.PendingButtonTargetId;
             var pendingViewport = view.PendingLinkViewport;
             var pageY = released.Y - ShellChrome.Height;
             var releaseIsOnLink = pendingViewport is { } viewport && released.X >= 0 && released.X < viewport.Width
                 && pageY >= 0 && pageY < viewport.Height && Controller.Page(releasedTab.Id) is { } page
                 && pendingLinkIndex >= 0 && pendingLinkIndex < page.LinkTargets.Count
                 && page.LinkTargets[pendingLinkIndex].Contains(released.X, pageY);
-            var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id && releaseIsOnLink;
+            var releaseIsOnButton = pendingButtonTargetId > 0 && pendingViewport is { } buttonViewport
+                && released.X >= 0 && released.X < buttonViewport.Width && pageY >= 0 && pageY < buttonViewport.Height
+                && ReferenceEquals(view.PendingButtonPage, Controller.Page(releasedTab.Id))
+                && view.PendingButtonPage!.FormControls.Any(control => control.FocusTargetId == pendingButtonTargetId
+                    && control.Kind == "inert" && !control.Disabled && control.Rect?.Contains(released.X, pageY) == true);
+            var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id
+                && (releaseIsOnLink || releaseIsOnButton);
             var pendingTab = view.PendingLinkTab;
             view.PendingLinkActivation = false;
             view.PendingLinkDragged = false;
             view.PendingLinkTab = null;
             view.PendingLinkIndex = -1;
+            view.PendingButtonTargetId = 0;
+            view.PendingButtonPage = null;
             view.PendingLinkViewport = null;
             if (view.SelectingText && pendingTab is { } selectedTab && Controller.Session.Contains(selectedTab)) { Controller.EndTextSelection(selectedTab); }
             if (activate)
             {
                 Controller.ClearSelectedText(releasedTab.Id);
-                // Primary press/release on the same anchor: opted-in pages first receive a trusted click event.
+                // Primary press/release on the same target dispatches the bounded opted-in click.
                 Controller.ActivateLink(releasedTab.Id, released.X, pageY, pendingViewport, dispatchClickEvent: true);
             }
         }
@@ -604,6 +632,8 @@ public sealed class DevelopmentShell : IDisposable
         view.PendingLinkDragged = false;
         view.PendingLinkIndex = -1;
         view.PendingLinkTab = null;
+        view.PendingButtonTargetId = 0;
+        view.PendingButtonPage = null;
         view.PendingLinkViewport = null;
         view.HoveredLink = -1;
         Edit(view, window, false);

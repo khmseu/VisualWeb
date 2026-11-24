@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-622; Phases 1-3 complete, Phase 3 commit pending):**
+**HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-625; Phases 1-3 committed, Phase 4 implementation active):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
 Features mit geringem Zusatzaufwand sollen mit aufgenommen werden; der Rest
@@ -57,8 +57,17 @@ einschliesslich Leerraum vor dem Terminator bei leerer Datenfolge. Build,
 betroffene Testprojekte, vollstaendige Solution-Tests und Formatverifikation
 bestanden; ein erster paralleler Volltestlauf zeigte zwei isoliert bestandene
 Timeouts, der nachfolgende Volltestlauf war erfolgreich. Review ist APPROVED.
-Phase 3 ist abgeschlossen, aber noch nicht committed; der Commitvorschlag steht
-im [Phase-3-Abschlussbericht](../plans/whatwg-html-dom-completion-roadmap-phase-3-complete.md).
+Phase 3 wurde als `f0a502b5` (`feat(scripting): add bounded Element.innerHTML`)
+committed. Phase 4 setzt als begrenzten naechsten Schritt auf enabled
+`button type=button` und `input type=button`: opted-in pointer-, Enter- und
+Space-Aktivierung dispatcht ein trusted plain `click` mit retained repaint,
+ohne Submit- oder Navigationsdefault. Das folgt der bestehenden
+browser-owned focus-target/Event-Pipeline; eventuelle IPC-Uebermittlung bleibt
+data-only. Dies ist eine aus dem bestehenden `inert`-Control-Pfad abgeleitete
+Priorisierung, keine volle PointerEvent-/Button-Aktivierungsimplementierung.
+Implementiert mit rendererlokaler Zielvalidierung und data-only IPC v51;
+Phase 4 bleibt aktiv. Details: [KP-624](./Kontextprotokoll.md#kp-624---phase-4-button-click-scope-gewaehlt)
+und [KP-625](./Kontextprotokoll.md#kp-625---begrenzte-type-button-klickaktivierung).
 Die Priorisierung wurde nach Codeeinsicht verfeinert: Foreign-Content erfordert
 namespace-erhaltende DOM-Elemente/-Attribute und Tree-Construction-Regeln; da
 `DomElement.NamespaceUri` auf HTML festgelegt ist, wird der Parserumfang nicht
@@ -72,7 +81,10 @@ Der Support-Prozentsatz bleibt unveraendert. Siehe
 bis [KP-621](./Kontextprotokoll.md#kp-621---phase-2-commit-und-phase-3-begonnen).
 Phase 3 und die finale Validierung sind unter
 [KP-622](./Kontextprotokoll.md#kp-622---bounded-innerhtml-implementiert-und-validiert)
-dokumentiert.
+dokumentiert; Commit und Phase 4 starten in
+[KP-623](./Kontextprotokoll.md#kp-623---phase-3-commit-und-phase-4-begonnen),
+mit der Begruendung zur Auswahl des naechsten Verhaltens in
+[KP-624](./Kontextprotokoll.md#kp-624---phase-4-button-click-scope-gewaehlt).
 
 **WHATWG-HTML/DOM-Auftrag (2026-11-20; KP-523 bis KP-532; inkrementelle Fortsetzung):**
 Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige

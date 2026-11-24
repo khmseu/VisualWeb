@@ -76,6 +76,7 @@ public sealed class BrowserController : IDisposable
         internal bool ClickDispatchStarted { get; set; }
         internal PageLinkTarget? ClickLink { get; set; }
         internal int ClickFocusTargetId { get; init; }
+        internal bool ClickButton { get; init; }
         internal int ClickLinkIndex { get; init; }
         internal bool ClickActivatesNewTab { get; init; }
         internal bool ClickForceNewTab { get; init; }
@@ -508,6 +509,8 @@ public sealed class BrowserController : IDisposable
     }
     /// <summary>Focuses a visible, enabled, non-hidden control; returns false (leaving focus unchanged) otherwise.</summary>
     public bool FocusControl(TabId id, int index)
+        => FocusControl(id, index, queueTransition: true);
+    private bool FocusControl(TabId id, int index, bool queueTransition)
     {
         Check();
         var owner = content[id];
@@ -519,7 +522,7 @@ public sealed class BrowserController : IDisposable
         owner.MultipleSelectRangeAnchors.Clear();
         owner.FocusedControl = index;
         SynchronizeFocusTargetId(owner);
-        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
+        if (queueTransition) { QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner)); }
         Changed?.Invoke(id);
         return true;
     }
@@ -555,7 +558,7 @@ public sealed class BrowserController : IDisposable
         return owner.PageFocused && owner.FocusedControl >= 0 && owner.Page is { } page
             && ToggleCheckable(id, owner, owner.FocusedControl, page.FormControls[owner.FocusedControl]);
     }
-    /// <summary>Activates the focused submit/reset button, or consumes activation of an inert button.</summary>
+    /// <summary>Activates the focused button, including script clicks for type=button.</summary>
     public bool ActivateFocusedButton(TabId id)
     {
         Check();
@@ -563,7 +566,7 @@ public sealed class BrowserController : IDisposable
         if (!owner.PageFocused || owner.FocusedControl < 0 || owner.Page is not { } page) { return false; }
         var control = page.FormControls[owner.FocusedControl];
         if (control.Kind is not ("submit" or "button" or "reset" or "inert")) { return false; }
-        if (control.Kind != "inert") { _ = ActivateControl(id, owner, owner.FocusedControl); }
+        _ = ActivateControl(id, owner, owner.FocusedControl);
         return true;
     }
     public string FormControlValue(TabId id, int index)
@@ -1467,11 +1470,18 @@ public sealed class BrowserController : IDisposable
         }
         return false;
     }
-    private bool ActivateControl(TabId id, Content owner, int index)
+    private bool ActivateControl(TabId id, Content owner, int index, int previousFocusTarget = -1)
     {
         var controls = owner.Page!.FormControls;
         var control = controls[index];
         if (control.Disabled) { return false; }
+        if (control.Kind == "inert")
+        {
+            if (owner.Renderer.DispatchesLinkClicks && owner.Document is { } document
+                && owner.Viewport is { } viewport && control.FocusTargetId > 0)
+            { return StartButtonClick(id, document, viewport, control.FocusTargetId, previousFocusTarget); }
+            return false;
+        }
         if (control.Form < 0) { return false; }
         if (control.Kind == "reset")
         {
@@ -1910,8 +1920,13 @@ public sealed class BrowserController : IDisposable
             var control = owner.Page.FormControls[index];
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true && !control.LabelRects.Any(rect => rect.Contains(x, y))) { continue; }
             if (forceNewTab || control.Disabled) { return false; }
-            FocusControl(id, index);
-            if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
+            var dispatchButton = control.Kind == "inert" && dispatchClickEvent && linkEventType == PageLinkEventType.Click
+                && owner.Renderer.DispatchesLinkClicks && owner.Document is not null;
+            var previousFocusTarget = ActiveFocusTarget(owner);
+            FocusControl(id, index, queueTransition: !dispatchButton);
+            if (control.Kind is "submit" or "button" or "reset"
+                || control.Kind == "inert" && dispatchClickEvent && linkEventType == PageLinkEventType.Click)
+            { return ActivateControl(id, owner, index, dispatchButton ? previousFocusTarget : -1); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
             if (control.Kind == "range")
             {
@@ -1963,6 +1978,25 @@ public sealed class BrowserController : IDisposable
             FocusEvents = FocusTransitionEvents(content[id], previousFocusTarget, nextFocusTarget)
         });
         tab.Status = $"Dispatching page {eventType.ToString().ToLowerInvariant()} event.";
+        Changed?.Invoke(id);
+        return true;
+    }
+    private bool StartButtonClick(TabId id, LoadedPage document, PageViewport viewport, int focusTargetId,
+        int previousFocusTarget)
+    {
+        Limit();
+        Cancel(id, preserveFocusEvents: true);
+        var tab = Session.Tab(id);
+        var cancellation = new CancellationTokenSource();
+        operations.Add(new(id, checked(++tab.Generation), Task.FromResult(document), cancellation, null, false, resize: true)
+        {
+            Viewport = viewport,
+            ClickFocusTargetId = focusTargetId,
+            ClickButton = true,
+            FocusEvents = previousFocusTarget >= 0
+                ? FocusTransitionEvents(content[id], previousFocusTarget, focusTargetId) : null
+        });
+        tab.Status = "Dispatching page click event.";
         Changed?.Invoke(id);
         return true;
     }
@@ -2304,18 +2338,29 @@ public sealed class BrowserController : IDisposable
             if (operation.Click is null && (operation.ClickFocusTargetId > 0 || operation.ClickLink is not null))
             {
                 var clickOwner = content[operation.Tab];
-                var link = operation.ClickFocusTargetId > 0
-                    ? clickOwner.Page?.LinkTargets.FirstOrDefault(target => target.FocusTargetId == operation.ClickFocusTargetId)
-                    : operation.ClickLink;
-                if (link is null)
-                { throw new PageNavigationException("Focused link no longer matches the committed rendered page."); }
-                operation.ClickLink = link;
                 operation.ClickDispatchStarted = true;
-                operation.Click = operation.ClickFocusTargetId > 0
-                    ? clickOwner.Renderer.DispatchLinkTargetEventAsync(document.DocumentId, operation.ClickFocusTargetId,
-                        operation.ClickEventType, operation.Cancellation.Token)
-                    : clickOwner.Renderer.DispatchLinkEventAsync(document.DocumentId, operation.ClickLinkIndex,
-                        link.Url, operation.ClickEventType, operation.Cancellation.Token);
+                if (operation.ClickButton)
+                {
+                    if (clickOwner.Page?.FormControls.Any(control => control.FocusTargetId == operation.ClickFocusTargetId
+                        && control.Kind == "inert" && !control.Disabled) != true)
+                    { throw new PageNavigationException("Clicked button no longer matches the committed rendered page."); }
+                    operation.Click = clickOwner.Renderer.DispatchButtonClickAsync(document.DocumentId,
+                        operation.ClickFocusTargetId, operation.Cancellation.Token);
+                }
+                else
+                {
+                    var link = operation.ClickFocusTargetId > 0
+                        ? clickOwner.Page?.LinkTargets.FirstOrDefault(target => target.FocusTargetId == operation.ClickFocusTargetId)
+                        : operation.ClickLink;
+                    if (link is null)
+                    { throw new PageNavigationException("Focused link no longer matches the committed rendered page."); }
+                    operation.ClickLink = link;
+                    operation.Click = operation.ClickFocusTargetId > 0
+                        ? clickOwner.Renderer.DispatchLinkTargetEventAsync(document.DocumentId, operation.ClickFocusTargetId,
+                            operation.ClickEventType, operation.Cancellation.Token)
+                        : clickOwner.Renderer.DispatchLinkEventAsync(document.DocumentId, operation.ClickLinkIndex,
+                            link.Url, operation.ClickEventType, operation.Cancellation.Token);
+                }
                 if (!operation.Click.IsCompleted) { finished = false; return; }
             }
             // Event errors/limits throw here, before any repaint can publish partially mutated DOM.

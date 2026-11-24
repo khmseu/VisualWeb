@@ -123,6 +123,11 @@ market share; Phase 1 may adjust it when the inventory exposes better evidence.
 4. **Phase 4: Common HTML elements, forms, and interactions**
    - **Objective:** Support common HTML element behavior needed by page
      navigation, form entry, and ordinary scripted interactions.
+   - **Bounded increment:** Opted-in enabled `type=button` pointer and
+     Enter/Space activations dispatch a trusted plain click and repaint retained
+     DOM; no form default is added. `ButtonClickEventTests`, `ShellTests`, and
+     IPC protocol tests cover local/process routing and validation. Phase 4
+     remains in progress; broader interactions are not claimed.
    - **Files/Functions to Modify/Create:** Relevant `Engine.Dom`,
      `Engine.Html`, `Engine.Scripting`, and browser-shell integration under
      `src/Apps/VisualWeb.Browser/` and `src/Apps/VisualWeb.PageRendering/`;
