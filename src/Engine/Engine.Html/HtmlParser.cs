@@ -38,7 +38,9 @@ namespace VisualWeb.Engine.Html;
 /// content, including template EOF recovery;
 /// other foster-parenting cases, nested tables in captions, nested selects, unsupported fragment contexts,
 /// full script preparation,
-/// and adoption-agency reparenting requiring table foster parenting are unsupported.</remarks>
+/// and adoption-agency reparenting requiring table foster parenting are unsupported. If a parser-script callback
+/// reparents the current table directly under the destination document, fostered table text is discarded,
+/// as required by <see href="https://html.spec.whatwg.org/multipage/parsing.html#insert-a-character">insert a character</see>.</remarks>
 public static class HtmlParser
 {
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
@@ -1589,10 +1591,12 @@ public static class HtmlParser
                 return;
             }
 
-            if (tableIndex < 0 || open[tableIndex].ParentNode is not { } parent || parent is DomDocument)
+            if (tableIndex < 0 || open[tableIndex].ParentNode is not { } parent)
             {
                 throw Unsupported("The foster-parent insertion location for this table is not implemented.");
             }
+
+            if (parent is DomDocument) { return; }
 
             var table = open[tableIndex];
             FlushText();

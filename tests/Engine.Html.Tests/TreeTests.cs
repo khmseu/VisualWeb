@@ -1204,6 +1204,43 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void FosteredTableTextIsDiscardedWhenCallbackMovesTableToDocument()
+    {
+        const string input = "<!doctype html><table><script></script>x</table>";
+
+        static (HtmlParseResult Result, DomDocument Document, DomElement Body, DomElement Table) ParseMoved(
+            string input, HtmlParserOptions? options, CancellationToken token, Action? afterMove = null)
+        {
+            var document = new DomDocument();
+            DomElement? body = null;
+            DomElement? table = null;
+            var result = HtmlParser.Parse(input, options, token, document, script =>
+            {
+                var root = document.DocumentElement!;
+                body = document.Body!;
+                table = Assert.IsType<DomElement>(script.ParentNode);
+                body.RemoveChild(table);
+                document.RemoveChild(root);
+                document.AppendChild(table);
+                afterMove?.Invoke();
+            });
+
+            return (result, document, body!, table!);
+        }
+
+        var parsed = ParseMoved(input, new() { MaxNodes = 7 }, TestContext.Current.CancellationToken);
+        Assert.Same(parsed.Table, parsed.Document.DocumentElement);
+        Assert.NotNull(parsed.Body.ParentNode);
+        Assert.Null(parsed.Body.ParentNode!.ParentNode);
+        Assert.Equal("", parsed.Body.TextContent);
+        Assert.Same(parsed.Table, parsed.Document.LastChild);
+        Assert.Contains(parsed.Result.Errors, error => error.Code == "non-whitespace-table-text");
+
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        Assert.ThrowsAny<OperationCanceledException>(() => ParseMoved(input, null, cancelled.Token, cancelled.Cancel));
+    }
+
+    [Fact]
     public void FosteredTableTextReconstructsNestedFormattingBeforeTheTable()
     {
         var result = Parse("<!doctype html><p><b id=bold><i class=kept>x</p>"

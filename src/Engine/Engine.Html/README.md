@@ -101,9 +101,10 @@ Non-whitespace table text reconstructs active formatting at the foster insertion
 location when needed; whitespace-only table text does not reconstruct it. If
 the last open template is later than any table (or no table is open), fostered
 table text goes into the template content, merging adjacent text.
-If a parser-script callback detaches an open table, fostered table text instead
-appends to the preceding open-stack element, merging adjacent text. If the
-table is moved to another parent, insertion remains immediately before it.
+If a parser-script callback detaches an open table, fostered table text appends
+to the preceding open-stack element, merging adjacent text. If the table is
+moved directly under a `Document`, fostered text is discarded; other parented
+tables retain insertion immediately before the table.
 Adoption selects the first special element below the formatting element and uses
 the foster insertion location for reparenting when required. This is not the
 full adoption-agency algorithm or full anchor semantics.

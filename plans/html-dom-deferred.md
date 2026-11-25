@@ -108,10 +108,14 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `FosteredTableTextUsesOpenStackParentAfterScriptDetachesTable` covers the
   previously unsupported table-text location when a parser callback removes the
   last open table; `FosteredTableTextUsesMovedTableParentRatherThanOpenStackParent`
-  preserves the parented-table path. `FosteredDetachedTableTextHonorsNodeLimitAndCancellation`
-  covers limits and cancellation, while `TableFragmentFosteredTextAppendsAtSyntheticRoot`
-  checks the separate no-open-table fragment location. Other foster insertion
-  failures remain explicit.
+  preserves the parented-table path. `FosteredTableTextIsDiscardedWhenCallbackMovesTableToDocument`
+  covers the document-parent case, where the character insertion algorithm
+  discards text without allocating a node, and checks cancellation.
+  `FosteredDetachedTableTextHonorsNodeLimitAndCancellation`
+  covers the detached-table limits and cancellation, while
+  `TableFragmentFosteredTextAppendsAtSyntheticRoot` checks the separate
+  no-open-table fragment location. Other foster insertion failures remain
+  explicit.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

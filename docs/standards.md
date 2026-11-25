@@ -261,8 +261,10 @@ adjacent whitespace) are foster-parented before the nearest table when the
 current node is table-related; whitespace-only runs stay in the table.
 Non-whitespace runs reconstruct active formatting at the foster location when
 needed. If a parser-script callback detaches the last open table, fostered
-table text appends to the preceding open-stack element, merging adjacent text;
-a moved table with a parent retains insertion before that table. `frame` and
+table text appends to the preceding open-stack element. When the table is
+moved directly under a `Document`, fostered text is discarded under the
+[insert a character algorithm](https://html.spec.whatwg.org/multipage/parsing.html#insert-a-character);
+other parented tables retain insertion before the table. `frame` and
 `frameset` starts in table modes also use the generic
 fostered in-body fallback without adding frame browsing contexts, loading or
 rendering. This increment does not change the coarse HTML percentage below.

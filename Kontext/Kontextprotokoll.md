@@ -18714,3 +18714,22 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   Build; [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
   [HDF-011](../plans/html-dom-deferred.md) und
   [Plan](../plans/html-dom-full-completion-plan.md).
+
+### KP-640 - Commit gepusht und Document-Text-Recovery korrigiert
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `ba1cea1b` (`fix(html): foster text for detached tables`) wurde nach
+  erfolgreichem Hook erstellt; `git push` uebertrug auch den vorherigen Commit
+  `8bf1064d` nach `origin/main`.
+- Belegt: Die erste vorgeschlagene Fortsetzung leitete fostered Tabellentext
+  bei einem Document-Parent faelschlich zum vorherigen Stack-Element um. Der
+  lokale HTML-Standard `#insert-a-character` verlangt stattdessen, Text mit
+  Document als Ziel zu verwerfen. Ein entsprechend korrigierter Regressionstest
+  schlug zuerst fehl; die Implementierung verwirft nun den Text ohne Node-
+  Allokation und behaelt Cancellation und Diagnostics.
+- Belegt: 7.727 HTML-Tests, Solution-Build (null Warnungen/Fehler) und
+  Formatverifikation bestanden.
+- Status: Phase 1 bleibt offen; diese Fortsetzung ist nicht committed.
+- Quelle: Nutzerauftrag, Commit-/Push-Ausgabe, lokaler HTML-Cache,
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und Testausgaben.

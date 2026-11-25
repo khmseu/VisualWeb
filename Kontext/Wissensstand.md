@@ -30,8 +30,13 @@ committed. Der naechste, uncommittete Schritt fuegt fostered Tabellentext nach
 Entfernung einer offenen Tabelle durch den Parser-Script-Callback in das
 vorherige Open-Stack-Element ein. Eine verschobene Tabelle mit Parent wird
 weiterhin vor der Tabelle behandelt. Solution-Build, 7.726 HTML-Tests und
-Formatverifikation und der serialisierte Solution-Testlauf bestanden.
-Weitere Parser-Luecken bleiben offen.
+Formatverifikation und der serialisierte Solution-Testlauf bestanden. Diese
+Korrektur wurde als `ba1cea1b` committed und mit `8bf1064d` gepusht.
+Der naechste Schritt (KP-640) verwirft fostered Tabellentext, wenn die
+Tabelle direkt unter das Document verschoben wurde, statt ihn in einen
+anderen Knoten umzuleiten; das entspricht dem lokalen HTML-Algorithmus
+`insert a character`. 7.727 HTML-Tests, der Solution-Build und die
+Formatverifikation bestanden. Weitere Parser-Luecken bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die

@@ -43,8 +43,8 @@ record of its completed, bounded scope.
      failures one algorithm at a time, retaining correct recovery and limits.
    - **Status:** In progress. Table-text foster insertion into a later open
      template and into the preceding open-stack element after a parser callback
-     detaches the open table have been implemented and tested; other
-     unsupported paths remain.
+     detaches the open table have been implemented. Fostered text under a
+     document parent is discarded; other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and
