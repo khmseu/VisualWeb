@@ -74,11 +74,6 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<!doctype html><frameset></td>")]
-    public void TableStructureTagsInOtherUnsupportedContextsStillFail(string input) =>
-        Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
-
-    [Theory]
     [InlineData("caption")]
     [InlineData("col")]
     [InlineData("colgroup")]
@@ -3022,6 +3017,54 @@ public sealed class TreeTests
 
         Assert.Null(result.Document.GetElementById("ignored"));
         Assert.Contains(result.Errors, error => error.Code == "unexpected-token-after-frameset");
+    }
+
+    [Theory]
+    [InlineData("table")]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void TableTagsInFramesetModesAreIgnored(string tag)
+    {
+        var cases = new[]
+        {
+            ($"<!doctype html><frameset><{tag} id=ignored></{tag}><frame id=kept></frameset>", "unexpected-token-in-frameset"),
+            ($"<!doctype html><frameset><frame id=kept></frameset><{tag} id=ignored></{tag}>", "unexpected-token-after-frameset"),
+            ($"<!doctype html><frameset><frame id=kept></frameset></html><{tag} id=ignored></{tag}>", "unexpected-token-after-after-frameset"),
+        };
+        foreach (var (input, errorCode) in cases)
+        {
+            var result = Parse(input);
+            var root = result.Document.DocumentElement!;
+            var frameset = Assert.IsType<DomElement>(root.LastChild);
+            var frame = Assert.IsType<DomElement>(Assert.Single(frameset.ChildNodes));
+            Assert.Equal("frameset", frameset.LocalName);
+            Assert.Equal("frame", frame.LocalName);
+            Assert.Same(frame, result.Document.GetElementById("kept"));
+            Assert.Null(result.Document.GetElementById("ignored"));
+            Assert.Null(result.Document.Body);
+            Assert.Collection(result.Errors,
+                error => Assert.Equal(errorCode, error.Code),
+                error => Assert.Equal(errorCode, error.Code));
+        }
+    }
+
+    [Fact]
+    public void TableTagsInFramesetModesHonorLimitsAndCancellation()
+    {
+        const string input = "<!doctype html><frameset><td></td><frame></frameset>";
+        Assert.NotNull(Parse(input, new() { MaxNodes = 6, MaxErrors = 2 }).Document.DocumentElement);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 5 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
     }
 
     [Fact]

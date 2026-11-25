@@ -138,6 +138,9 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `ParseFragment_htmlContextRecoversTableStructureTagAfterBody` cover after-body
   reprocessing in documents and HTML fragments; limits and cancellation are
   separately tested.
+  `TableTagsInFramesetModesAreIgnored` covers table and structure start/end
+  tags in all three frameset modes; `TableTagsInFramesetModesHonorLimitsAndCancellation`
+  checks node/error limits and cancellation.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

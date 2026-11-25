@@ -159,6 +159,8 @@ are reprocessed, whereas table end tags are ignored with a parse error.
 Table and table-structure tokens in after-body and after-after-body modes
 report a parse error and are reprocessed in-body; after-body also applies to
 HTML fragments.
+In frameset, after-frameset and after-after-frameset modes, those tokens
+report a parse error and are ignored.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

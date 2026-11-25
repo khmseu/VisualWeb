@@ -62,12 +62,17 @@ behaelt Raw-Text-Verhalten. 16 fokussierte Tests, 7.784 HTML-Tests, der
 Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
 allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
 und gab zwei uebersprungene Faelle aus.
-KP-644 wurde als `5e85a9ac` committed und gepusht. Der neue uncommittete
+KP-644 wurde als `5e85a9ac` committed und gepusht. Der
 Schritt KP-645 verarbeitet Tabellen-Tags nach Body- und HTML-Ende erneut im
 In-Body-Modus; After-Body gilt auch fuer HTML-Fragmente. 14 fokussierte Tests,
 7.797 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+KP-645 wurde als `53373564` committed und nach `origin/main` gepusht.
+Der uncommittete Schritt KP-646 ignoriert Tabellen- und Tabellenstruktur-Start-
+und Endtags in InFrameset, AfterFrameset und AfterAfterFrameset mit jeweiliger
+Parse-Diagnose. 13 fokussierte Tests, alle 7.807 HTML-Tests, der
+Solution-Build und die Formatpruefung bestanden.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

@@ -222,6 +222,8 @@ after-after-frameset modes. Supported behavior includes:
   parse error. With scripting enabled, the same markup remains raw text.
   Table and table-structure tokens after `body` or `html` report a parse error
   and reenter in-body processing, including after-body HTML fragments.
+  In frameset, after-frameset and after-after-frameset modes, these tokens
+  instead report a parse error and are ignored.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

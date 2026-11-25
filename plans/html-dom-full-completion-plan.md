@@ -50,7 +50,9 @@ record of its completed, bounded scope.
      now process table-structure starts and ends through their existing
      mode-specific rules, including head-noscript recovery with scripting
      disabled. After-body and after-after-body table tokens reenter in-body
-     processing. Other unsupported paths remain.
+     processing. In frameset, after-frameset and after-after-frameset modes,
+     table and structure tokens are diagnosed and ignored. Other unsupported
+     paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and

@@ -72,6 +72,8 @@ starts; table ends are ignored with a parse error. Scripting-enabled head
 `noscript` remains raw text.
 After-body and after-after-body table tokens report a parse error and reenter
 in-body processing, including after-body HTML fragments.
+In frameset, after-frameset and after-after-frameset modes, table and
+table-structure tokens report a parse error and are ignored.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

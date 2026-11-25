@@ -18849,3 +18849,25 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-afterbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-646 - Tabellen-Tags in Frameset-Modi
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `53373564` (`fix(html): recover table tags after body`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht; dies aktualisiert
+  den damaligen uncommitteten Status von KP-645.
+- Belegt: Der uncommittete Guard-Fix laesst `table` und neun
+  Tabellenstruktur-Start- und Endtags in InFrameset, AfterFrameset und
+  AfterAfterFrameset durch die vorhandenen Regeln laufen. Diese melden die
+  jeweilige Parse-Diagnose und ignorieren die Tags. Frameset-Fragmentkontexte,
+  Frame-Loading und Browsing-Kontexte bleiben ausserhalb dieses Schritts.
+- Belegt: 11 neue Testfaelle schlugen vor dem Fix fehl; danach bestanden 13
+  fokussierte Faelle einschliesslich Grenzen, Cancellation und bestehender
+  Frameset-Tests, alle 7.807 HTML-Tests, der Solution-Build mit null
+  Warnungen/Fehlern und die Formatpruefung.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inframeset),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

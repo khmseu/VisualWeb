@@ -292,7 +292,8 @@ public static class HtmlParser
                     && !(mode == Mode.InBody && (!IsSelectContextActive
                         || tableTag.Name != "table"))
                     && mode is not (Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.InHeadNoscript
-                        or Mode.AfterHead or Mode.AfterBody or Mode.AfterAfterBody)
+                        or Mode.AfterHead or Mode.AfterBody or Mode.AfterAfterBody
+                        or Mode.InFrameset or Mode.AfterFrameset or Mode.AfterAfterFrameset)
                     && !(tableTag.Name == "table" && mode == Mode.InBody))
                 {
                     throw Unsupported($"Table tag <{tableTag.Name}> is outside the supported table tree-building subset.");
