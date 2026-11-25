@@ -770,6 +770,31 @@ public static class HtmlParser
             }
 
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token."); }
+            if (tag is { IsEndTag: false, Name: "input" })
+            {
+                if (fragmentContext?.LocalName == "select")
+                {
+                    Error("input-start-tag-in-select");
+                    return;
+                }
+
+                if (InScope("select"))
+                {
+                    Error("input-start-tag-in-select");
+                    Close("select");
+                }
+
+                ReconstructFormatting();
+                Insert(tag, push: false);
+                if (!tag.Attributes.TryGetValue("type", out var inputType)
+                    || !AsciiEqualsIgnoreCase(inputType, "hidden"))
+                {
+                    framesetOk = false;
+                }
+
+                return;
+            }
+
             if (tag is { IsEndTag: false, Name: "select" })
             {
                 if (fragmentContext?.LocalName == "select")
@@ -919,14 +944,6 @@ public static class HtmlParser
                         Insert(tag);
                         mode = Mode.InFrameset;
                         return;
-                    case "input":
-                        if (!tag.Attributes.TryGetValue("type", out var inputType)
-                            || !AsciiEqualsIgnoreCase(inputType, "hidden"))
-                        {
-                            framesetOk = false;
-                        }
-
-                        break;
                     case "option":
                     case "optgroup":
                         if (open.LastOrDefault()?.LocalName == "option") { Close("option"); }
@@ -2088,17 +2105,6 @@ public static class HtmlParser
                 return;
             }
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in select."); }
-            if (!tag.IsEndTag && tag.Name == "input")
-            {
-                Error("input-start-tag-in-select");
-                if (selectIndex >= 0)
-                {
-                    CloseAt(selectIndex);
-                    BodyToken(tag);
-                }
-
-                return;
-            }
             if (!tag.IsEndTag && tag.Name == "hr")
             {
                 GenerateImpliedEndTags();

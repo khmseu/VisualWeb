@@ -18954,3 +18954,33 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-650 - Input-Starts und Select-Scope
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `447a17b5` (`fix(html): respect scope for select starts`) wurde erstellt und
+  nach `origin/main` gepusht; der erfolgreiche Hook formatierte dabei
+  `docs/standards.md`. Dies aktualisiert den damaligen uncommitteten Status
+  von KP-649.
+- Belegt: Die uncommittete Fortsetzung verarbeitet In-Body-Input-Starts vor
+  Select-Token-Weiterleitung: Im Select-Fragmentkontext werden sie
+  diagnostiziert und ignoriert, auch in Template-Inhalt. Sonst wird ein
+  in Scope befindliches Select bei Diagnose geschlossen; jenseits einer
+  Scope-Grenze bleibt es offen. Der Input wird mit bestehender
+  Formatierungsrekonstruktion und Frameset-Regel eingefuegt. Die gesonderte
+  In-Table-Regel fuer Hidden-Inputs bleibt erhalten.
+- Belegt: Sechs fokussierte Testfaelle schlugen vor der Korrektur fehl,
+  einer bestand bereits; danach bestanden neun fokussierte Tests und alle
+  7.831 HTML-Tests, einschliesslich Grenzen, Cancellation und der getrennten
+  Hidden-Input-Regel. Der Solution-Build bestand mit null Warnungen/Fehlern,
+  ebenso die Formatpruefung und der serialisierte Solution-Testlauf in allen
+  14 Projekten. Der Browser-Runner meldete 1.449 bestandene Tests und gab
+  zwei uebersprungene Faelle aus.
+- Offen: Select-Endtags und andere Select-Algorithmen sind durch diesen
+  Input-Schritt nicht weitergehend geprueft.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

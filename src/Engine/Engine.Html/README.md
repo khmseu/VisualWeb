@@ -46,6 +46,9 @@ and row modes, and template start/end processing in those modes.
 An in-body `select` start closes an in-scope select, inserts a new select
 when the previous one is beyond a scope boundary, or is ignored in a
 select-context fragment. Table-mode insertion retains foster parenting.
+An in-body `input` start is ignored in a select-context fragment, closes an
+in-scope select before insertion, and leaves an out-of-scope select open.
+In-table hidden inputs retain their separate rule.
 Document `noscript` uses the parser scripting state: disabled scripting selects
 the in-head-noscript insertion mode in head and ordinary in-body parsing in
 body, while enabled scripting selects RAWTEXT in head and body. This does not
@@ -146,7 +149,7 @@ parser; templates started inside select content use in-body/template
 processing, keep their contents out of the enclosing select's token handling,
 and resume the enclosing select's token handling on close, including in
 select-context fragments, although the fragment-context rule still ignores
-`select` starts within template content.
+in-body `select` and `input` starts within template content.
 Foreign content and other unsupported template algorithms
 remain explicit failures.
 Inside template contents, including template-context fragments, form starts

@@ -938,6 +938,53 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "input-start-tag-in-select");
     }
 
+    [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void InputStartBeyondSelectScopeBoundaryKeepsOuterSelect(string boundary)
+    {
+        var result = Parse($"<!doctype html><select id=outer><{boundary}><input id=inner>"
+            + $"</{boundary}><option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var inner = Assert.IsType<DomElement>(result.Document.GetElementById("inner"));
+        var container = Assert.IsType<DomElement>(outer.FirstChild);
+
+        Assert.Equal(boundary, container.LocalName);
+        Assert.Same(container, inner.ParentNode);
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void InputStartBeyondTableScopeBoundaryUsesFosterParenting()
+    {
+        var result = Parse("<!doctype html><select id=outer><table><input id=fostered>"
+            + "<input id=hidden type=hidden></table><option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var fostered = Assert.IsType<DomElement>(result.Document.GetElementById("fostered"));
+        var table = Assert.IsType<DomElement>(fostered.NextSibling);
+
+        Assert.Same(outer, fostered.ParentNode);
+        Assert.Equal("table", table.LocalName);
+        Assert.Same(table, result.Document.GetElementById("hidden")!.ParentNode);
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("non-hidden-input-in-table", error.Code),
+            error => Assert.Equal("hidden-input-in-table", error.Code));
+    }
+
+    [Fact]
+    public void InputStartBeyondSelectScopeBoundaryHonorsNodeLimitAndCancellation()
+    {
+        const string input = "<!doctype html><select><object><input></object></select>";
+        Assert.Empty(Parse(input, new() { MaxNodes = 8 }).Errors);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 7 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
     [Fact]
     public void TextareaInSelectUsesBodyModeRcdataAndKeepsTheSelectOpen()
     {

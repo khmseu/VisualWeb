@@ -172,6 +172,10 @@ For an in-body `select` start, the select fragment context ignores the token;
 otherwise an in-scope select is closed and the token ignored, while a select
 beyond a scope boundary does not prevent insertion. Table-mode starts continue
 to use foster parenting. Other select algorithms remain bounded.
+For an in-body `input` start, the select fragment context ignores the token;
+otherwise an in-scope select is closed before inserting the input, while an
+out-of-scope select remains open. In-table hidden inputs retain their separate
+insertion rule.
 
 Document `noscript` uses the
 [parser scripting state](../specs/cache/html.html#parser-scripting-disabled).

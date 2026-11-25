@@ -123,7 +123,7 @@ after-after-frameset modes. Supported behavior includes:
   handling. Template content does not inherit select-only token handling from
   an enclosing select.
   Select-context fragments also retain the fragment-context rule that ignores
-  `select` starts, including inside template content. Foreign content and
+  in-body `select` and `input` starts, including inside template content. Foreign content and
   broader template algorithms remain explicitly unsupported.
 - `HtmlParser.ParseFragment` returns a context-document-owned `DocumentFragment`.
   It selects the bounded insertion mode for supported in-body, table, select and
@@ -154,10 +154,11 @@ after-after-frameset modes. Supported behavior includes:
   children in options and optgroups. `textarea` uses the in-body RCDATA rules
   in the current select context; its initial LF is ignored. The in-body
   recovery rules also insert `hr` inside the select after implied option/group
-  closure, close the select and reprocess an `input` start tag, and
+  closure, close an in-scope select before inserting an `input` start, and
   close-and-ignore a `select` start tag when a select is in scope. A scope
-  boundary permits a separate inner select; a select-context fragment ignores
-  the start regardless of scope. Outside selects, `option` and
+  boundary permits a separate inner select or input; a select-context fragment
+  ignores in-body `select` and `input` starts regardless of scope. In-table
+  hidden input handling remains separate. Outside selects, `option` and
   `optgroup` use ordinary in-body insertion; starting either while an `option`
   is current closes that option first.
 - Basic static table construction for `table`, `caption`, `colgroup`/`col`,

@@ -86,12 +86,18 @@ kein `colgroup` ist; offene Dokument-`colgroup`-Elemente bleiben unsupported.
 Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
 bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
 uebersprungene Faelle aus. KP-648 wurde als `68d151cb` committed und gepusht.
-Der uncommittete Schritt KP-649 behandelt Select-Starts anhand des
+Schritt KP-649 behandelt Select-Starts anhand des
 Select-Fragmentkontexts und der Element-Scope-Grenzen, einschliesslich
 Foster-Parenting im Tabellenmodus. Alle 7.824 HTML-Tests, der Solution-Build,
 die Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
 bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
-uebersprungene Faelle aus.
+uebersprungene Faelle aus. KP-649 wurde als `447a17b5` committed und gepusht.
+Der uncommittete Schritt KP-650 behandelt In-Body-Input-Starts anhand von
+Select-Fragmentkontext und Scope-Grenzen, auch in Templates; die gesonderte
+In-Table-Regel fuer Hidden-Inputs bleibt erhalten. Alle 7.831 HTML-Tests und
+der Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf
+in allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
+Tests und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

@@ -447,7 +447,7 @@ public sealed class FragmentTests
     }
 
     [Fact]
-    public void ParseFragment_selectTemplateContentUsesInBodyRulesAndResumesSelectContext()
+    public void ParseFragment_selectTemplateIgnoresInputAndResumesSelectContext()
     {
         var document = new DomDocument();
 
@@ -456,13 +456,47 @@ public sealed class FragmentTests
             document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
 
         var template = Assert.IsType<DomTemplateElement>(result.Fragment.FirstChild);
-        Assert.Equal(new[] { "input", "option" },
+        Assert.Equal(new[] { "option" },
             template.Content.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
         Assert.Equal(new[] { "template", "option" },
             result.Fragment.ChildNodes.Cast<DomElement>().Select(element => element.LocalName));
         Assert.Equal("after", result.Fragment.LastChild!.TextContent);
         Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
-        Assert.Empty(result.Errors);
+        Assert.Collection(result.Errors, error => Assert.Equal("input-start-tag-in-select", error.Code));
+    }
+
+    [Fact]
+    public void SelectContextIgnoresInputsBeyondScopeBoundaryAndHonorsErrorLimit()
+    {
+        var context = new DomDocument().CreateElement("select");
+        const string input = "<object><input><input type=hidden><option>inside</option></object>";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxErrors = 2 },
+            TestContext.Current.CancellationToken);
+        var container = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("object", container.LocalName);
+        Assert.Equal("option", Assert.IsType<DomElement>(Assert.Single(container.ChildNodes)).LocalName);
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("input-start-tag-in-select", error.Code),
+            error => Assert.Equal("input-start-tag-in-select", error.Code));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxErrors = 1 },
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void SelectContextTableModeRetainsHiddenInputRule()
+    {
+        var context = new DomDocument().CreateElement("select");
+        var result = HtmlParser.ParseFragment("<table><input id=ignored><input id=hidden type=hidden></table>",
+            context, cancellationToken: TestContext.Current.CancellationToken);
+        var table = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        var hidden = Assert.IsType<DomElement>(Assert.Single(table.ChildNodes));
+
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("hidden", hidden.GetAttribute("id"));
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("non-hidden-input-in-table", error.Code),
+            error => Assert.Equal("input-start-tag-in-select", error.Code),
+            error => Assert.Equal("hidden-input-in-table", error.Code));
     }
 
     [Fact]
