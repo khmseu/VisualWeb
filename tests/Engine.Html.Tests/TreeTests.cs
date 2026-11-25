@@ -2945,6 +2945,8 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
+    [InlineData("<!doctype html><body></body><svg>")]
+    [InlineData("<!doctype html><body></body></html><math>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
@@ -3062,6 +3064,45 @@ public sealed class TreeTests
         Assert.NotNull(Parse(input, new() { MaxNodes = 6, MaxErrors = 2 }).Document.DocumentElement);
         Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 5 }));
         Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Theory]
+    [InlineData("svg")]
+    [InlineData("math")]
+    public void ForeignStartsInFramesetModesAreIgnored(string tag)
+    {
+        var cases = new[]
+        {
+            ($"<!doctype html><frameset><{tag} id=ignored /><frame id=kept></frameset>", "unexpected-token-in-frameset"),
+            ($"<!doctype html><frameset><frame id=kept></frameset><{tag} id=ignored />", "unexpected-token-after-frameset"),
+            ($"<!doctype html><frameset><frame id=kept></frameset></html><{tag} id=ignored />", "unexpected-token-after-after-frameset"),
+        };
+        foreach (var (input, errorCode) in cases)
+        {
+            var result = Parse(input);
+            var root = result.Document.DocumentElement!;
+            var frameset = Assert.IsType<DomElement>(root.LastChild);
+            var frame = Assert.IsType<DomElement>(Assert.Single(frameset.ChildNodes));
+            Assert.Equal("frame", frame.LocalName);
+            Assert.Same(frame, result.Document.GetElementById("kept"));
+            Assert.Null(result.Document.GetElementById("ignored"));
+            Assert.Null(result.Document.Body);
+            Assert.Collection(result.Errors, error => Assert.Equal(errorCode, error.Code));
+        }
+    }
+
+    [Fact]
+    public void ForeignStartsInFramesetModesHonorLimitsAndCancellation()
+    {
+        const string input = "<!doctype html><frameset><svg><frame></frameset>";
+        Assert.NotNull(Parse(input, new() { MaxNodes = 6, MaxErrors = 1 }).Document.DocumentElement);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 5 }));
+        const string twoErrors = "<!doctype html><frameset><svg><math><frame></frameset>";
+        Assert.NotNull(Parse(twoErrors, new() { MaxErrors = 2 }).Document.DocumentElement);
+        Assert.Throws<HtmlLimitException>(() => Parse(twoErrors, new() { MaxErrors = 1 }));
         using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cancelled.Cancel();
         Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));

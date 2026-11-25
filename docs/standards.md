@@ -161,6 +161,8 @@ report a parse error and are reprocessed in-body; after-body also applies to
 HTML fragments.
 In frameset, after-frameset and after-after-frameset modes, those tokens
 report a parse error and are ignored.
+The same frameset-mode recovery ignores `svg` and `math` starts; actual
+foreign-content tree construction remains unsupported.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

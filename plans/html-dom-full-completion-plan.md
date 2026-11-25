@@ -51,8 +51,8 @@ record of its completed, bounded scope.
      mode-specific rules, including head-noscript recovery with scripting
      disabled. After-body and after-after-body table tokens reenter in-body
      processing. In frameset, after-frameset and after-after-frameset modes,
-     table and structure tokens are diagnosed and ignored. Other unsupported
-     paths remain.
+     table and structure tokens, and `svg`/`math` starts, are diagnosed and
+     ignored without constructing foreign content. Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and

@@ -224,6 +224,8 @@ after-after-frameset modes. Supported behavior includes:
   and reenter in-body processing, including after-body HTML fragments.
   In frameset, after-frameset and after-after-frameset modes, these tokens
   instead report a parse error and are ignored.
+  `svg` and `math` start tags in those three frameset modes are also diagnosed
+  and ignored; this does not enable foreign-content tree construction.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

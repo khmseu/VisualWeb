@@ -141,6 +141,9 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `TableTagsInFramesetModesAreIgnored` covers table and structure start/end
   tags in all three frameset modes; `TableTagsInFramesetModesHonorLimitsAndCancellation`
   checks node/error limits and cancellation.
+  `ForeignStartsInFramesetModesAreIgnored` covers ignored `svg` and `math`
+  starts in those modes; limits, cancellation and foreign-content failures
+  outside them remain separately tested.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

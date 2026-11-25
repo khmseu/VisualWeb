@@ -18871,3 +18871,28 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inframeset),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-647 - Foreign-Starts in Frameset-Modi
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `7562c480` (`fix(html): recover table tags in framesets`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht; dies aktualisiert
+  den damaligen uncommitteten Status von KP-646.
+- Belegt: Der serialisierte Solution-Testlauf fuer KP-646 bestand in allen 14
+  Projekten. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
+  uebersprungene Faelle aus.
+- Belegt: Die uncommittete Fortsetzung laesst `svg`- und `math`-Starttags in
+  InFrameset, AfterFrameset und AfterAfterFrameset durch die vorhandenen
+  Regeln laufen, die sie mit Parse-Diagnose ignorieren. In anderen Modi bleibt
+  Foreign-Content-Tree-Construction explizit unsupported; es entstehen keine
+  SVG- oder MathML-Elemente durch diese Recovery.
+- Belegt: Drei neue Testfaelle schlugen vor dem Fix fehl; anschliessend
+  bestanden 19 fokussierte Tests einschliesslich Grenzen, Cancellation und
+  Unsupported-Regressionen, alle 7.812 HTML-Tests und der Solution-Build mit
+  null Warnungen/Fehlern sowie die Formatpruefung.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inframeset),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).
