@@ -463,6 +463,35 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void SelectFragmentOptgroupStartKeepsCurrentGroupOpen()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<optgroup><optgroup>two</optgroup></optgroup>",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
+        var outer = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        var inner = Assert.IsType<DomElement>(Assert.Single(outer.ChildNodes));
+
+        Assert.Equal("optgroup", outer.LocalName);
+        Assert.Equal("optgroup", inner.LocalName);
+        Assert.Equal("two", inner.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void SelectFragmentOptgroupStartReconstructsFormattingWithoutSelectInScope()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<p><b>one</p><optgroup>two</optgroup></b>",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
+        var reconstructed = Assert.IsType<DomElement>(result.Fragment.LastChild);
+
+        Assert.Equal("b", reconstructed.LocalName);
+        Assert.Equal("optgroup", Assert.IsType<DomElement>(reconstructed.FirstChild).LocalName);
+        Assert.Equal("two", reconstructed.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {
         var document = new DomDocument();

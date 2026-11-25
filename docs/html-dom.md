@@ -163,8 +163,10 @@ after-after-frameset modes. Supported behavior includes:
   and optgroup ends are generated before checking misnesting. An in-body
   `option` start generates implied end tags except `optgroup` when a select is
   in scope, then diagnoses a remaining in-scope option. Otherwise it closes
-  only a current option. Both paths reconstruct formatting before insertion.
-  `optgroup` start recovery remains a bounded subset.
+  only a current option. An `optgroup` start generates implied end tags when
+  a select is in scope and diagnoses a remaining in-scope option or optgroup;
+  otherwise it also closes only a current option, not a current optgroup.
+  Both start rules reconstruct formatting before insertion.
 - Basic static table construction for `table`, `caption`, `colgroup`/`col`,
   `tbody`/`thead`/`tfoot`, `tr`, `td` and `th`, including implied
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell

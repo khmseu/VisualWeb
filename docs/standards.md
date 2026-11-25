@@ -181,6 +181,9 @@ the search, and implied end tags are generated before the misnesting check.
 In-body `option` starts generate implied end tags except `optgroup` when select
 is in scope, diagnose an option still in scope, and reconstruct formatting.
 Without an in-scope select, only a current option is closed before insertion.
+In-body `optgroup` starts generate all implied end tags with a select in scope,
+diagnose a remaining in-scope option or group, and reconstruct formatting.
+Without an in-scope select, they close only a current option.
 
 Document `noscript` uses the
 [parser scripting state](../specs/cache/html.html#parser-scripting-disabled).

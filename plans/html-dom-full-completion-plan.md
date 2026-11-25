@@ -60,6 +60,8 @@ record of its completed, bounded scope.
      implied end tags.
      In-body option starts use scoped implied-end recovery and formatting
      reconstruction, including fragments and fostered selects.
+     Optgroup starts use their distinct scoped implied-end and diagnostic rule,
+     preserving open groups when no select is in scope.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

@@ -161,6 +161,8 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   limits; other select algorithms remain bounded.
   Option-start regressions cover select scope, implied ends, misnesting,
   formatting reconstruction, fragment and table paths, and parser limits.
+  Optgroup-start regressions cover its distinct implied-end and diagnostic
+  rules, scope boundaries, select fragments, foster parenting and limits.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

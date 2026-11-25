@@ -19038,3 +19038,29 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-653 - Optgroup-Starts und Select-Scope
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `9a148ff8` (`fix(html): recover option starts using scope`) wurde erstellt
+  und nach `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund.
+  Der nicht bestandene Solution-Testlauf von KP-652 und sein bestandener
+  isolierter Wiederholungstest bleiben historische Befunde.
+- Belegt: Die uncommittete Fortsetzung verarbeitet In-Body-Optgroup-Starts
+  anhand des Select-Scope. Bei Select in Scope erzeugt sie alle impliziten
+  Endtags und diagnostiziert verbleibende Optionen oder Gruppen in Scope.
+  Sonst schliesst sie nur eine aktuelle Option und laesst eine aktuelle
+  Optgroup offen. Beide Wege rekonstruieren aktive Formatierung.
+- Belegt: Alle acht fokussierten Tests schlugen vor der Korrektur fehl; danach
+  bestanden diese sowie zwei zusaetzliche Tests fuer Foster-Parenting und
+  Grenzen. Alle 7.857 HTML-Tests, der Solution-Build mit null Warnungen
+  und Fehlern, die Formatpruefung und der serialisierte Solution-Testlauf in
+  allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
+  Tests und gab zwei uebersprungene Faelle aus.
+- Offen: Andere Select-Algorithmen und Parser-Luecken bleiben begrenzt;
+  Phase 1 ist nicht abgeschlossen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

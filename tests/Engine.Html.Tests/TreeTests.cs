@@ -1062,6 +1062,91 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void OptgroupStartInSelectGeneratesImpliedEnds()
+    {
+        var result = Parse("<!doctype html><select><optgroup id=first><option><p>one"
+            + "<optgroup id=second>two</optgroup></select>");
+        var first = Assert.IsType<DomElement>(result.Document.GetElementById("first"));
+        var second = Assert.IsType<DomElement>(result.Document.GetElementById("second"));
+
+        Assert.Same(first.ParentNode, second.ParentNode);
+        Assert.Equal("one", first.TextContent);
+        Assert.Equal("two", second.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("<option id=first><div>", "</div></option>")]
+    [InlineData("<optgroup id=first><div>", "</div></optgroup>")]
+    [InlineData("<optgroup id=first><option><div>", "</div></option></optgroup>")]
+    public void OptgroupStartInSelectDiagnosesRemainingOptionOrGroup(string start, string end)
+    {
+        var result = Parse("<!doctype html><select>" + start
+            + "<optgroup id=second>two</optgroup>" + end + "</select>", new() { MaxErrors = 1 });
+        var first = Assert.IsType<DomElement>(result.Document.GetElementById("first"));
+        var second = Assert.IsType<DomElement>(result.Document.GetElementById("second"));
+
+        Assert.Equal("div", Assert.IsType<DomElement>(second.ParentNode).LocalName);
+        Assert.Contains(second, first.Descendants());
+        Assert.Collection(result.Errors, error => Assert.Equal("optgroup-start-tag-with-open-option-or-optgroup", error.Code));
+        Assert.Throws<HtmlLimitException>(() => Parse(
+            "<!doctype html><select><optgroup><div><optgroup><div><optgroup>", new() { MaxErrors = 1 }));
+    }
+
+    [Fact]
+    public void OptgroupStartBeyondSelectScopeKeepsCurrentGroupOpen()
+    {
+        var result = Parse("<!doctype html><select><object><optgroup id=first>"
+            + "<optgroup id=second>two</optgroup></optgroup></object></select>");
+        var first = Assert.IsType<DomElement>(result.Document.GetElementById("first"));
+
+        Assert.Same(first, result.Document.GetElementById("second")!.ParentNode);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void OptgroupStartInSelectReconstructsFormatting()
+    {
+        var result = Parse("<!doctype html><select><p><b>one</p><optgroup>two</optgroup></b></select>");
+        var select = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var reconstructed = Assert.IsType<DomElement>(select.LastChild);
+
+        Assert.Equal("b", reconstructed.LocalName);
+        Assert.Equal("optgroup", Assert.IsType<DomElement>(reconstructed.FirstChild).LocalName);
+        Assert.Equal("two", reconstructed.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void OptgroupStartInFosteredSelectUsesSelectScope()
+    {
+        var result = Parse("<!doctype html><table><select id=select><optgroup id=first><option><p>one"
+            + "<optgroup id=second>two</optgroup></select></table>");
+        var select = Assert.IsType<DomElement>(result.Document.GetElementById("select"));
+        var first = Assert.IsType<DomElement>(result.Document.GetElementById("first"));
+        var second = Assert.IsType<DomElement>(result.Document.GetElementById("second"));
+
+        Assert.Same(select, first.ParentNode);
+        Assert.Same(select, second.ParentNode);
+        Assert.Equal("one", first.TextContent);
+        Assert.Equal("two", second.TextContent);
+        Assert.DoesNotContain(result.Errors, error => error.Code == "optgroup-start-tag-with-open-option-or-optgroup");
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "fostered-optgroup-start-in-table"));
+    }
+
+    [Fact]
+    public void OptgroupStartImpliedEndsHonorNodeDepthAndCancellationLimits()
+    {
+        const string input = "<!doctype html><select><option><p><optgroup></optgroup></select>";
+        Assert.Empty(Parse(input, new() { MaxNodes = 9, MaxDepth = 5 }).Errors);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 8 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxDepth = 4 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Fact]
     public void SelectHrClosesOpenOptionGroupsAndRemainsInsideSelect()
     {
         var result = Parse("<!doctype html><select><optgroup><option>A<hr></select>");

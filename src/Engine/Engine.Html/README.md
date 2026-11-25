@@ -53,7 +53,10 @@ Select end tags use generic in-body recovery, respecting intervening special
 elements and generating implied option/optgroup ends before misnesting checks.
 In-body `option` starts use select scope, implied ends excluding `optgroup`,
 remaining-option diagnostics and formatting reconstruction; without a select in
-scope they close only a current option. Other select rules remain bounded.
+scope they close only a current option. `optgroup` starts similarly use select
+scope but generate all implied ends and diagnose remaining in-scope options or
+groups; without a select in scope they leave a current group open. Both
+reconstruct formatting. Other select rules remain bounded.
 Document `noscript` uses the parser scripting state: disabled scripting selects
 the in-head-noscript insertion mode in head and ordinary in-body parsing in
 body, while enabled scripting selects RAWTEXT in head and body. This does not
