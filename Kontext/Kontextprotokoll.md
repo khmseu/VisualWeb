@@ -18733,3 +18733,25 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
 - Status: Phase 1 bleibt offen; diese Fortsetzung ist nicht committed.
 - Quelle: Nutzerauftrag, Commit-/Push-Ausgabe, lokaler HTML-Cache,
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und Testausgaben.
+
+### KP-641 - Select-Tabellenstarts in Phase 1
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `e7c5e54e` (`fix(html): discard fostered text under documents`) wurde nach
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht.
+- Belegt: Die Fortsetzung verarbeitet neun Tabellenstruktur-Starttags innerhalb
+  von Selects und Select-Fragmenten wie im In-Body-Modus: Parse-Diagnose und
+  Ignorieren ohne erzeugten Knoten. Struktur-Endtags in diesem Select-Kontext
+  bleiben explizit unsupported.
+- Belegt: Laut Implementierungsbericht schlugen 19 fokussierte Tests vor dem
+  Fix fehl und bestanden danach; 7.745 HTML- und 78 DOM-Tests bestanden.
+  Der Solution-Build bestand mit null Warnungen/Fehlern. Eine fokussierte
+  und die Solution-Formatpruefung bestanden. Ein
+  Solution-Testlauf wurde vor Abschluss der Browser-Tests gestoppt; die zuvor
+  abgeschlossenen 13 Projekte bestanden laut Implementierungsbericht.
+- Status: Phase 1 bleibt offen; diese Fortsetzung ist nicht committed.
+- Quelle: Nutzerauftrag, Commit-/Push-Ausgabe, Implementierungsbericht,
+  eigener Build; [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [HDF-011](../plans/html-dom-deferred.md) und
+  [Plan](../plans/html-dom-full-completion-plan.md).

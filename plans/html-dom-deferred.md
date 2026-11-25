@@ -116,6 +116,12 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `TableFragmentFosteredTextAppendsAtSyntheticRoot` checks the separate
   no-open-table fragment location. Other foster insertion failures remain
   explicit.
+  `SelectIgnoresTableStructureStartAndKeepsOptionContent` and
+  `SelectContextIgnoresTableStructureStart` cover in-body ignored
+  table-structure starts inside selects and select fragments;
+  `SelectTableStructureStartRecoveryHonorsLimitsAndCancellation` checks
+  node/error budgets and cancellation. Select-context structure end tags remain
+  explicitly unsupported.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

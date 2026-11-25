@@ -208,6 +208,10 @@ after-after-frameset modes. Supported behavior includes:
   the enclosing select's token handling on close, including in select-context
   fragments. Nested selects, foreign content and other unsupported
   table/template algorithms remain explicit failures.
+  In the in-body insertion mode, table-structure start tags (`caption`, `col`,
+  `colgroup`, `tbody`, `thead`, `tfoot`, `tr`, `td` and `th`) inside a select
+  report a parse error and are ignored, including in select-context fragments;
+  table-structure end tags in that select context remain unsupported.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

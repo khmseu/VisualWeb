@@ -76,11 +76,33 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<!doctype html><head><td>")]
     [InlineData("<!doctype html><head></td>")]
-    [InlineData("<!doctype html><body><select><td>")]
     [InlineData("<!doctype html><body><select></td>")]
     [InlineData("<!doctype html><frameset></td>")]
     public void TableStructureTagsInOtherUnsupportedContextsStillFail(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void SelectIgnoresTableStructureStartAndKeepsOptionContent(string tag)
+    {
+        var result = Parse($"<!doctype html><select><option>before<{tag} id=ignored>after</option></select><p>later</p>");
+        var select = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var option = Assert.IsType<DomElement>(Assert.Single(select.ChildNodes));
+        Assert.Equal("option", option.LocalName);
+        Assert.Equal("beforeafter", option.TextContent);
+        Assert.Null(result.Document.GetElementById("ignored"));
+        Assert.Equal("later", Assert.IsType<DomElement>(result.Document.Body.LastChild).TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-table-structure-start-tag-in-body");
+        Assert.Single(result.Errors);
+    }
 
     [Fact]
     public void LegacyPreElementsRetainTheirDistinctParsingModes()

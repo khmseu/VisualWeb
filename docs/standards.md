@@ -147,6 +147,11 @@ For an in-body table start, HTML tree construction closes an in-scope
 paragraph only when the document is not in quirks mode; quirks mode preserves
 the paragraph around the table. The overall HTML estimate remains unchanged.
 
+The [in-body](../specs/cache/html.html#parsing-main-inbody) ignored
+table-structure start-tag rule also applies inside selects and select-context
+fragments. Select-context table-structure end handling remains unsupported.
+The overall HTML estimate remains unchanged.
+
 Document `noscript` uses the
 [parser scripting state](../specs/cache/html.html#parser-scripting-disabled).
 Disabled scripting selects the dedicated

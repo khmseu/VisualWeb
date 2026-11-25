@@ -84,6 +84,49 @@ public sealed class FragmentTests
     }
 
     [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void SelectContextIgnoresTableStructureStart(string tag)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment($"<option>before<{tag} id=ignored>after</option>",
+            document.CreateElement("select"), new() { MaxNodes = 2, MaxDepth = 1 },
+            TestContext.Current.CancellationToken);
+        var option = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("option", option.LocalName);
+        Assert.Equal("beforeafter", option.TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Single(result.Errors, error => error.Code == "unexpected-table-structure-start-tag-in-body");
+        Assert.Single(result.Errors);
+    }
+
+    [Fact]
+    public void SelectTableStructureStartRecoveryHonorsLimitsAndCancellation()
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement("select");
+        const string input = "<option>a<td>b<tr>c</option>";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxNodes = 2, MaxErrors = 2 },
+            TestContext.Current.CancellationToken);
+        Assert.Equal("abc", result.Fragment.TextContent);
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxNodes = 1 },
+            TestContext.Current.CancellationToken));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxErrors = 1 },
+            TestContext.Current.CancellationToken));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => HtmlParser.ParseFragment(input, context,
+            cancellationToken: cancelled.Token));
+    }
+
+    [Theory]
     [InlineData("a")]
     [InlineData("nobr")]
     public void FragmentNestedFormattingStartsUseAdjustedAdoptionParent(string tag)

@@ -36,7 +36,11 @@ Der naechste Schritt (KP-640) verwirft fostered Tabellentext, wenn die
 Tabelle direkt unter das Document verschoben wurde, statt ihn in einen
 anderen Knoten umzuleiten; das entspricht dem lokalen HTML-Algorithmus
 `insert a character`. 7.727 HTML-Tests, der Solution-Build und die
-Formatverifikation bestanden. Weitere Parser-Luecken bleiben offen.
+Formatverifikation bestanden und die Korrektur wurde als `e7c5e54e` gepusht.
+Der aktuelle uncommittete Schritt (KP-641) ignoriert Tabellenstruktur-Starttags
+in Selects und Select-Fragmenten mit Parse-Diagnose; entsprechende Endtags
+bleiben unsupported. 7.745 HTML-Tests, 78 DOM-Tests, der Solution-Build und
+die Solution-Formatpruefung bestanden. Weitere Parser-Luecken bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die

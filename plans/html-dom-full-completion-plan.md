@@ -44,7 +44,9 @@ record of its completed, bounded scope.
    - **Status:** In progress. Table-text foster insertion into a later open
      template and into the preceding open-stack element after a parser callback
      detaches the open table have been implemented. Fostered text under a
-     document parent is discarded; other unsupported paths remain.
+     document parent is discarded. In-body table-structure starts inside
+     selects and select fragments are ignored with a parse error; select-context
+     structure ends and other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and
