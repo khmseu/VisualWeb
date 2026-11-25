@@ -18779,3 +18779,27 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
 - Quelle: Nutzerauftrag, Commit-/Push-Ausgabe, lokaler
   [HTML-Cache](../specs/cache/html.html#parsing-main-intd),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs), Tests und Buildausgabe.
+
+### KP-643 - Tabellenstruktur-Tags in fruehen Dokumentmodi
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `5bcef9ce` (`fix(html): recover table ends inside selects`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht.
+- Belegt: Die neue, uncommittete Fortsetzung laesst neun Tabellenstruktur-
+  Start- und Endtags in Initial, BeforeHtml, BeforeHead, InHead und AfterHead
+  durch die bestehenden modusabhaengigen Regeln laufen. Starts werden nach
+  notwendigen Moduswechseln in-body ignoriert; nicht passende Ends werden
+  mit Diagnose ignoriert und schliessen etwa einen offenen Head nicht.
+  Frameset- und andere nicht freigegebene Modi behalten den Guard.
+- Belegt: Zehn fokussierte Tests schlugen vor der Guard-Aenderung fehl;
+  anschliessend bestanden 12 fokussierte Tests einschliesslich Grenzen und
+  Cancellation, alle 7.771 HTML-Tests, der Solution-Build mit null
+  Warnungen/Fehlern, die Solution-Formatpruefung und der serialisierte
+  Solution-Testlauf in allen 14 Projekten. Der Browser-Runner meldete 1.449
+  bestandene Tests und gab zwei uebersprungene Faelle aus.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#the-before-html-insertion-mode),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

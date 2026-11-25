@@ -40,12 +40,19 @@ Formatverifikation bestanden und die Korrektur wurde als `e7c5e54e` gepusht.
 Der Schritt KP-641 ignoriert Tabellenstruktur-Starttags in Selects und
 Select-Fragmenten mit Parse-Diagnose; 7.745 HTML-Tests, 78 DOM-Tests,
 Solution-Build und Solution-Formatpruefung bestanden. Er wurde als `3e15054b`
-committed und nach `origin/main` gepusht. Der aktuelle uncommittete Schritt
-(KP-642) laesst neun entsprechende Endtags im In-Body-Select-Kontext durch die
+committed und nach `origin/main` gepusht. Der Schritt KP-642 laesst neun
+entsprechende Endtags im In-Body-Select-Kontext durch die
 generische Endtag-Recovery laufen; die gesonderten In-Cell-Regeln schliessen
 weiterhin eine passende Tabellenzelle. 19 fokussierte Tests, 7.762 HTML-Tests,
 der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden; der Browser-Runner meldete
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. Dieser Schritt
+wurde als `5bcef9ce` committed und gepusht. Der neue uncommittete Schritt
+(KP-643) verarbeitet die neun Tabellenstruktur-Start- und Endtags nun auch in
+den fruehen Dokumentmodi Initial, BeforeHtml, BeforeHead, InHead und AfterHead
+mittels der bestehenden modusabhaengigen Recovery. 12 fokussierte Tests,
+7.771 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
+Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 

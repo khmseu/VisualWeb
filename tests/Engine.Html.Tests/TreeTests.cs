@@ -74,11 +74,58 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<!doctype html><head><td>")]
-    [InlineData("<!doctype html><head></td>")]
     [InlineData("<!doctype html><frameset></td>")]
     public void TableStructureTagsInOtherUnsupportedContextsStillFail(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void EarlyTableStructureTagsRecoverThroughDocumentModes(string tag)
+    {
+        string[] prefixes = ["", "<!doctype html>", "<!doctype html><html>",
+            "<!doctype html><html><head>", "<!doctype html><html><head></head>"];
+        foreach (var prefix in prefixes)
+        {
+            var start = Parse($"{prefix}<{tag} id=ignored><p>later</p>");
+            Assert.Null(start.Document.GetElementById("ignored"));
+            Assert.Equal("later", Assert.IsType<DomElement>(start.Document.Body!.FirstChild).TextContent);
+            Assert.Single(start.Errors, error => error.Code == "unexpected-table-structure-start-tag-in-body");
+
+            var end = Parse($"{prefix}</{tag}><p>later</p>");
+            Assert.Equal("later", Assert.IsType<DomElement>(end.Document.Body!.FirstChild).TextContent);
+            Assert.Single(end.Errors, error => error.Code == "unexpected-end-tag");
+        }
+    }
+
+    [Fact]
+    public void TableStructureEndInHeadDoesNotCloseHead()
+    {
+        var result = Parse("<!doctype html><head></td><title>kept in head</title></head><body>later</body>");
+        Assert.Equal("kept in head", Assert.IsType<DomElement>(result.Document.Head!.FirstChild).TextContent);
+        Assert.Equal("later", result.Document.Body!.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.Single(result.Errors);
+    }
+
+    [Fact]
+    public void EarlyTableStructureRecoveryHonorsLimitsAndCancellation()
+    {
+        const string input = "<!doctype html><head></td></th><p>x</p>";
+        Assert.Equal("x", Parse(input, new() { MaxNodes = 7, MaxErrors = 2 }).Document.Body!.TextContent);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 6 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
 
     [Theory]
     [InlineData("caption")]

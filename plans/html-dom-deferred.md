@@ -124,6 +124,11 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   and `SelectContextIgnoresUnmatchedTableStructureEnd` cover generic in-body
   recovery for unmatched structure end tags; `SelectInCellPreservesCellEndTagRecovery`
   preserves the distinct in-cell closing behavior.
+  `EarlyTableStructureTagsRecoverThroughDocumentModes` covers structure starts
+  and ends across early document modes, with
+  `TableStructureEndInHeadDoesNotCloseHead` and
+  `EarlyTableStructureRecoveryHonorsLimitsAndCancellation` covering head
+  preservation and parser budgets.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

@@ -64,6 +64,9 @@ In ordinary in-body parsing, `caption`, `col`, `colgroup`, `tbody`, `thead`,
 This also applies inside a select and in select-context fragments. Unmatched
 structure end tags there use generic in-body recovery; cell-mode closing rules
 remain separate.
+In initial, before-html, before-head, in-head and after-head document modes,
+structure starts follow mode transitions into in-body recovery, while unmatched
+structure ends are ignored with a parse error.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

@@ -151,6 +151,9 @@ The [in-body](../specs/cache/html.html#parsing-main-inbody) ignored
 table-structure start-tag rule also applies inside selects and select-context
 fragments. Unmatched table-structure end tags in that in-body select context
 use generic end-tag recovery; in-cell rules remain separate.
+In initial, before-html, before-head, in-head and after-head modes, structure
+start and end tags follow the existing document-mode reprocessing and
+unexpected-end-tag rules.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

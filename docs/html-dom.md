@@ -214,6 +214,9 @@ after-after-frameset modes. Supported behavior includes:
   Unmatched end tags for those names use the in-body generic end-tag recovery
   inside selects and select-context fragments; table-cell insertion mode retains
   its own cell-closing rules.
+  In initial, before-html, before-head, in-head and after-head document modes,
+  these start tags follow the existing mode transitions into in-body recovery;
+  unmatched end tags are ignored with a parse error in the early modes.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.
