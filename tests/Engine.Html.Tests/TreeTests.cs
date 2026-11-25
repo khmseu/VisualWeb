@@ -1159,6 +1159,83 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void HrInSelectClosesParagraphBeforeGeneratingImpliedEnds()
+    {
+        var result = Parse("<!doctype html><select id=select><option><p><span>one<hr id=rule>two</select>");
+        var select = Assert.IsType<DomElement>(result.Document.GetElementById("select"));
+        var option = Assert.IsType<DomElement>(select.FirstChild);
+        var rule = Assert.IsType<DomElement>(result.Document.GetElementById("rule"));
+
+        Assert.Equal("one", option.TextContent);
+        Assert.Same(select, rule.ParentNode);
+        Assert.Equal("two", select.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void HrClosesParagraphAfterItsImpliedOptionWithoutMisnestingError()
+    {
+        var result = Parse("<!doctype html><p><option>one<hr id=rule>two");
+        var body = result.Document.Body!;
+
+        Assert.Same(body, result.Document.GetElementById("rule")!.ParentNode);
+        Assert.Equal("one", body.FirstChild!.TextContent);
+        Assert.Equal("two", body.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void HrBeyondSelectScopeKeepsOptionOpen()
+    {
+        var result = Parse("<!doctype html><select><object><option id=option>one<hr id=rule>two"
+            + "</option></object></select>");
+        var option = Assert.IsType<DomElement>(result.Document.GetElementById("option"));
+
+        Assert.Same(option, result.Document.GetElementById("rule")!.ParentNode);
+        Assert.Equal("onetwo", option.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("option")]
+    [InlineData("optgroup")]
+    public void HrInSelectDiagnosesRemainingOptionOrGroup(string name)
+    {
+        var result = Parse($"<!doctype html><select><{name}><div>one<hr id=rule>two"
+            + $"</div></{name}></select>", new() { MaxErrors = 1 });
+        var rule = Assert.IsType<DomElement>(result.Document.GetElementById("rule"));
+
+        Assert.Equal("div", Assert.IsType<DomElement>(rule.ParentNode).LocalName);
+        Assert.Collection(result.Errors, error => Assert.Equal("hr-start-tag-with-open-option-or-optgroup", error.Code));
+        Assert.Throws<HtmlLimitException>(() => Parse(
+            $"<!doctype html><select><{name}><div><hr><hr></div></{name}></select>", new() { MaxErrors = 1 }));
+    }
+
+    [Fact]
+    public void HrBeyondTableScopeDoesNotCloseFosteredOption()
+    {
+        var result = Parse("<!doctype html><select id=select><table><option id=option>one"
+            + "<hr id=rule>two</option></table></select>");
+        var option = Assert.IsType<DomElement>(result.Document.GetElementById("option"));
+
+        Assert.Same(option, result.Document.GetElementById("rule")!.ParentNode);
+        Assert.Equal("onetwo", option.TextContent);
+        Assert.DoesNotContain(result.Errors, error => error.Code == "hr-start-tag-with-open-option-or-optgroup");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-hr-in-table");
+    }
+
+    [Fact]
+    public void HrInSelectHonorsNodeLimitAndCancellation()
+    {
+        const string input = "<!doctype html><select><option><hr></select>";
+        Assert.Empty(Parse(input, new() { MaxNodes = 8 }).Errors);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 7 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Fact]
     public void InputStartInSelectClosesSelectAndReprocessesInput()
     {
         var result = Parse("<!doctype html><select><option>before<input name=after><p>tail</p>");

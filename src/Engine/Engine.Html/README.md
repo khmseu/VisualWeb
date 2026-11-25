@@ -57,6 +57,9 @@ scope they close only a current option. `optgroup` starts similarly use select
 scope but generate all implied ends and diagnose remaining in-scope options or
 groups; without a select in scope they leave a current group open. Both
 reconstruct formatting. Other select rules remain bounded.
+In-body `hr` starts close an in-button-scope paragraph first, including its
+implied ends, then generate implied ends and diagnose remaining options or
+groups only if a select is in scope. Fragment and fostered paths use this rule.
 Document `noscript` uses the parser scripting state: disabled scripting selects
 the in-head-noscript insertion mode in head and ordinary in-body parsing in
 body, while enabled scripting selects RAWTEXT in head and body. This does not

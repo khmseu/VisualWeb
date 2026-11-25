@@ -822,6 +822,28 @@ public static class HtmlParser
                 return;
             }
 
+            if (tag is { IsEndTag: false, Name: "hr" })
+            {
+                if (InScope("p", buttonScope: true))
+                {
+                    GenerateImpliedEndTags(except: "p");
+                    Close("p");
+                }
+
+                if (InScope("select"))
+                {
+                    GenerateImpliedEndTags();
+                    if (InScope("option") || InScope("optgroup"))
+                    {
+                        Error("hr-start-tag-with-open-option-or-optgroup");
+                    }
+                }
+
+                Insert(tag, push: false);
+                framesetOk = false;
+                return;
+            }
+
             if (tag is { IsEndTag: false, Name: "option" or "optgroup" })
             {
                 if (InScope("select"))
@@ -973,11 +995,6 @@ public static class HtmlParser
                         open.RemoveRange(1, open.Count - 1);
                         Insert(tag);
                         mode = Mode.InFrameset;
-                        return;
-                    case "hr":
-                        CloseParagraph();
-                        Insert(tag, push: false);
-                        framesetOk = false;
                         return;
                     case "image":
                         Error("image-start-tag");
@@ -2132,17 +2149,6 @@ public static class HtmlParser
                 return;
             }
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in select."); }
-            if (!tag.IsEndTag && tag.Name == "hr")
-            {
-                GenerateImpliedEndTags();
-                if (open.Skip(selectIndex + 1).Any(element => element.LocalName is "option" or "optgroup"))
-                {
-                    Error("hr-start-tag-with-open-option-or-optgroup");
-                }
-
-                Insert(tag, push: false);
-                return;
-            }
             if (tag.IsEndTag && tag.Name == "option")
             {
                 if (open[^1].LocalName == "option") { Close("option"); }

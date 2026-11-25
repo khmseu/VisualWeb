@@ -153,8 +153,10 @@ after-after-frameset modes. Supported behavior includes:
   ordinary in-body processing for other supported tokens, including block
   children in options and optgroups. `textarea` uses the in-body RCDATA rules
   in the current select context; its initial LF is ignored. The in-body
-  recovery rules also insert `hr` inside the select after implied option/group
-  closure, close an in-scope select before inserting an `input` start, and
+  recovery rules close an in-scope paragraph before processing `hr`, then
+  generate implied ends and diagnose remaining options/groups only when a
+  select is in scope. Without an in-scope select, `hr` does not implicitly
+  close options or groups. Other rules close an in-scope select before inserting an `input` start, and
   close-and-ignore a `select` start tag when a select is in scope. A scope
   boundary permits a separate inner select or input; a select-context fragment
   ignores in-body `select` and `input` starts regardless of scope. In-table

@@ -163,6 +163,8 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   formatting reconstruction, fragment and table paths, and parser limits.
   Optgroup-start regressions cover its distinct implied-end and diagnostic
   rules, scope boundaries, select fragments, foster parenting and limits.
+  `hr`-start regressions cover paragraph closure, select and table scope,
+  fragment handling, remaining-option diagnostics and parser limits.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

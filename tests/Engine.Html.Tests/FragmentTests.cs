@@ -492,6 +492,20 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void SelectFragmentHrDoesNotCloseOptionWithoutSelectInScope()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<option>one<hr>two</option>",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
+        var option = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+
+        Assert.Equal("option", option.LocalName);
+        Assert.Equal("onetwo", option.TextContent);
+        Assert.Equal("hr", Assert.IsType<DomElement>(option.ChildNodes[1]).LocalName);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {
         var document = new DomDocument();

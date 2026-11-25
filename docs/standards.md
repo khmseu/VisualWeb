@@ -184,6 +184,9 @@ Without an in-scope select, only a current option is closed before insertion.
 In-body `optgroup` starts generate all implied end tags with a select in scope,
 diagnose a remaining in-scope option or group, and reconstruct formatting.
 Without an in-scope select, they close only a current option.
+In-body `hr` starts close an in-button-scope paragraph using implied end tags,
+then generate implied ends and diagnose remaining in-scope options or groups
+only when a select is in scope. Fragment and fostered paths use the same rule.
 
 Document `noscript` uses the
 [parser scripting state](../specs/cache/html.html#parser-scripting-disabled).

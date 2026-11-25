@@ -112,13 +112,19 @@ Der serialisierte Solution-Testlauf hatte einen Browser-Testfehler wegen einer
 V8-Deadline; 13 andere Projekte bestanden. Der isolierte Wiederholungslauf
 dieses Browser-Tests bestand in beiden Prozessvarianten. Die Ursache des
 Timeouts ist nicht belegt; der vollstaendige Lauf ist nicht bestanden.
-KP-652 wurde als `9a148ff8` committed und gepusht. Der uncommittete Schritt
-KP-653 behandelt In-Body-Optgroup-Starts mit Select-Scope, vollstaendigen
+KP-652 wurde als `9a148ff8` committed und gepusht. Schritt KP-653 behandelt
+In-Body-Optgroup-Starts mit Select-Scope, vollstaendigen
 impliziten Endtags, Diagnose verbleibender Optionen oder Gruppen und
-Formatierungsrekonstruktion. Alle 7.857 HTML-Tests, der Solution-Build und
+Formatierungsrekonstruktion. Alle 7.857 HTML-Tests, der Solution-Build,
 die Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
 bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
-uebersprungene Faelle aus.
+uebersprungene Faelle aus. KP-653 wurde als `b22fb2cb` committed und gepusht.
+Der uncommittete Schritt KP-654 behandelt In-Body-Hr-Starts: Paragraphen werden
+zuerst mit impliziten Endtags geschlossen; Select-Scope steuert anschliessend
+implizite Option-/Gruppen-Endtags und Diagnosen. Alle 7.865 HTML-Tests,
+der Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf
+in allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
+Tests und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

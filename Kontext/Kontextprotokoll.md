@@ -19064,3 +19064,29 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-654 - Hr-Starts und Select-Scope
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `b22fb2cb` (`fix(html): recover optgroup starts using scope`) wurde erstellt
+  und nach `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund.
+- Belegt: Die uncommittete Fortsetzung verarbeitet In-Body-Hr-Starts vor der
+  begrenzten Select-Weiterleitung. Ein Paragraph in Button-Scope wird mit
+  vorherigen impliziten Endtags geschlossen; nur ein anschliessend in Scope
+  befindliches Select loest weitere implizite Endtags und Diagnosen
+  verbleibender Optionen oder Gruppen aus. Der Void-Insert setzt frameset-ok
+  auf false. Fragment- und fostered Pfade nutzen dieselbe Regel.
+- Belegt: Vier von sechs fokussierten Tests schlugen vor der Korrektur fehl,
+  zwei bestanden bereits; danach bestanden sieben fokussierte Faelle. Ein
+  weiterer Test deckt den Knotenlimit- und Cancellation-Pfad ab. Alle 7.865
+  HTML-Tests, der Solution-Build mit null Warnungen und Fehlern und die
+  Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
+  bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
+  uebersprungene Faelle aus.
+- Offen: Andere Select-Algorithmen und Parser-Luecken bleiben begrenzt;
+  Phase 1 ist nicht abgeschlossen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).
