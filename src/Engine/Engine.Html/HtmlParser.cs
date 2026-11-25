@@ -1572,34 +1572,20 @@ public static class HtmlParser
             var targetIndex = open.FindLastIndex(element => element.LocalName is "table" or "template");
             if (targetIndex >= 0 && open[targetIndex].LocalName == "template")
             {
-                var templateParent = AdjustedInsertionParent(open[targetIndex]);
-                FlushText();
-                if (templateParent.LastChild is DomText precedingText)
-                {
-                    precedingText.Data += data;
-                }
-                else
-                {
-                    CountNode();
-                    templateParent.AppendChild(ownerDocument.CreateTextNode(data));
-                }
-
+                AppendFosteredText(AdjustedInsertionParent(open[targetIndex]), data);
                 return;
             }
 
             var tableIndex = targetIndex;
             if (tableIndex < 0 && fragmentRoot is not null)
             {
-                FlushText();
-                var fragmentText = fragment!.LastChild as DomText;
-                if (fragmentText is not null)
-                {
-                    fragmentText.Data += data;
-                    return;
-                }
+                AppendFosteredText(fragment!, data);
+                return;
+            }
 
-                CountNode();
-                fragment.AppendChild(ownerDocument.CreateTextNode(data));
+            if (tableIndex > 0 && open[tableIndex].ParentNode is null)
+            {
+                AppendFosteredText(AdjustedInsertionParent(open[tableIndex - 1]), data);
                 return;
             }
 
@@ -1618,6 +1604,19 @@ public static class HtmlParser
 
             CountNode();
             parent.InsertBefore(ownerDocument.CreateTextNode(data), table);
+        }
+
+        private void AppendFosteredText(DomNode parent, string data)
+        {
+            FlushText();
+            if (parent.LastChild is DomText precedingText)
+            {
+                precedingText.Data += data;
+                return;
+            }
+
+            CountNode();
+            parent.AppendChild(ownerDocument.CreateTextNode(data));
         }
 
         private void ColumnGroupToken(HtmlToken token)

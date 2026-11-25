@@ -24,12 +24,14 @@ die angrenzenden Browser-/Plattformthemen einzubeziehen (KP-636) und die
 vorgeschlagenen Phasen und deren Reihenfolge genehmigt (KP-637). Der
 [genehmigte Plan](../plans/html-dom-full-completion-plan.md) ist gespeichert;
 konkrete Sicherheits-, Implementierungs- und Baselineentscheidungen bleiben
-phasenbezogen offen. Phase 1 wurde begonnen (KP-638): Tabellentext mit
-Nicht-Leerzeichen
-wird in den Inhalt des zuletzt offenen Templates eingefuegt, wenn dieses
-spaeter als alle offenen Tabellen liegt oder keine Tabelle offen ist; weitere
-Parser-Luecken bleiben offen. Solution-Build, 7.722 HTML-Tests und die
-Formatverifikation bestanden.
+phasenbezogen offen. Phase 1 ist in Arbeit (KP-638/KP-639): Die erste
+Tabellentext-Foster-Korrektur fuer offene Templates wurde als `8bf1064d`
+committed. Der naechste, uncommittete Schritt fuegt fostered Tabellentext nach
+Entfernung einer offenen Tabelle durch den Parser-Script-Callback in das
+vorherige Open-Stack-Element ein. Eine verschobene Tabelle mit Parent wird
+weiterhin vor der Tabelle behandelt. Solution-Build, 7.726 HTML-Tests und
+Formatverifikation und der serialisierte Solution-Testlauf bestanden.
+Weitere Parser-Luecken bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die

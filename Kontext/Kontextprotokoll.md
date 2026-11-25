@@ -18690,3 +18690,27 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   Testergebnisse; [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
   [Deferred HDF-011](../plans/html-dom-deferred.md) und
   [Plan](../plans/html-dom-full-completion-plan.md).
+
+### KP-639 - Gestagten Stand committed und Parserarbeit fortgesetzt
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files, then continue“. Der gesamte gestagte
+  Stand wurde als `8bf1064d` (`fix(html): foster table text into open templates`)
+  committed; der Hook formatierte Deferred-Register und Manifest und bestand.
+- Belegt: Der naechste begrenzte Phase-1-Schritt behandelt fostered
+  Tabellentext, wenn ein Parser-Script-Callback die offene Tabelle entfernt.
+  Die Einfuegung verwendet dann das vorherige Element des Open-Element-Stacks;
+  fuer eine verschobene Tabelle mit Parent bleibt sie vor der Tabelle.
+  Tests decken diese Faelle, Fragment-Root, Textzusammenfuehrung,
+  Node-/Depth-/Error-Limits und Cancellation ab.
+- Belegt: Vier fokussierte Tests schlugen vor der Korrektur fehl und bestanden
+  danach laut Implementierungsbericht. 7.726 HTML-Tests und Formatpruefung
+  bestanden laut Bericht; eigener Solution-Build bestand mit null Warnungen und
+  Fehlern. Ein erster Solution-Testlauf wurde vor Abschluss der Browser-Tests
+  gestoppt; der eigene serialisierte Solution-Testlauf bestand anschliessend
+  in allen 14 Projekten, einschliesslich 1.449 Browser-Tests.
+- Status: Phase 1 bleibt offen; diese Fortsetzung ist nicht committed.
+- Quelle: Nutzerauftrag, Commit/Hook-Ausgabe, Implementierungsbericht, eigener
+  Build; [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [HDF-011](../plans/html-dom-deferred.md) und
+  [Plan](../plans/html-dom-full-completion-plan.md).

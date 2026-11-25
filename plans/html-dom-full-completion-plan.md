@@ -42,7 +42,9 @@ record of its completed, bounded scope.
    - **Objective:** Remove remaining non-foreign-content tree-construction
      failures one algorithm at a time, retaining correct recovery and limits.
    - **Status:** In progress. Table-text foster insertion into a later open
-     template has been implemented and tested; other unsupported paths remain.
+     template and into the preceding open-stack element after a parser callback
+     detaches the open table have been implemented and tested; other
+     unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and

@@ -1131,6 +1131,79 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void FosteredTableTextUsesOpenStackParentAfterScriptDetachesTable()
+    {
+        var document = new DomDocument();
+        DomElement? detachedTable = null;
+        var result = HtmlParser.Parse("<!doctype html><body><div>before<table><script></script> A"
+            + "<tr>B</tr>C</table>after</div>", null, TestContext.Current.CancellationToken, document, script =>
+            {
+                detachedTable = Assert.IsType<DomElement>(script.ParentNode);
+                detachedTable.ParentNode!.RemoveChild(detachedTable);
+            });
+
+        var div = Assert.IsType<DomElement>(Assert.Single(document.Body!.ChildNodes));
+        Assert.Collection(div.ChildNodes,
+            node => Assert.Equal("before ABCafter", Assert.IsType<DomText>(node).Data));
+        Assert.NotNull(detachedTable);
+        Assert.Null(detachedTable.ParentNode);
+        Assert.Equal(3, result.Errors.Count(error => error.Code == "non-whitespace-table-text"));
+    }
+
+    [Fact]
+    public void FosteredDetachedTableTextHonorsNodeLimitAndCancellation()
+    {
+        const string input = "<!doctype html><table><script></script>x</table>";
+        static HtmlParseResult ParseDetached(string input, HtmlParserOptions options, CancellationToken token) =>
+            HtmlParser.Parse(input, options, token, new DomDocument(), script =>
+            {
+                var table = script.ParentNode!;
+                table.ParentNode!.RemoveChild(table);
+            });
+
+        Assert.Equal("x", ParseDetached(input, new() { MaxNodes = 8, MaxDepth = 4 }, TestContext.Current.CancellationToken)
+            .Document.Body!.TextContent);
+        Assert.Throws<HtmlLimitException>(() => ParseDetached(input, new() { MaxNodes = 7 },
+            TestContext.Current.CancellationToken));
+        Assert.Throws<HtmlLimitException>(() => ParseDetached(input, new() { MaxDepth = 3 },
+            TestContext.Current.CancellationToken));
+        const string twoRuns = "<!doctype html><table><script></script>x<!--separator-->y</table>";
+        Assert.Equal("xy", ParseDetached(twoRuns, new() { MaxErrors = 2 }, TestContext.Current.CancellationToken)
+            .Document.Body!.TextContent);
+        Assert.Throws<HtmlLimitException>(() => ParseDetached(twoRuns, new() { MaxErrors = 1 },
+            TestContext.Current.CancellationToken));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => ParseDetached(input, new(), cancelled.Token));
+        using var cancelDuringParsing = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        Assert.ThrowsAny<OperationCanceledException>(() => HtmlParser.Parse(input, null, cancelDuringParsing.Token,
+            new DomDocument(), script =>
+            {
+                var table = script.ParentNode!;
+                table.ParentNode!.RemoveChild(table);
+                cancelDuringParsing.Cancel();
+            }));
+    }
+
+    [Fact]
+    public void FosteredTableTextUsesMovedTableParentRatherThanOpenStackParent()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.Parse("<!doctype html><div id=target>before</div><table><script></script>x</table>",
+            null, TestContext.Current.CancellationToken, document, script =>
+            {
+                var table = script.ParentNode!;
+                document.GetElementById("target")!.AppendChild(table);
+            });
+
+        var target = document.GetElementById("target")!;
+        Assert.Collection(target.ChildNodes,
+            node => Assert.Equal("beforex", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName));
+        Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
+    }
+
+    [Fact]
     public void FosteredTableTextReconstructsNestedFormattingBeforeTheTable()
     {
         var result = Parse("<!doctype html><p><b id=bold><i class=kept>x</p>"

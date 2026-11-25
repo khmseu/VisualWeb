@@ -198,7 +198,11 @@ after-after-frameset modes. Supported behavior includes:
   modes for supported start tags and uses the existing bounded table
   construction. Non-whitespace table text is fostered into the last open
   template's content when that template is later on the stack than any table,
-  including when there is no open table; adjacent text is merged. A `select`
+  including when there is no open table; adjacent text is merged. If a
+  parser-script callback detaches the last open table, non-whitespace table
+  text is appended to the element immediately preceding that table on the open
+  stack, merging with adjacent text; a moved table with a parent still uses
+  insertion immediately before the table. A `select`
   start uses bounded in-body/select parsing; templates
   started inside select content use in-body/template processing and restore
   the enclosing select's token handling on close, including in select-context

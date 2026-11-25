@@ -214,6 +214,22 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void TableFragmentFosteredTextAppendsAtSyntheticRoot()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("a<tr>b</tr>c", document.CreateElement("table"),
+            new() { MaxNodes = 4 }, TestContext.Current.CancellationToken);
+
+        Assert.Collection(result.Fragment.ChildNodes,
+            node => Assert.Equal("a", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("tbody", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("bc", Assert.IsType<DomText>(node).Data));
+        Assert.Same(document, result.Fragment.FirstChild!.OwnerDocument);
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment("a<tr>b</tr>c",
+            document.CreateElement("table"), new() { MaxNodes = 3 }, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ParseFragmentFosteredTableTextReconstructsFormattingInTheFragment()
     {
         var document = new DomDocument();
