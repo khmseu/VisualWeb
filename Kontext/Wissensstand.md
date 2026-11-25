@@ -79,11 +79,17 @@ und nach `origin/main` gepusht. Schritt KP-647 ignoriert auch
 `svg`- und `math`-Starts in diesen drei Frameset-Modi mit Diagnose, ohne
 Foreign-Content zu implementieren. 19 fokussierte Tests, alle 7.812 HTML-Tests,
 der Solution-Build und die Formatpruefung bestanden. KP-647 wurde als
-`18f70741` committed und gepusht. Der uncommittete Schritt KP-648 ignoriert
+`18f70741` committed und gepusht. Schritt KP-648 ignoriert
 solche Starts auch im Column-Group-Fragmentmodus, wenn der aktuelle Knoten
 kein `colgroup` ist; offene Dokument-`colgroup`-Elemente bleiben unsupported.
 12 fokussierte Tests, alle 7.817 HTML-Tests, der Solution-Build, die
 Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
+bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
+uebersprungene Faelle aus. KP-648 wurde als `68d151cb` committed und gepusht.
+Der uncommittete Schritt KP-649 behandelt Select-Starts anhand des
+Select-Fragmentkontexts und der Element-Scope-Grenzen, einschliesslich
+Foster-Parenting im Tabellenmodus. Alle 7.824 HTML-Tests, der Solution-Build,
+die Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
 bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
 uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.

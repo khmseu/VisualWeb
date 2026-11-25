@@ -18922,3 +18922,35 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-incolgroup),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-649 - Select-Starts und Scope-Grenzen
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `68d151cb` (`fix(html): recover foreign starts in colgroups`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht; dies aktualisiert
+  den damaligen uncommitteten Status von KP-648.
+- Belegt: Die uncommittete Fortsetzung verarbeitet In-Body-Select-Starts vor
+  der Select-Token-Weiterleitung: Im Select-Fragmentkontext werden sie
+  diagnostiziert und ignoriert, auch innerhalb von Template-Inhalt. Sonst
+  schliesst ein in Scope befindliches Select bei Diagnose; jenseits einer
+  Scope-Grenze wird ein neues Select eingefuegt. Im Tabellenmodus bleibt
+  Foster-Parenting aktiv. Weitergehende Select-Algorithmen sind nicht behauptet.
+- Belegt: Fuenf neue Tests schlugen vor dem Fix fehl; anschliessend bestanden
+  alle 7.824 HTML-Tests einschliesslich Scope-Grenzen, Fragmenten,
+  Foster-Parenting, Parser-Limits und Cancellation sowie der Solution-Build
+  mit null Warnungen/Fehlern. Eine zusaetzliche fokussierte Pruefung scheiterte
+  zunaechst an einer zu engen Erwartung fuer die zwei korrekten
+  Foster-Diagnosen; diese Erwartung wurde korrigiert und ist im bestandenen
+  HTML-Testlauf enthalten. Formatpruefung und serialisierter Solution-Testlauf
+  in allen 14 Projekten bestanden; der Browser-Runner meldete 1.449 bestandene
+  Tests und gab zwei uebersprungene Faelle aus.
+- Offen: Als naechster begrenzter Pruefpunkt ist `SelectToken` fuer `input`
+  und Select-Endtags zu untersuchen: Diese Zweige verwenden derzeit den
+  gefundenen Select-Stackindex, ohne dort die Scope-Grenze zu pruefen.
+  Eine Verhaltensabweichung und ihr genauer Umfang sind noch nicht getestet.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

@@ -147,6 +147,10 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `ColumnGroupContextIgnoresForeignStarts` checks the same ignored starts in
   column-group fragments, with separate limit, cancellation and real open
   `colgroup` failure tests.
+  `SelectStartBeyondScopeBoundaryCreatesInnerSelect` and
+  `SelectStartBeyondTableScopeBoundaryUsesFosterParenting` cover scope-aware
+  select starts, while fragment tests cover ignoring starts across boundaries
+  and inside templates. Separate tests check node/error limits and cancellation.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

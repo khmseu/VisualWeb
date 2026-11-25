@@ -1011,6 +1011,51 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "nested-select-start-tag");
     }
 
+    [Theory]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("object")]
+    public void SelectStartBeyondScopeBoundaryCreatesInnerSelect(string boundary)
+    {
+        var result = Parse($"<!doctype html><select id=outer><{boundary}><select id=inner></select>"
+            + $"</{boundary}><option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var inner = Assert.IsType<DomElement>(result.Document.GetElementById("inner"));
+        var container = Assert.IsType<DomElement>(outer.FirstChild);
+
+        Assert.Equal(boundary, container.LocalName);
+        Assert.Same(container, inner.ParentNode);
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void SelectStartBeyondScopeBoundaryHonorsNodeLimitAndCancellation()
+    {
+        const string input = "<!doctype html><select><object><select></select></object></select>";
+        Assert.Empty(Parse(input, new() { MaxNodes = 8 }).Errors);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 7 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Fact]
+    public void SelectStartBeyondTableScopeBoundaryUsesFosterParenting()
+    {
+        var result = Parse("<!doctype html><select id=outer><table><select id=inner></select>"
+            + "</table><option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var inner = Assert.IsType<DomElement>(result.Document.GetElementById("inner"));
+
+        Assert.Same(outer, inner.ParentNode);
+        Assert.Equal("table", Assert.IsType<DomElement>(inner.NextSibling).LocalName);
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("fostered-select-start-in-table", error.Code),
+            error => Assert.Equal("fostered-select-end-in-table", error.Code));
+    }
+
     [Fact]
     public void TemplateInSelectContentUsesSeparateFragmentAndResumesSelectParsing()
     {

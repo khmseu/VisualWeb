@@ -43,6 +43,9 @@ and `label` start/end foster parenting in table/column-group/table-body/row
 modes, `plaintext` starts and unmatched end tags in those modes, root-attribute merging for in-table
 `html` starts, body/head starts and unmatched head ends in table, table-body
 and row modes, and template start/end processing in those modes.
+An in-body `select` start closes an in-scope select, inserts a new select
+when the previous one is beyond a scope boundary, or is ignored in a
+select-context fragment. Table-mode insertion retains foster parenting.
 Document `noscript` uses the parser scripting state: disabled scripting selects
 the in-head-noscript insertion mode in head and ordinary in-body parsing in
 body, while enabled scripting selects RAWTEXT in head and body. This does not
@@ -142,8 +145,9 @@ templates with diagnostics. A `select` start uses the bounded in-body/select
 parser; templates started inside select content use in-body/template
 processing, keep their contents out of the enclosing select's token handling,
 and resume the enclosing select's token handling on close, including in
-select-context fragments.
-Nested selects, foreign content and other unsupported template algorithms
+select-context fragments, although the fragment-context rule still ignores
+`select` starts within template content.
+Foreign content and other unsupported template algorithms
 remain explicit failures.
 Inside template contents, including template-context fragments, form starts
 ignore and preserve the outer form pointer; in-body form ends close the

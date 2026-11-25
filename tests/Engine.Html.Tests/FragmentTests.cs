@@ -466,6 +466,38 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void SelectContextIgnoresSelectStartInsideTemplate()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<template><select id=ignored><option>inside</option></template>"
+            + "<option>after</option>", document.CreateElement("select"),
+            cancellationToken: TestContext.Current.CancellationToken);
+        var template = Assert.IsType<DomTemplateElement>(result.Fragment.FirstChild);
+        var option = Assert.IsType<DomElement>(Assert.Single(template.Content.ChildNodes));
+        Assert.Equal("option", option.LocalName);
+        Assert.Equal("inside", option.TextContent);
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("nested-select-start-tag", error.Code));
+    }
+
+    [Fact]
+    public void SelectContextIgnoresSelectStartsBeyondScopeBoundariesAndHonorsErrorLimit()
+    {
+        var context = new DomDocument().CreateElement("select");
+        const string input = "<object><select><select><option>inside</option></object>";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxErrors = 2 },
+            TestContext.Current.CancellationToken);
+        var container = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("object", container.LocalName);
+        Assert.Equal("option", Assert.IsType<DomElement>(container.FirstChild).LocalName);
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("nested-select-start-tag", error.Code),
+            error => Assert.Equal("nested-select-start-tag", error.Code));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxErrors = 1 },
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ParseFragment_templateContextKeepsNestedTemplateContentSeparate()
     {
         var document = new DomDocument();

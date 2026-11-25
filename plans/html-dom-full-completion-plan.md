@@ -54,6 +54,7 @@ record of its completed, bounded scope.
      table and structure tokens, and `svg`/`math` starts, are diagnosed and
      ignored without constructing foreign content. Column-group fragments also
      ignore `svg`/`math` starts when the current node is not a `colgroup`.
+     Select starts now respect scope boundaries and the select fragment context.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

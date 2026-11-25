@@ -36,7 +36,7 @@ namespace VisualWeb.Engine.Html;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported; bounded table insertion modes apply within template
 /// content, including template EOF recovery;
-/// other foster-parenting cases, nested tables in captions, nested selects, unsupported fragment contexts,
+/// other foster-parenting cases, nested tables in captions, unsupported fragment contexts,
 /// full script preparation,
 /// and adoption-agency reparenting requiring table foster parenting are unsupported. If a parser-script callback
 /// reparents the current table directly under the destination document, fostered table text is discarded,
@@ -770,6 +770,27 @@ public static class HtmlParser
             }
 
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token."); }
+            if (tag is { IsEndTag: false, Name: "select" })
+            {
+                if (fragmentContext?.LocalName == "select")
+                {
+                    Error("nested-select-start-tag");
+                }
+                else if (InScope("select"))
+                {
+                    Error("nested-select-start-tag");
+                    Close("select");
+                }
+                else
+                {
+                    ReconstructFormatting();
+                    Insert(tag);
+                    framesetOk = false;
+                }
+
+                return;
+            }
+
             var selectIndex = SelectIndexAfterLastTemplate();
             if (!fromSelectContext && selectIndex >= 0)
             {
@@ -856,12 +877,6 @@ public static class HtmlParser
                         return;
                     case "button":
                         if (InScope("button")) { Error("nested-button"); Close("button"); }
-                        ReconstructFormatting();
-                        Insert(tag);
-                        framesetOk = false;
-                        return;
-                    case "select":
-                        if (InScope("select")) { throw Unsupported("Nested select elements are not implemented."); }
                         ReconstructFormatting();
                         Insert(tag);
                         framesetOk = false;
@@ -2082,12 +2097,6 @@ public static class HtmlParser
                     BodyToken(tag);
                 }
 
-                return;
-            }
-            if (!tag.IsEndTag && tag.Name == "select")
-            {
-                Error("nested-select-start-tag");
-                if (selectIndex >= 0) { CloseAt(selectIndex); }
                 return;
             }
             if (!tag.IsEndTag && tag.Name == "hr")
