@@ -156,6 +156,9 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   recovery; fragment tests cover template input ignoring, the in-table hidden
   input exception and error limits. A separate document test checks node
   limits and cancellation.
+  Select-end regressions cover special-element barriers, implied option/group
+  endings, template and fragment contexts, table foster processing and error
+  limits; other select algorithms remain bounded.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

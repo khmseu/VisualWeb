@@ -176,6 +176,8 @@ For an in-body `input` start, the select fragment context ignores the token;
 otherwise an in-scope select is closed before inserting the input, while an
 out-of-scope select remains open. In-table hidden inputs retain their separate
 insertion rule.
+Select end tags follow in-body generic end-tag recovery: special elements stop
+the search, and implied end tags are generated before the misnesting check.
 
 Document `noscript` uses the
 [parser scripting state](../specs/cache/html.html#parser-scripting-disabled).

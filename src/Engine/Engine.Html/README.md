@@ -49,6 +49,8 @@ select-context fragment. Table-mode insertion retains foster parenting.
 An in-body `input` start is ignored in a select-context fragment, closes an
 in-scope select before insertion, and leaves an out-of-scope select open.
 In-table hidden inputs retain their separate rule.
+Select end tags use generic in-body recovery, respecting intervening special
+elements and generating implied option/optgroup ends before misnesting checks.
 Document `noscript` uses the parser scripting state: disabled scripting selects
 the in-head-noscript insertion mode in head and ordinary in-body parsing in
 body, while enabled scripting selects RAWTEXT in head and body. This does not

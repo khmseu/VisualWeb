@@ -895,6 +895,68 @@ public sealed class TreeTests
         Assert.Empty(result.Errors);
     }
 
+    [Theory]
+    [InlineData("object")]
+    [InlineData("applet")]
+    [InlineData("marquee")]
+    [InlineData("div")]
+    public void SelectEndBehindSpecialElementIsIgnored(string boundary)
+    {
+        var result = Parse($"<!doctype html><select id=outer><{boundary}></select><span id=inside></span>"
+            + $"</{boundary}><option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var container = Assert.IsType<DomElement>(outer.FirstChild);
+
+        Assert.Equal(boundary, container.LocalName);
+        Assert.Same(container, result.Document.GetElementById("inside")!.ParentNode);
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void SelectEndGeneratesImpliedOptionEndsBeforeCheckingMisnesting()
+    {
+        var result = Parse("<!doctype html><select><optgroup><option>before</select><p>after</p>");
+
+        Assert.Equal(["select", "p"], result.Document.Body!.ChildNodes.OfType<DomElement>().Select(e => e.LocalName));
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void SelectEndReportsNonImpliedDescendants()
+    {
+        var result = Parse("<!doctype html><select><span>before</select><p>after</p>");
+
+        Assert.Equal(["select", "p"], result.Document.Body!.ChildNodes.OfType<DomElement>().Select(e => e.LocalName));
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void SelectEndBehindTableUsesFosteredRecoveryWithoutClosingOuterSelect()
+    {
+        var result = Parse("<!doctype html><select id=outer><table></select></table>"
+            + "<option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("fostered-select-end-in-table", error.Code),
+            error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void SelectEndInsideTemplateDoesNotCloseOuterSelect()
+    {
+        var result = Parse("<!doctype html><select id=outer><template><span>inside</select>more</span></template>"
+            + "<option id=after></option></select>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var template = Assert.IsType<DomTemplateElement>(outer.FirstChild);
+
+        Assert.Equal("insidemore", template.Content.FirstChild!.TextContent);
+        Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
     [Fact]
     public void OptionAndOptgroupStartsOutsideSelectUseBodyInsertionRules()
     {

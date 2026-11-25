@@ -56,6 +56,8 @@ record of its completed, bounded scope.
      ignore `svg`/`math` starts when the current node is not a `colgroup`.
      In-body select and input starts respect scope boundaries and the select
      fragment context, retaining the separate in-table hidden-input rule.
+     Select ends use generic in-body recovery with special-element barriers and
+     implied end tags.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

@@ -18984,3 +18984,28 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-651 - Generische Select-Endtag-Wiederherstellung
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `cbad4bc4` (`fix(html): respect scope for input starts`) wurde erstellt und
+  nach `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund.
+- Belegt: Der lokale HTML-Standard ordnet `</select>` der generischen
+  In-Body-Endtag-Regel zu; eine blosse Scope-Pruefung waere unzureichend, da
+  auch andere Special-Elemente die Suche stoppen. Die uncommittete Fortsetzung
+  nutzt die bestehende generische Suche und erzeugt bei einem Select-Treffer
+  implizite Endtags vor der Verschachtelungsdiagnose.
+- Belegt: Sieben der acht fokussierten Faelle schlugen vor der Korrektur fehl,
+  danach bestanden alle acht. Ein anschliessend ergaenzter Template-Test
+  benoetigte eine Korrektur seines Testaufbaus, um In-Body statt In-Template
+  zu erreichen. Alle 7.840 HTML-Tests, der Solution-Build mit null
+  Warnungen und Fehlern, die Formatpruefung und der serialisierte
+  Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner
+  meldete 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+- Offen: Weitere Select-Algorithmen und Parser-Luecken bleiben begrenzt;
+  Phase 1 ist nicht abgeschlossen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

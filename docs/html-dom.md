@@ -158,7 +158,9 @@ after-after-frameset modes. Supported behavior includes:
   close-and-ignore a `select` start tag when a select is in scope. A scope
   boundary permits a separate inner select or input; a select-context fragment
   ignores in-body `select` and `input` starts regardless of scope. In-table
-  hidden input handling remains separate. Outside selects, `option` and
+  hidden input handling remains separate. A `select` end uses generic in-body
+  end-tag recovery: intervening special elements block it, while implied option
+  and optgroup ends are generated before checking misnesting. Outside selects, `option` and
   `optgroup` use ordinary in-body insertion; starting either while an `option`
   is current closes that option first.
 - Basic static table construction for `table`, `caption`, `colgroup`/`col`,

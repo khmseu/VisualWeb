@@ -816,6 +816,12 @@ public static class HtmlParser
                 return;
             }
 
+            if (tag is { IsEndTag: true, Name: "select" })
+            {
+                AnyOtherEndTag(tag.Name);
+                return;
+            }
+
             var selectIndex = SelectIndexAfterLastTemplate();
             if (!fromSelectContext && selectIndex >= 0)
             {
@@ -1104,6 +1110,7 @@ public static class HtmlParser
             {
                 if (open[index].LocalName == name)
                 {
+                    if (name == "select") { GenerateImpliedEndTags(except: name); }
                     CloseAt(index);
                     return;
                 }
@@ -2141,12 +2148,6 @@ public static class HtmlParser
                     && open[^2].LocalName == "optgroup") { Close("option"); }
                 if (open[^1].LocalName == "optgroup") { Close("optgroup"); }
                 else { Error("unexpected-optgroup-end-tag"); }
-                return;
-            }
-            if (tag.IsEndTag && tag.Name == "select")
-            {
-                if (selectIndex >= 0) { CloseAt(selectIndex); }
-                else { Error("unexpected-select-end-tag"); }
                 return;
             }
             BodyToken(token, fromSelectContext: true);

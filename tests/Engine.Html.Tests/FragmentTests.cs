@@ -447,6 +447,23 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void SelectContextEndTagDoesNotCloseFragmentRoot()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<object></select><span>inside</span></object><option>after</option>",
+            document.CreateElement("select"), new() { MaxErrors = 1 }, TestContext.Current.CancellationToken);
+        var container = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+
+        Assert.Equal("object", container.LocalName);
+        Assert.Equal("inside", container.FirstChild!.TextContent);
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(
+            "<object></select></select></object>", document.CreateElement("select"), new() { MaxErrors = 1 },
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ParseFragment_selectTemplateIgnoresInputAndResumesSelectContext()
     {
         var document = new DomDocument();
