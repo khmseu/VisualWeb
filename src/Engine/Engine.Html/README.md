@@ -76,6 +76,9 @@ In frameset, after-frameset and after-after-frameset modes, table and
 table-structure tokens report a parse error and are ignored.
 Those modes also diagnose and ignore `svg` and `math` starts without creating
 foreign content.
+In column-group fragments, these starts are likewise diagnosed and ignored
+when the current node is not a `colgroup`; foreign starts in an open
+document `colgroup` remain unsupported.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

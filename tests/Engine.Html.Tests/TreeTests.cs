@@ -2947,6 +2947,8 @@ public sealed class TreeTests
     [InlineData("<math>x")]
     [InlineData("<!doctype html><body></body><svg>")]
     [InlineData("<!doctype html><body></body></html><math>")]
+    [InlineData("<!doctype html><table><colgroup><svg>")]
+    [InlineData("<!doctype html><table><colgroup><math>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 

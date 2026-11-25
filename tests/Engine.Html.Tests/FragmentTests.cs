@@ -6,6 +6,40 @@ namespace VisualWeb.Engine.Html.Tests;
 public sealed class FragmentTests
 {
     [Theory]
+    [InlineData("svg")]
+    [InlineData("math")]
+    public void ColumnGroupContextIgnoresForeignStarts(string tag)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment($"<{tag} id=ignored /><col id=kept>",
+            document.CreateElement("colgroup"), cancellationToken: TestContext.Current.CancellationToken);
+
+        var column = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("col", column.LocalName);
+        Assert.Equal("kept", column.GetAttribute("id"));
+        Assert.Same(document, column.OwnerDocument);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-column-group-content", error.Code));
+    }
+
+    [Fact]
+    public void ColumnGroupContextForeignRecoveryHonorsLimitsAndCancellation()
+    {
+        var context = new DomDocument().CreateElement("colgroup");
+        const string input = "<svg><math><col><col>";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxNodes = 2, MaxErrors = 2 },
+            TestContext.Current.CancellationToken);
+        Assert.Equal(2, result.Fragment.ChildNodes.Count);
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxNodes = 1 },
+            TestContext.Current.CancellationToken));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxErrors = 1 },
+            TestContext.Current.CancellationToken));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.ParseFragment(input, context,
+            cancellationToken: cancelled.Token));
+    }
+
+    [Theory]
     [InlineData("caption")]
     [InlineData("col")]
     [InlineData("colgroup")]

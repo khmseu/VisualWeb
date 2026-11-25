@@ -144,6 +144,9 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `ForeignStartsInFramesetModesAreIgnored` covers ignored `svg` and `math`
   starts in those modes; limits, cancellation and foreign-content failures
   outside them remain separately tested.
+  `ColumnGroupContextIgnoresForeignStarts` checks the same ignored starts in
+  column-group fragments, with separate limit, cancellation and real open
+  `colgroup` failure tests.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

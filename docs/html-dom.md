@@ -226,6 +226,9 @@ after-after-frameset modes. Supported behavior includes:
   instead report a parse error and are ignored.
   `svg` and `math` start tags in those three frameset modes are also diagnosed
   and ignored; this does not enable foreign-content tree construction.
+  The column-group fragment mode similarly ignores those starts with a
+  diagnostic when the current node is not a `colgroup`; a real open `colgroup`
+  still retains the explicit foreign-content failure.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

@@ -163,6 +163,9 @@ In frameset, after-frameset and after-after-frameset modes, those tokens
 report a parse error and are ignored.
 The same frameset-mode recovery ignores `svg` and `math` starts; actual
 foreign-content tree construction remains unsupported.
+Column-group fragments also diagnose and ignore those starts when the current
+node is not a `colgroup`; foreign starts in an open document `colgroup` remain
+unsupported.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

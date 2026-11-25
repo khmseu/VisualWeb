@@ -18896,3 +18896,29 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inframeset),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-648 - Foreign-Starts im Column-Group-Fragment
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `18f70741` (`fix(html): ignore foreign starts in framesets`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht; dies aktualisiert
+  den damaligen uncommitteten Status von KP-647.
+- Belegt: Die uncommittete Fortsetzung laesst `svg`- und `math`-Starts im
+  Column-Group-Modus durch die vorhandene Diagnose-und-Ignorieren-Regel, wenn
+  der aktuelle Knoten kein `colgroup` ist, insbesondere im Fragmentkontext.
+  Bei einem offenen Dokument-`colgroup` bleibt der Foreign-Content-Guard
+  bestehen; diese Recovery implementiert keine SVG- oder MathML-Elemente.
+- Belegt: Drei neue Tests schlugen vor dem Fix fehl; danach bestanden 12
+  fokussierte Tests einschliesslich Grenzen, Cancellation und expliziter
+  Unsupported-Faelle, alle 7.817 HTML-Tests, der Solution-Build mit null
+  Warnungen/Fehlern und die Formatpruefung.
+  Ein paralleler Solution-Testlauf wurde abgebrochen, nachdem er den absichtlich
+  fehlschlagenden Zwischenstand geladen hatte; der erneute Lauf mit stabilem
+  Build bestand in allen 14 Projekten. Der Browser-Runner meldete 1.449
+  bestandene Tests und gab zwei uebersprungene Faelle aus.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-incolgroup),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

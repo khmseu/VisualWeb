@@ -52,7 +52,9 @@ record of its completed, bounded scope.
      disabled. After-body and after-after-body table tokens reenter in-body
      processing. In frameset, after-frameset and after-after-frameset modes,
      table and structure tokens, and `svg`/`math` starts, are diagnosed and
-     ignored without constructing foreign content. Other unsupported paths remain.
+     ignored without constructing foreign content. Column-group fragments also
+     ignore `svg`/`math` starts when the current node is not a `colgroup`.
+     Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and

@@ -282,7 +282,8 @@ public static class HtmlParser
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (token is HtmlTag { IsEndTag: false } tag && UnsupportedTags.Contains(tag.Name)
-                    && mode is not (Mode.InFrameset or Mode.AfterFrameset or Mode.AfterAfterFrameset))
+                    && mode is not (Mode.InFrameset or Mode.AfterFrameset or Mode.AfterAfterFrameset)
+                    && !(mode == Mode.InColumnGroup && Current is not DomElement { LocalName: "colgroup" }))
                 {
                     throw Unsupported($"Tree construction for <{tag.Name}> is not implemented.");
                 }
