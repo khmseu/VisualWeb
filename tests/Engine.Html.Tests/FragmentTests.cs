@@ -228,6 +228,31 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void TableFragmentFostersTextIntoLastOpenTemplateAndHonorsLimits()
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement("table");
+        const string input = "<template><tbody>A</tbody></template>";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxNodes = 4, MaxDepth = 2 },
+            TestContext.Current.CancellationToken);
+
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Collection(template.Content.ChildNodes,
+            node => Assert.Equal("tbody", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("A", Assert.IsType<DomText>(node).Data));
+        Assert.Same(template.Content.OwnerDocument, template.Content.LastChild!.OwnerDocument);
+        Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxNodes = 3 },
+            TestContext.Current.CancellationToken));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxDepth = 1 },
+            TestContext.Current.CancellationToken));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => HtmlParser.ParseFragment(input, context,
+            cancellationToken: cancelled.Token));
+    }
+
+    [Fact]
     public void ParseFragment_tableFosterTextMergesWithBufferedWhitespace()
     {
         var document = new DomDocument();

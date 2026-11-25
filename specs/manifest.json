@@ -367,7 +367,7 @@
       "url": "https://www.w3.org/TR/upgrade-insecure-requests/",
       "file": "upgrade-insecure-requests.html",
       "fetchedAt": "2026-10-16T01:54:01.0451297+00:00",
-      "checkedAt": "2026-10-16T01:54:01.0451297+00:00",
+      "checkedAt": "2026-11-24T23:58:12.5108353+00:00",
       "eTag": null,
       "lastModified": "2017-10-02T10:53:57+00:00"
     },
@@ -417,7 +417,7 @@
       "url": "https://www.w3.org/TR/pointerevents4/",
       "file": "pointerevents4.html",
       "fetchedAt": "2026-10-19T02:44:31.4221612+00:00",
-      "checkedAt": "2026-10-19T02:44:31.4221612+00:00",
+      "checkedAt": "2026-11-24T23:58:12.7975104+00:00",
       "eTag": null,
       "lastModified": "2026-10-08T14:41:58+00:00"
     },
@@ -447,7 +447,7 @@
       "url": "https://www.w3.org/TR/mediaqueries-5/",
       "file": "css-mediaqueries-5.html",
       "fetchedAt": "2026-10-19T05:14:47.0723566+00:00",
-      "checkedAt": "2026-10-19T05:14:47.0723566+00:00",
+      "checkedAt": "2026-11-24T23:58:12.826579+00:00",
       "eTag": null,
       "lastModified": "2026-02-17T19:43:05+00:00"
     },
@@ -517,7 +517,7 @@
       "url": "https://www.w3.org/TR/css-overflow-3/",
       "file": "css-overflow.html",
       "fetchedAt": "2026-10-23T06:43:29.5625973+00:00",
-      "checkedAt": "2026-10-23T06:43:29.5625973+00:00",
+      "checkedAt": "2026-11-24T23:58:12.8537426+00:00",
       "eTag": null,
       "lastModified": "2025-10-07T03:50:08+00:00"
     },
@@ -527,7 +527,7 @@
       "url": "https://www.w3.org/TR/css-overscroll-1/",
       "file": "css-overscroll.html",
       "fetchedAt": "2026-10-23T06:47:03.9565537+00:00",
-      "checkedAt": "2026-10-23T06:47:03.9565537+00:00",
+      "checkedAt": "2026-11-24T23:58:12.9908316+00:00",
       "eTag": null,
       "lastModified": "2019-06-04T20:42:28+00:00"
     },

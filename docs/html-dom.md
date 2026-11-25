@@ -196,7 +196,10 @@ after-after-frameset modes. Supported behavior includes:
   in-head/template processing and restore the originating table mode on close.
   Template content selects in-table, in-column-group, in-table-body and in-row
   modes for supported start tags and uses the existing bounded table
-  construction. A `select` start uses bounded in-body/select parsing; templates
+  construction. Non-whitespace table text is fostered into the last open
+  template's content when that template is later on the stack than any table,
+  including when there is no open table; adjacent text is merged. A `select`
+  start uses bounded in-body/select parsing; templates
   started inside select content use in-body/template processing and restore
   the enclosing select's token handling on close, including in select-context
   fragments. Nested selects, foreign content and other unsupported
@@ -286,8 +289,11 @@ implied end tags, reports misnesting if the form is not current, and removes
 only that form from the open stack. Its still-open descendants remain in the
 tree. Other in-body end-tag closures (for example `</div>` or `</dl>`) may pop
 an open form from the stack while leaving the form pointer set; new form starts
-remain ignored until a later form end clears the pointer. Adoption-agency cases
-that would remove the pointed-to form remain unsupported. `input` stays a void
+remain ignored until a later form end clears the pointer. The adoption-agency
+guards for removing the pointed-to form are unreachable in the current HTML-only
+stack: `form` is special, so it is the furthest block if encountered before
+another special element, rather than a node removed by either guarded branch.
+Those guards remain in place; adoption is still a bounded subset. `input` stays a void
 element and `button` an ordinary element, so control text never renders as raw
 markup. The native DOM exposes `DomFormControls.FormOwner` for built-in listed
 form-associated elements. It recomputes ownership from the current tree: a

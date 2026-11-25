@@ -18620,3 +18620,73 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [Gesamtbericht](../plans/whatwg-html-dom-completion-roadmap-complete.md),
   [Roadmap](../plans/whatwg-html-dom-completion-roadmap.md),
   [HTML/DOM Deferred](../plans/html-dom-deferred.md).
+
+### KP-635 - Plan fuer verbleibende HTML/DOM-Unterstuetzung angefragt
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Ein Plan zur Vervollstaendigung der HTML/DOM-Unterstuetzung
+  soll auf [html-dom-deferred.md](../plans/html-dom-deferred.md) basieren und
+  nach einfacher Implementierung geordnet sein.
+- Belegt: Das Register enthaelt 15 Kategorien, einschliesslich angrenzender
+  Browser- und Plattformprojekte, und bezeichnet sich nicht als erschoepfendes
+  Audit. Die fruehere Roadmap ist nur im begrenzten Umfang abgeschlossen.
+- Vorschlag, Freigabe offen: kleine Parser-/Markup-Luecken zuerst, danach
+  DOM-Lebenszeit-/Interaktionsfunktionen, Namespace- und Komponentenarbeit,
+  Ressourcen-/Script-Scheduling und die grossen Browser-/Plattformprojekte.
+  Abhaengigkeiten haben Vorrang vor isolierter Aufwandsschaetzung.
+  Ein spaeteres versioniertes Anforderungsaudit muss weitere Luecken fuer eine
+  belastbare Vollstaendigkeitsaussage aufdecken; diese Arbeit ist noch nicht
+  durchgefuehrt.
+- Offen: Ob der Nutzer den vorgeschlagenen Umfang und die Reihenfolge
+  freigibt, insbesondere die Einbeziehung der angrenzenden Plattformthemen.
+  Es wurde keine Implementierung begonnen.
+- Quelle: Nutzerauftrag im aktuellen Chat; Deferred-Register und
+  [bisherige Roadmap](../plans/whatwg-html-dom-completion-roadmap.md).
+
+### KP-636 - Angrenzende Browser- und Plattformthemen einbeziehen
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerentscheidung: Die im Deferred-Register enthaltenen angrenzenden
+  Browser- und Plattformthemen sollen im Abschlussplan enthalten sein.
+  Eine Beschraenkung auf HTML/DOM im engeren Sinne wurde nicht gewaehlt.
+- Offen: Die ausdrueckliche Freigabe des vorgeschlagenen Phasenplans und
+  seiner Reihenfolge steht noch aus. Es wurde keine Implementierung begonnen.
+- Quelle: Nutzerantwort im aktuellen Chat auf die Umfangsfrage zu KP-635.
+
+### KP-637 - HTML/DOM-Abschlussplan genehmigt
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerentscheidung: Auf die Frage nach Freigabe der vorgeschlagenen Phasen
+  und Reihenfolge antwortete der Nutzer „approved“.
+- Belegt: Der [Plan](../plans/html-dom-full-completion-plan.md) dokumentiert
+  die zehn Phasen einschliesslich angrenzender Systeme, TDD, Abhaengigkeiten,
+  Grenzen und eines spaeteren Standards-Audits. Er bleibt eine Roadmap;
+  Einzelheiten zu Sicherheitsmodell, Budgets, Baseline und Plattformen sind
+  nicht durch die allgemeine Freigabe entschieden.
+- Status: Plan gespeichert; keine Implementierung begonnen. Naechster
+  moeglicher Schritt ist Phase 1 nach einer Umsetzungsanweisung.
+- Quelle: Nutzerantwort im aktuellen Chat und der gespeicherte Plan.
+
+### KP-638 - Erste Phase-1-Parserkorrektur begonnen
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „start implementing the plan“.
+- Belegt: Der erste begrenzte Phase-1-Schritt behebt Tabellentext-Foster-
+  Parenting, wenn das letzte offene Template nach allen offenen Tabellen liegt
+  oder keine Tabelle offen ist. Dokument- und Fragmenttests pruefen
+  Einfuegeort, Textzusammenfuehrung, Owner und Grenzen. Drei fokussierte
+  Tests schlugen vor der Korrektur fehl und fuenf bestanden danach laut
+  Implementierungsbericht; eigener Solution-Build, alle 7.722 HTML-Tests
+  und die Formatverifikation bestanden.
+- Belegt: Die bestehenden Adoption-Guards fuer das Entfernen des Form-Pointers
+  sind im aktuellen HTML-only Stack nicht erreichbar: `form` ist ein special
+  element und wird zum furthest block. Ein Regressionstest prueft, dass der
+  Pointer nach Adoption bis zum Form-Endtag erhalten bleibt; die Guards bleiben.
+- Status: Phase 1 ist nicht abgeschlossen; weitere Table-Recovery und Foster-
+  Positionen bleiben explizit unsupported. SpecCache-Refresh bestand; die
+  HTML-/DOM-Quellen waren frisch, fuenf andere Quellen wurden mit NotModified
+  bestaetigt. Keine Commits.
+- Quelle: aktueller Auftrag, Implementierungsbericht und eigene Build-/
+  Testergebnisse; [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [Deferred HDF-011](../plans/html-dom-deferred.md) und
+  [Plan](../plans/html-dom-full-completion-plan.md).

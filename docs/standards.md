@@ -170,8 +170,10 @@ template contents and caption fragments. Furthest-block recovery includes
 inner-loop clone/removal, bookmark/index shifts, reparenting and open-stack/list
 replacement. The outer loop is capped at eight iterations, inner-list removal
 follows the after-three-iterations rule, generated nodes count toward parser
-limits, and adjusted fragment/template insertion parents are honored. Nested
-anchor and `nobr` starts use bounded adoption recovery, with original-anchor
+limits, and adjusted fragment/template insertion parents are honored.
+Non-whitespace table text uses the last open template's contents as the foster
+location when it follows all open tables, including when no table is open.
+Nested anchor and `nobr` starts use bounded adoption recovery, with original-anchor
 removal and `nobr` post-adoption reconstruction respectively. Non-hidden input
 starts in table, table-body and row modes use in-body handling with bounded
 foster-parent insertion; inputs in cells use ordinary in-body insertion.
@@ -220,8 +222,9 @@ An in-scope form end generates implied end tags and removes the pointed-to form
 from the open stack, leaving misnested descendants open with a diagnostic.
 Other in-body end-tag closures may pop the pointed-to form from the open stack
 while leaving the form pointer set; later form starts remain ignored until a
-form end clears it. Adoption-agency removal of the pointed-to form remains
-unsupported.
+form end clears it. Adoption's form-removal guards are unreachable in the
+current HTML-only stack because `form` is special and becomes the furthest
+block rather than a removed intermediate node; the guards remain in place.
 Formatting-element start/end tags, including `a`, and `span`
 start/end tags use bounded in-body foster parenting in table, column-group,
 table-body and row modes, including existing bounded nested-anchor and

@@ -98,7 +98,9 @@ the scope check and again after reporting an error and running adoption.
 Scope checks include the `caption` boundary; supported captions are created
 through table insertion and add a formatting marker.
 Non-whitespace table text reconstructs active formatting at the foster insertion
-location when needed; whitespace-only table text does not reconstruct it.
+location when needed; whitespace-only table text does not reconstruct it. If
+the last open template is later than any table (or no table is open), fostered
+table text goes into the template content, merging adjacent text.
 Adoption selects the first special element below the formatting element and uses
 the foster insertion location for reparenting when required. This is not the
 full adoption-agency algorithm or full anchor semantics.
@@ -131,8 +133,9 @@ In-scope form ends generate implied end tags and remove only the pointed-to
 form, reporting misnesting while leaving remaining descendants open. Other
 in-body end-tag closures may pop a pointed-to form from the open stack while
 leaving the form pointer set, so additional form starts remain ignored until a
-later form end clears it. Adoption-agency removal of the pointed-to form remains
-unsupported.
+later form end clears it. Adoption-agency removal guards remain, but are
+unreachable with the current HTML-only stack: `form` is a special element and
+therefore becomes the furthest block instead of a removed intermediate node.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,

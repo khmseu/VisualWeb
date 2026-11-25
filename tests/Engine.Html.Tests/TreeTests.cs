@@ -1204,6 +1204,33 @@ public sealed class TreeTests
         Assert.All(template.Content.Descendants(), node => Assert.Same(template.Content.OwnerDocument, node.OwnerDocument));
     }
 
+    [Theory]
+    [InlineData("<tbody>", "tbody")]
+    [InlineData("<tr>", "tr")]
+    public void TableTextAfterTemplateInOpenStackFostersIntoTemplateContent(string section, string name)
+    {
+        var result = Parse("<!doctype html><table><template>" + section
+            + "A<!--separator-->B</template></table>");
+        var table = Assert.IsType<DomElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(table.ChildNodes));
+        Assert.Collection(template.Content.ChildNodes,
+            node => Assert.Equal(name, Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("AB", Assert.IsType<DomText>(node).Data));
+        Assert.All(template.Content.Descendants(), node => Assert.Same(template.Content.OwnerDocument, node.OwnerDocument));
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "non-whitespace-table-text"));
+    }
+
+    [Fact]
+    public void TableTextFostersIntoTemplateWhenNoTableIsOpen()
+    {
+        var result = Parse("<!doctype html><body><template><tbody>A</tbody></template>");
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        Assert.Collection(template.Content.ChildNodes,
+            node => Assert.Equal("tbody", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("A", Assert.IsType<DomText>(node).Data));
+        Assert.Single(result.Errors, error => error.Code == "non-whitespace-table-text");
+    }
+
     [Fact]
     public void FosteredTableTextRunsSeparatedByTagsMergeBeforeTable()
     {
@@ -3218,6 +3245,21 @@ public sealed class TreeTests
         Assert.IsType<DomText>(input.NextSibling);
         Assert.Equal("after", Assert.IsType<DomText>(body.LastChild).Data);
         Assert.DoesNotContain(result.Errors, e => e.Code == "implicitly-closed-descendants");
+    }
+
+    [Fact]
+    public void AdoptionWithFormAsFurthestBlockKeepsFormPointerUntilEndTag()
+    {
+        var result = Parse("<!doctype html><b><form id=first>x</b>"
+            + "<form id=ignored>y</form><form id=second>z</form>");
+        var body = result.Document.Body!;
+        var first = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("first", first.GetAttribute("id"));
+        Assert.Equal("b", Assert.IsType<DomElement>(first.FirstChild).LocalName);
+        Assert.Equal("xy", first.TextContent);
+        Assert.Null(result.Document.GetElementById("ignored"));
+        Assert.Equal("second", Assert.IsType<DomElement>(body.LastChild).GetAttribute("id"));
+        Assert.Single(result.Errors, error => error.Code == "nested-form");
     }
 
     [Theory]

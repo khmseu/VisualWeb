@@ -1567,7 +1567,27 @@ public static class HtmlParser
                 return;
             }
 
-            var tableIndex = open.FindLastIndex(element => element.LocalName == "table");
+            // A template later on the stack than any table takes precedence over
+            // fostering before the table, including when there is no open table.
+            var targetIndex = open.FindLastIndex(element => element.LocalName is "table" or "template");
+            if (targetIndex >= 0 && open[targetIndex].LocalName == "template")
+            {
+                var templateParent = AdjustedInsertionParent(open[targetIndex]);
+                FlushText();
+                if (templateParent.LastChild is DomText precedingText)
+                {
+                    precedingText.Data += data;
+                }
+                else
+                {
+                    CountNode();
+                    templateParent.AppendChild(ownerDocument.CreateTextNode(data));
+                }
+
+                return;
+            }
+
+            var tableIndex = targetIndex;
             if (tableIndex < 0 && fragmentRoot is not null)
             {
                 FlushText();

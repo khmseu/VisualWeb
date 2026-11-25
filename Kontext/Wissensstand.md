@@ -8,6 +8,29 @@
 
 ## Aktueller Wissensstand
 
+**Neue HTML/DOM-Abschlussplanung (2026-11-25; KP-635 bis KP-637):**
+Der Nutzer wuenscht einen Plan zur Vervollstaendigung auf Basis des
+[Deferred-Registers](../plans/html-dom-deferred.md), nach einfacher
+Implementierung geordnet. Der Vorschlag beginnt mit verbleibender
+Parser-Recovery und Parent-Kontext-Markup, gefolgt von DOM-Traversierung,
+Ranges/Observern und Reveal/Formularzustand; danach folgen Namespace-/Foreign-
+Content, wiederverwendbare Bindings/Shadow DOM, Ressourcen- und Script-
+Scheduling sowie Frames, Worker/Storage, Grafik/Medien und Accessibility.
+Kosten sind grobe Schaetzungen; echte Abhaengigkeiten koennen die Reihenfolge
+verschieben. Das Register ist nicht vollstaendig und enthaelt auch angrenzende
+Subsysteme: Vollkonformitaet erfordert deshalb ein getrenntes, versioniertes
+Anforderungsaudit und entsprechende Nachweise. Der Nutzer hat entschieden,
+die angrenzenden Browser-/Plattformthemen einzubeziehen (KP-636) und die
+vorgeschlagenen Phasen und deren Reihenfolge genehmigt (KP-637). Der
+[genehmigte Plan](../plans/html-dom-full-completion-plan.md) ist gespeichert;
+konkrete Sicherheits-, Implementierungs- und Baselineentscheidungen bleiben
+phasenbezogen offen. Phase 1 wurde begonnen (KP-638): Tabellentext mit
+Nicht-Leerzeichen
+wird in den Inhalt des zuletzt offenen Templates eingefuegt, wenn dieses
+spaeter als alle offenen Tabellen liegt oder keine Tabelle offen ist; weitere
+Parser-Luecken bleiben offen. Solution-Build, 7.722 HTML-Tests und die
+Formatverifikation bestanden.
+
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die
 gaengige Websites und Browser typischerweise benoetigen. Eng benachbarte
