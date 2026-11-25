@@ -54,14 +54,20 @@ mittels der bestehenden modusabhaengigen Recovery. 12 fokussierte Tests,
 7.771 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
-KP-643 wurde als `be6edce2` committed und gepusht. Der neue uncommittete
-Schritt KP-644 unterstuetzt Tabellen-Tags im Head-Noscript-Modus bei
+KP-643 wurde als `be6edce2` committed und gepusht. Schritt KP-644
+unterstuetzt Tabellen-Tags im Head-Noscript-Modus bei
 deaktiviertem Scripting: Starts schliessen `noscript` und werden erneut
 verarbeitet; Ends werden mit Diagnose ignoriert. Aktiviertes Scripting
 behaelt Raw-Text-Verhalten. 16 fokussierte Tests, 7.784 HTML-Tests, der
 Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
 allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
 und gab zwei uebersprungene Faelle aus.
+KP-644 wurde als `5e85a9ac` committed und gepusht. Der neue uncommittete
+Schritt KP-645 verarbeitet Tabellen-Tags nach Body- und HTML-Ende erneut im
+In-Body-Modus; After-Body gilt auch fuer HTML-Fragmente. 14 fokussierte Tests,
+7.797 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
+Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

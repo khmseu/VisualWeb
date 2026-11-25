@@ -244,6 +244,20 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void ParseFragment_htmlContextRecoversTableStructureTagAfterBody()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<body>before</body></td><p>after</p>",
+            document.CreateElement("html"), cancellationToken: TestContext.Current.CancellationToken);
+        var body = Assert.Single(result.Fragment.ChildNodes.OfType<DomElement>(), element => element.LocalName == "body");
+        Assert.Equal("beforeafter", body.TextContent);
+        Assert.Same(document, body.OwnerDocument);
+        Assert.Collection(result.Errors,
+            error => Assert.Equal("content-after-body", error.Code),
+            error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
     public void ParseFragment_tableContextBuildsTableBodyAndRows()
     {
         var document = new DomDocument();

@@ -133,6 +133,11 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `TableStartInHeadNoscriptIsReprocessedInBody` cover the head-noscript
   recovery path; table end, scripting-enabled raw text, budgets and
   cancellation are separately tested.
+  `TableStructureTagsAfterBodyReenterInBodyRecovery`,
+  `TableStartAfterBodyReentersTableParsing` and
+  `ParseFragment_htmlContextRecoversTableStructureTagAfterBody` cover after-body
+  reprocessing in documents and HTML fragments; limits and cancellation are
+  separately tested.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

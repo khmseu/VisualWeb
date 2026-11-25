@@ -70,6 +70,8 @@ structure ends are ignored with a parse error.
 Scripting-disabled head-noscript mode closes `noscript` and reprocesses table
 starts; table ends are ignored with a parse error. Scripting-enabled head
 `noscript` remains raw text.
+After-body and after-after-body table tokens report a parse error and reenter
+in-body processing, including after-body HTML fragments.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

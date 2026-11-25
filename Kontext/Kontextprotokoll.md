@@ -18827,3 +18827,25 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inheadnoscript),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-645 - Tabellen-Tags nach Body und HTML
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `5e85a9ac` (`fix(html): recover table tags in head noscript`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht.
+- Belegt: Die uncommittete Fortsetzung verarbeitet `table` und neun
+  Tabellenstruktur-Start- und Endtags in AfterBody und AfterAfterBody nach
+  Diagnose erneut mit den bestehenden In-Body-Regeln. Ein HTML-Fragment
+  prueft den AfterBody-Pfad; nicht freigegebene Modi behalten den Guard.
+- Belegt: Zwoelf fokussierte Faelle schlugen vor der Guard-Aenderung fehl;
+  anschliessend bestanden 14 fokussierte Tests einschliesslich Grenzen und
+  Cancellation, alle 7.797 HTML-Tests, der Solution-Build mit null
+  Warnungen/Fehlern, die Formatpruefung und der serialisierte Solution-Testlauf
+  in allen 14 Projekten. Der Browser-Runner meldete 1.449 bestandene Tests und
+  gab zwei uebersprungene Faelle aus.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-afterbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

@@ -156,6 +156,9 @@ start and end tags follow the existing document-mode reprocessing and
 unexpected-end-tag rules.
 In scripting-disabled head-noscript mode, table starts close `noscript` and
 are reprocessed, whereas table end tags are ignored with a parse error.
+Table and table-structure tokens in after-body and after-after-body modes
+report a parse error and are reprocessed in-body; after-body also applies to
+HTML fragments.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

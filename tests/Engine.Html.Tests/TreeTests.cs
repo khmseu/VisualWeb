@@ -137,6 +137,66 @@ public sealed class TreeTests
     [InlineData("tr")]
     [InlineData("td")]
     [InlineData("th")]
+    public void TableStructureTagsAfterBodyReenterInBodyRecovery(string tag)
+    {
+        foreach (var (end, errorCode) in new[] { ("</body>", "content-after-body"), ("</body></html>", "content-after-html") })
+        {
+            var start = Parse($"<!doctype html><body><p>before</p>{end}<{tag} id=ignored><p>after</p>");
+            Assert.Null(start.Document.GetElementById("ignored"));
+            Assert.Equal(["before", "after"], start.Document.Body!.ChildNodes.Select(node => node.TextContent));
+            Assert.Collection(start.Errors,
+                error => Assert.Equal(errorCode, error.Code),
+                error => Assert.Equal("unexpected-table-structure-start-tag-in-body", error.Code));
+
+            var unmatchedEnd = Parse($"<!doctype html><body><p>before</p>{end}</{tag}><p>after</p>");
+            Assert.Equal(["before", "after"], unmatchedEnd.Document.Body!.ChildNodes.Select(node => node.TextContent));
+            Assert.Collection(unmatchedEnd.Errors,
+                error => Assert.Equal(errorCode, error.Code),
+                error => Assert.Equal("unexpected-end-tag", error.Code));
+        }
+    }
+
+    [Theory]
+    [InlineData("</body>", "content-after-body")]
+    [InlineData("</body></html>", "content-after-html")]
+    public void TableStartAfterBodyReentersTableParsing(string end, string errorCode)
+    {
+        var result = Parse($"<!doctype html><body><p>before</p>{end}<table><tr><td>cell</td></tr></table>");
+        var table = Assert.IsType<DomElement>(result.Document.Body!.LastChild);
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Single(result.Errors, error => error.Code == errorCode);
+        Assert.Single(result.Errors);
+
+        var unmatchedEnd = Parse($"<!doctype html><body><p>before</p>{end}</table><p>after</p>");
+        Assert.Equal(["before", "after"], unmatchedEnd.Document.Body!.ChildNodes.Select(node => node.TextContent));
+        Assert.Collection(unmatchedEnd.Errors,
+            error => Assert.Equal(errorCode, error.Code),
+            error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void TableStructureAfterBodyRecoveryHonorsLimitsAndCancellation()
+    {
+        const string input = "<!doctype html><body></body></td><p>x</p>";
+        Assert.Equal("x", Parse(input, new() { MaxNodes = 7, MaxErrors = 2 }).Document.Body!.TextContent);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 6 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
     public void SelectIgnoresTableStructureStartAndKeepsOptionContent(string tag)
     {
         var result = Parse($"<!doctype html><select><option>before<{tag} id=ignored>after</option></select><p>later</p>");

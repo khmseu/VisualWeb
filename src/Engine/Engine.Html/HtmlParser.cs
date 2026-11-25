@@ -291,7 +291,8 @@ public static class HtmlParser
                     // In-body table-structure recovery also applies inside a select.
                     && !(mode == Mode.InBody && (!IsSelectContextActive
                         || tableTag.Name != "table"))
-                    && mode is not (Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.InHeadNoscript or Mode.AfterHead)
+                    && mode is not (Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.InHeadNoscript
+                        or Mode.AfterHead or Mode.AfterBody or Mode.AfterAfterBody)
                     && !(tableTag.Name == "table" && mode == Mode.InBody))
                 {
                     throw Unsupported($"Table tag <{tableTag.Name}> is outside the supported table tree-building subset.");

@@ -220,6 +220,8 @@ after-after-frameset modes. Supported behavior includes:
   In head-noscript mode with scripting disabled, table and table-structure
   starts close `noscript` and are reprocessed; end tags are ignored with a
   parse error. With scripting enabled, the same markup remains raw text.
+  Table and table-structure tokens after `body` or `html` report a parse error
+  and reenter in-body processing, including after-body HTML fragments.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.
