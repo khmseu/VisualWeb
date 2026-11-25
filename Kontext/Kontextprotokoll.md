@@ -19009,3 +19009,32 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-652 - Option-Starts und Select-Scope
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `87531e7e` (`fix(html): recover select end tags correctly`) wurde erstellt
+  und nach `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund.
+- Belegt: Die uncommittete Fortsetzung verarbeitet In-Body-Option-Starts vor
+  der begrenzten Select-Weiterleitung. Bei Select in Scope erzeugt sie
+  implizite Endtags ausser `optgroup` und diagnostiziert eine verbleibende
+  Option in Scope. Andernfalls schliesst sie nur eine aktuelle Option.
+  Beide Wege rekonstruieren aktive Formatierung vor dem Einfuegen.
+- Belegt: Drei von vier fokussierten Tests schlugen vor der Korrektur fehl;
+  danach bestanden alle vier und mit weiteren Grenzen, Foster-Parenting und
+  Formatierungsfaellen sieben. Alle 7.847 HTML-Tests, der Solution-Build
+  mit null Warnungen und Fehlern und die Formatpruefung bestanden. Der
+  serialisierte Solution-Testlauf scheiterte mit Exit-Code 1: 13 Projekte
+  bestanden, aber `InlineScriptTests.FilteredNthQueriesAndStylesFeedTransactionalRetainedPaint`
+  in der Prozessvariante ueberschritt die V8-Deadline. Der Browser-Runner
+  meldete 1.448 bestandene von 1.449 und gab zwei uebersprungene Faelle aus.
+  Ein isolierter `--no-build`-Wiederholungslauf desselben Tests bestand in
+  beiden Prozessvarianten. Die Ursache des Timeouts ist nicht belegt; der
+  vollstaendige Solution-Testlauf ist nicht bestanden.
+- Offen: Die `optgroup`-Startregel und andere Select-Algorithmen bleiben
+  begrenzt; Phase 1 ist nicht abgeschlossen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

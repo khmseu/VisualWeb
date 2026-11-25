@@ -447,6 +447,22 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void SelectFragmentOptionStartReconstructsFormattingWithoutSelectInScope()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<p><b>one</p><option>two</option>",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
+        var paragraph = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+        var reconstructed = Assert.IsType<DomElement>(result.Fragment.LastChild);
+
+        Assert.Equal("one", paragraph.TextContent);
+        Assert.Equal("b", reconstructed.LocalName);
+        Assert.Equal("option", Assert.IsType<DomElement>(reconstructed.FirstChild).LocalName);
+        Assert.Equal("two", reconstructed.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {
         var document = new DomDocument();

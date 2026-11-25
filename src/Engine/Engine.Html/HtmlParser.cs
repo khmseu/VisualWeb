@@ -822,6 +822,23 @@ public static class HtmlParser
                 return;
             }
 
+            if (tag is { IsEndTag: false, Name: "option" })
+            {
+                if (InScope("select"))
+                {
+                    GenerateImpliedEndTags(except: "optgroup");
+                    if (InScope("option")) { Error("option-start-tag-with-open-option"); }
+                }
+                else if (open[^1].LocalName == "option")
+                {
+                    Close("option");
+                }
+
+                ReconstructFormatting();
+                Insert(tag);
+                return;
+            }
+
             var selectIndex = SelectIndexAfterLastTemplate();
             if (!fromSelectContext && selectIndex >= 0)
             {
@@ -950,7 +967,6 @@ public static class HtmlParser
                         Insert(tag);
                         mode = Mode.InFrameset;
                         return;
-                    case "option":
                     case "optgroup":
                         if (open.LastOrDefault()?.LocalName == "option") { Close("option"); }
                         break;
@@ -2121,12 +2137,6 @@ public static class HtmlParser
                 }
 
                 Insert(tag, push: false);
-                return;
-            }
-            if (!tag.IsEndTag && tag.Name == "option")
-            {
-                if (open[^1].LocalName == "option") { Close("option"); }
-                Insert(tag);
                 return;
             }
             if (!tag.IsEndTag && tag.Name == "optgroup")

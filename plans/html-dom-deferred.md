@@ -159,6 +159,8 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   Select-end regressions cover special-element barriers, implied option/group
   endings, template and fragment contexts, table foster processing and error
   limits; other select algorithms remain bounded.
+  Option-start regressions cover select scope, implied ends, misnesting,
+  formatting reconstruction, fragment and table paths, and parser limits.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

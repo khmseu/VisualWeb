@@ -98,12 +98,20 @@ In-Table-Regel fuer Hidden-Inputs bleibt erhalten. Alle 7.831 HTML-Tests und
 der Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf
 in allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
 Tests und gab zwei uebersprungene Faelle aus. KP-650 wurde als `cbad4bc4`
-committed und gepusht. Der uncommittete Schritt KP-651 behandelt Select-Endtags
+committed und gepusht. Schritt KP-651 behandelt Select-Endtags
 nach der generischen In-Body-Endtag-Regel: Special-Elemente stoppen die Suche,
 implizite Endtags werden vor der Verschachtelungsdiagnose erzeugt. Alle 7.840
 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
-1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. KP-651 wurde als
+`87531e7e` committed und gepusht. Der uncommittete Schritt KP-652 behandelt
+In-Body-Option-Starts mit Select-Scope, impliziten Endtags ausser `optgroup`,
+Diagnose verbleibender Optionen und Formatierungsrekonstruktion. Alle 7.847
+HTML-Tests, der Solution-Build und die Formatpruefung bestanden.
+Der serialisierte Solution-Testlauf hatte einen Browser-Testfehler wegen einer
+V8-Deadline; 13 andere Projekte bestanden. Der isolierte Wiederholungslauf
+dieses Browser-Tests bestand in beiden Prozessvarianten. Die Ursache des
+Timeouts ist nicht belegt; der vollstaendige Lauf ist nicht bestanden.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

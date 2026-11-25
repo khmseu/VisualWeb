@@ -160,9 +160,11 @@ after-after-frameset modes. Supported behavior includes:
   ignores in-body `select` and `input` starts regardless of scope. In-table
   hidden input handling remains separate. A `select` end uses generic in-body
   end-tag recovery: intervening special elements block it, while implied option
-  and optgroup ends are generated before checking misnesting. Outside selects, `option` and
-  `optgroup` use ordinary in-body insertion; starting either while an `option`
-  is current closes that option first.
+  and optgroup ends are generated before checking misnesting. An in-body
+  `option` start generates implied end tags except `optgroup` when a select is
+  in scope, then diagnoses a remaining in-scope option. Otherwise it closes
+  only a current option. Both paths reconstruct formatting before insertion.
+  `optgroup` start recovery remains a bounded subset.
 - Basic static table construction for `table`, `caption`, `colgroup`/`col`,
   `tbody`/`thead`/`tfoot`, `tr`, `td` and `th`, including implied
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell

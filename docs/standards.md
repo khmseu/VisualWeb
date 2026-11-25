@@ -178,6 +178,9 @@ out-of-scope select remains open. In-table hidden inputs retain their separate
 insertion rule.
 Select end tags follow in-body generic end-tag recovery: special elements stop
 the search, and implied end tags are generated before the misnesting check.
+In-body `option` starts generate implied end tags except `optgroup` when select
+is in scope, diagnose an option still in scope, and reconstruct formatting.
+Without an in-scope select, only a current option is closed before insertion.
 
 Document `noscript` uses the
 [parser scripting state](../specs/cache/html.html#parser-scripting-disabled).

@@ -58,6 +58,8 @@ record of its completed, bounded scope.
      fragment context, retaining the separate in-table hidden-input rule.
      Select ends use generic in-body recovery with special-element barriers and
      implied end tags.
+     In-body option starts use scoped implied-end recovery and formatting
+     reconstruction, including fragments and fostered selects.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
