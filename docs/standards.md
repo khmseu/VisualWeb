@@ -154,6 +154,8 @@ use generic end-tag recovery; in-cell rules remain separate.
 In initial, before-html, before-head, in-head and after-head modes, structure
 start and end tags follow the existing document-mode reprocessing and
 unexpected-end-tag rules.
+In scripting-disabled head-noscript mode, table starts close `noscript` and
+are reprocessed, whereas table end tags are ignored with a parse error.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

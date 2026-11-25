@@ -129,6 +129,10 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `TableStructureEndInHeadDoesNotCloseHead` and
   `EarlyTableStructureRecoveryHonorsLimitsAndCancellation` covering head
   preservation and parser budgets.
+  `TableStructureTagsInHeadNoscriptFollowTheirDistinctRecoveryRules` and
+  `TableStartInHeadNoscriptIsReprocessedInBody` cover the head-noscript
+  recovery path; table end, scripting-enabled raw text, budgets and
+  cancellation are separately tested.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

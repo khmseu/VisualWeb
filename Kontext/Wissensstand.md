@@ -47,13 +47,21 @@ weiterhin eine passende Tabellenzelle. 19 fokussierte Tests, 7.762 HTML-Tests,
 der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden; der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. Dieser Schritt
-wurde als `5bcef9ce` committed und gepusht. Der neue uncommittete Schritt
+wurde als `5bcef9ce` committed und gepusht. Der Schritt
 (KP-643) verarbeitet die neun Tabellenstruktur-Start- und Endtags nun auch in
 den fruehen Dokumentmodi Initial, BeforeHtml, BeforeHead, InHead und AfterHead
 mittels der bestehenden modusabhaengigen Recovery. 12 fokussierte Tests,
 7.771 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+KP-643 wurde als `be6edce2` committed und gepusht. Der neue uncommittete
+Schritt KP-644 unterstuetzt Tabellen-Tags im Head-Noscript-Modus bei
+deaktiviertem Scripting: Starts schliessen `noscript` und werden erneut
+verarbeitet; Ends werden mit Diagnose ignoriert. Aktiviertes Scripting
+behaelt Raw-Text-Verhalten. 16 fokussierte Tests, 7.784 HTML-Tests, der
+Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
+allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
+und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

@@ -48,7 +48,8 @@ record of its completed, bounded scope.
      selects and select fragments are ignored with a parse error; unmatched
      structure ends use generic in-body recovery there. Early document modes
      now process table-structure starts and ends through their existing
-     mode-specific rules. Other unsupported paths remain.
+     mode-specific rules, including head-noscript recovery with scripting
+     disabled. Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),
      [HTML tests](../tests/Engine.Html.Tests/) and

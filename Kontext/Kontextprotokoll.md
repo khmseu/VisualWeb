@@ -18803,3 +18803,27 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#the-before-html-insertion-mode),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-644 - Tabellen-Tags im Head-Noscript-Modus
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `be6edce2` (`fix(html): recover early table structure tags`) wurde mit
+  erfolgreichem Hook erstellt und nach `origin/main` gepusht.
+- Belegt: Die uncommittete Fortsetzung verarbeitet `table` und neun
+  Tabellenstruktur-Tags im Head-Noscript-Modus mit deaktiviertem Scripting
+  nach den bestehenden Regeln: Starts schliessen `noscript` und werden
+  erneut verarbeitet, Ends werden mit Diagnose ignoriert. Mit aktiviertem
+  Scripting bleiben die Zeichen unveraendert Raw Text. Nicht freigegebene
+  Modi behalten den Guard.
+- Belegt: Zehn fokussierte Tests schlugen vor der Guard-Aenderung fehl;
+  anschliessend bestanden 16 fokussierte Tests einschliesslich Grenzen,
+  Cancellation und Raw Text, alle 7.784 HTML-Tests, der Solution-Build
+  mit null Warnungen/Fehlern, die Formatpruefung und der serialisierte
+  Solution-Testlauf in allen 14 Projekten. Der Browser-Runner meldete 1.449
+  bestandene Tests und gab zwei uebersprungene Faelle aus.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inheadnoscript),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

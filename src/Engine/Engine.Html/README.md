@@ -67,6 +67,9 @@ remain separate.
 In initial, before-html, before-head, in-head and after-head document modes,
 structure starts follow mode transitions into in-body recovery, while unmatched
 structure ends are ignored with a parse error.
+Scripting-disabled head-noscript mode closes `noscript` and reprocesses table
+starts; table ends are ignored with a parse error. Scripting-enabled head
+`noscript` remains raw text.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

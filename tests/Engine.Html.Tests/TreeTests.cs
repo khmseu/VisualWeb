@@ -3032,6 +3032,84 @@ public sealed class TreeTests
         Assert.Same(result.Document.Body, result.Document.GetElementById("fallback")!.ParentNode);
     }
 
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void TableStructureTagsInHeadNoscriptFollowTheirDistinctRecoveryRules(string tag)
+    {
+        var start = Parse($"<!doctype html><head><noscript><{tag} id=ignored><p>later</p>");
+        var startNoscript = Assert.IsType<DomElement>(Assert.Single(start.Document.Head!.ChildNodes));
+        Assert.Equal("noscript", startNoscript.LocalName);
+        Assert.Empty(startNoscript.ChildNodes);
+        Assert.Null(start.Document.GetElementById("ignored"));
+        Assert.Equal("later", start.Document.Body!.TextContent);
+        Assert.Collection(start.Errors,
+            error => Assert.Equal("unexpected-token-in-head-noscript", error.Code),
+            error => Assert.Equal("unexpected-table-structure-start-tag-in-body", error.Code));
+
+        var end = Parse($"<!doctype html><head><noscript></{tag}><meta id=kept></noscript>"
+            + "<title>title</title></head><body>later</body>");
+        var endNoscript = Assert.IsType<DomElement>(end.Document.Head!.FirstChild);
+        Assert.Same(endNoscript, end.Document.GetElementById("kept")!.ParentNode);
+        Assert.Equal("title", Assert.IsType<DomElement>(endNoscript.NextSibling).TextContent);
+        Assert.Equal("later", end.Document.Body!.TextContent);
+        Assert.Single(end.Errors, error => error.Code == "unexpected-end-tag-in-head-noscript");
+        Assert.Single(end.Errors);
+    }
+
+    [Fact]
+    public void TableStartInHeadNoscriptIsReprocessedInBody()
+    {
+        var result = Parse("<!doctype html><head><noscript><table><tr><td>cell</td></tr></table>");
+        Assert.Empty(Assert.IsType<DomElement>(result.Document.Head!.FirstChild).ChildNodes);
+        var table = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-token-in-head-noscript");
+        Assert.Single(result.Errors);
+    }
+
+    [Fact]
+    public void TableEndInHeadNoscriptIsIgnored()
+    {
+        var result = Parse("<!doctype html><head><noscript></table><meta id=kept></noscript></head>");
+        var noscript = Assert.IsType<DomElement>(result.Document.Head!.FirstChild);
+        Assert.Same(noscript, result.Document.GetElementById("kept")!.ParentNode);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag-in-head-noscript");
+        Assert.Single(result.Errors);
+    }
+
+    [Fact]
+    public void HeadNoscriptTableRecoveryHonorsLimitsAndCancellation()
+    {
+        const string input = "<!doctype html><head><noscript><td><p>x</p>";
+        Assert.Equal("x", Parse(input, new() { MaxNodes = 8, MaxErrors = 2 }).Document.Body!.TextContent);
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxNodes = 7 }));
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancelled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => HtmlParser.Parse(input, cancellationToken: cancelled.Token));
+    }
+
+    [Fact]
+    public void TableTagsInHeadNoscriptRemainRawTextWhenScriptingIsEnabled()
+    {
+        var result = HtmlParser.Parse("<!doctype html><head><noscript><td></table></noscript></head><body>later</body>",
+            options: null, cancellationToken: TestContext.Current.CancellationToken,
+            document: new DomDocument(), scriptCompleted: _ => { });
+        var noscript = Assert.IsType<DomElement>(result.Document.Head!.FirstChild);
+        Assert.Equal("<td></table>", noscript.TextContent);
+        Assert.IsType<DomText>(Assert.Single(noscript.ChildNodes));
+        Assert.Empty(result.Errors);
+    }
+
     [Fact]
     public void NoscriptUsesRawTextWhenScriptingIsEnabled()
     {
