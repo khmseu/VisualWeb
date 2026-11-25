@@ -61,8 +61,9 @@ in-body fallback in table, table-body and row modes; unsupported table starts
 remain explicit failures.
 In ordinary in-body parsing, `caption`, `col`, `colgroup`, `tbody`, `thead`,
 `tfoot`, `tr`, `td` and `th` starts report a parse error and are ignored.
-This also applies inside a select and in select-context fragments; table-structure
-end tags in that select context remain unsupported.
+This also applies inside a select and in select-context fragments. Unmatched
+structure end tags there use generic in-body recovery; cell-mode closing rules
+remain separate.
 Formatting-element start/end tags use the bounded in-body path, including
 existing nested-anchor and nested-`nobr` recovery and fostered adoption
 reparenting. `select` starts and

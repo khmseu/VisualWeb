@@ -75,12 +75,27 @@ public sealed class FragmentTests
         Assert.Single(result.Errors);
     }
 
-    [Fact]
-    public void SelectContextStillRejectsTableStructureEndTags()
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void SelectContextIgnoresUnmatchedTableStructureEnd(string tag)
     {
         var document = new DomDocument();
-        Assert.Throws<UnsupportedHtmlException>(() => HtmlParser.ParseFragment("</td>",
-            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken));
+        var result = HtmlParser.ParseFragment($"<option>before</{tag}>after</option>",
+            document.CreateElement("select"), new() { MaxNodes = 2, MaxErrors = 1 },
+            TestContext.Current.CancellationToken);
+        var option = Assert.IsType<DomElement>(Assert.Single(result.Fragment.ChildNodes));
+        Assert.Equal("beforeafter", option.TextContent);
+        Assert.Same(document, option.OwnerDocument);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.Single(result.Errors);
     }
 
     [Theory]

@@ -149,7 +149,8 @@ the paragraph around the table. The overall HTML estimate remains unchanged.
 
 The [in-body](../specs/cache/html.html#parsing-main-inbody) ignored
 table-structure start-tag rule also applies inside selects and select-context
-fragments. Select-context table-structure end handling remains unsupported.
+fragments. Unmatched table-structure end tags in that in-body select context
+use generic end-tag recovery; in-cell rules remain separate.
 The overall HTML estimate remains unchanged.
 
 Document `noscript` uses the

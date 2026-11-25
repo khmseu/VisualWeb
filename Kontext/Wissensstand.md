@@ -26,7 +26,7 @@ vorgeschlagenen Phasen und deren Reihenfolge genehmigt (KP-637). Der
 konkrete Sicherheits-, Implementierungs- und Baselineentscheidungen bleiben
 phasenbezogen offen. Phase 1 ist in Arbeit (KP-638/KP-639): Die erste
 Tabellentext-Foster-Korrektur fuer offene Templates wurde als `8bf1064d`
-committed. Der naechste, uncommittete Schritt fuegt fostered Tabellentext nach
+committed. Der naechste Schritt fuegt fostered Tabellentext nach
 Entfernung einer offenen Tabelle durch den Parser-Script-Callback in das
 vorherige Open-Stack-Element ein. Eine verschobene Tabelle mit Parent wird
 weiterhin vor der Tabelle behandelt. Solution-Build, 7.726 HTML-Tests und
@@ -37,10 +37,17 @@ Tabelle direkt unter das Document verschoben wurde, statt ihn in einen
 anderen Knoten umzuleiten; das entspricht dem lokalen HTML-Algorithmus
 `insert a character`. 7.727 HTML-Tests, der Solution-Build und die
 Formatverifikation bestanden und die Korrektur wurde als `e7c5e54e` gepusht.
-Der aktuelle uncommittete Schritt (KP-641) ignoriert Tabellenstruktur-Starttags
-in Selects und Select-Fragmenten mit Parse-Diagnose; entsprechende Endtags
-bleiben unsupported. 7.745 HTML-Tests, 78 DOM-Tests, der Solution-Build und
-die Solution-Formatpruefung bestanden. Weitere Parser-Luecken bleiben offen.
+Der Schritt KP-641 ignoriert Tabellenstruktur-Starttags in Selects und
+Select-Fragmenten mit Parse-Diagnose; 7.745 HTML-Tests, 78 DOM-Tests,
+Solution-Build und Solution-Formatpruefung bestanden. Er wurde als `3e15054b`
+committed und nach `origin/main` gepusht. Der aktuelle uncommittete Schritt
+(KP-642) laesst neun entsprechende Endtags im In-Body-Select-Kontext durch die
+generische Endtag-Recovery laufen; die gesonderten In-Cell-Regeln schliessen
+weiterhin eine passende Tabellenzelle. 19 fokussierte Tests, 7.762 HTML-Tests,
+der Solution-Build, die Formatpruefung und der serialisierte
+Solution-Testlauf in allen 14 Projekten bestanden; der Browser-Runner meldete
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
 Der Nutzer moechte die HTML-/DOM-Arbeit nach Funktionen priorisieren, die

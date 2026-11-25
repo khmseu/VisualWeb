@@ -288,10 +288,9 @@ public static class HtmlParser
 
                 if (token is HtmlTag tableTag && TableTags.Contains(tableTag.Name)
                     && !IsTableMode(mode) && mode != Mode.InTemplate
-                    // The in-body ignored table-structure start rule also applies inside a select.
-                    // This exception does not expand select-context table-structure end handling.
+                    // In-body table-structure recovery also applies inside a select.
                     && !(mode == Mode.InBody && (!IsSelectContextActive
-                        || (!tableTag.IsEndTag && tableTag.Name != "table")))
+                        || tableTag.Name != "table"))
                     && !(tableTag.Name == "table"
                         && mode is Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.AfterHead or Mode.InBody))
                 {

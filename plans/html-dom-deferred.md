@@ -120,8 +120,10 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   `SelectContextIgnoresTableStructureStart` cover in-body ignored
   table-structure starts inside selects and select fragments;
   `SelectTableStructureStartRecoveryHonorsLimitsAndCancellation` checks
-  node/error budgets and cancellation. Select-context structure end tags remain
-  explicitly unsupported.
+  node/error budgets and cancellation. `SelectIgnoresUnmatchedTableStructureEnd`
+  and `SelectContextIgnoresUnmatchedTableStructureEnd` cover generic in-body
+  recovery for unmatched structure end tags; `SelectInCellPreservesCellEndTagRecovery`
+  preserves the distinct in-cell closing behavior.
   Fragment contexts `svg`, `math`, `frame`, and `frameset` are explicitly
   rejected. [TreeTests.cs](../tests/Engine.Html.Tests/TreeTests.cs) includes
   `UnsupportedTableRecoveryFailsExplicitly` and

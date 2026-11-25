@@ -18755,3 +18755,27 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   eigener Build; [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
   [HDF-011](../plans/html-dom-deferred.md) und
   [Plan](../plans/html-dom-full-completion-plan.md).
+
+### KP-642 - Select-Tabellenenden und In-Cell-Abgrenzung
+
+- Dokumentiert am: 2026-11-25, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `3e15054b` (`fix(html): recover table starts inside selects`) wurde erstellt
+  und nach `origin/main` gepusht.
+- Belegt: Die uncommittete Fortsetzung verarbeitet neun Tabellenstruktur-
+  Endtags in In-Body-Selects und Select-Fragmenten mit der bestehenden
+  generischen Recovery; nicht passende Endtags werden mit Diagnose ignoriert.
+  Ein zuerst angenommener Schutz einer Select-umgebenden Zelle war falsch:
+  Der lokale HTML-Standard `#parsing-main-intd` schliesst eine passende Zelle
+  im In-Cell-Modus auch bei offenem Select. Der Test wurde entsprechend
+  korrigiert; dieser Modus bleibt unveraendert.
+- Belegt: Die 18 neuen Endtag-Faelle schlugen vor der Guard-Aenderung fehl.
+  Danach bestanden 19 fokussierte Tests einschliesslich Cell-Regression,
+  alle 7.762 HTML-Tests, der Solution-Build mit null Warnungen/Fehlern und
+  die Solution-Formatpruefung. Der serialisierte Solution-Testlauf bestand
+  in allen 14 Projekten; der Browser-Runner meldete 1.449 bestandene Tests
+  und gab zwei uebersprungene Faelle aus.
+- Status: Nicht committed; Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push-Ausgabe, lokaler
+  [HTML-Cache](../specs/cache/html.html#parsing-main-intd),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs), Tests und Buildausgabe.

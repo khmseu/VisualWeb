@@ -210,8 +210,10 @@ after-after-frameset modes. Supported behavior includes:
   table/template algorithms remain explicit failures.
   In the in-body insertion mode, table-structure start tags (`caption`, `col`,
   `colgroup`, `tbody`, `thead`, `tfoot`, `tr`, `td` and `th`) inside a select
-  report a parse error and are ignored, including in select-context fragments;
-  table-structure end tags in that select context remain unsupported.
+  report a parse error and are ignored, including in select-context fragments.
+  Unmatched end tags for those names use the in-body generic end-tag recovery
+  inside selects and select-context fragments; table-cell insertion mode retains
+  its own cell-closing rules.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

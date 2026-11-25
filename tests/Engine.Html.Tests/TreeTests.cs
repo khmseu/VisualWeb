@@ -76,7 +76,6 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<!doctype html><head><td>")]
     [InlineData("<!doctype html><head></td>")]
-    [InlineData("<!doctype html><body><select></td>")]
     [InlineData("<!doctype html><frameset></td>")]
     public void TableStructureTagsInOtherUnsupportedContextsStillFail(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
@@ -102,6 +101,41 @@ public sealed class TreeTests
         Assert.Equal("later", Assert.IsType<DomElement>(result.Document.Body.LastChild).TextContent);
         Assert.Single(result.Errors, error => error.Code == "unexpected-table-structure-start-tag-in-body");
         Assert.Single(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("caption")]
+    [InlineData("col")]
+    [InlineData("colgroup")]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tfoot")]
+    [InlineData("tr")]
+    [InlineData("td")]
+    [InlineData("th")]
+    public void SelectIgnoresUnmatchedTableStructureEnd(string tag)
+    {
+        var result = Parse($"<!doctype html><select><option>before</{tag}>after</option></select><p>later</p>");
+        var select = Assert.IsType<DomElement>(result.Document.Body!.FirstChild);
+        var option = Assert.IsType<DomElement>(Assert.Single(select.ChildNodes));
+        Assert.Equal("beforeafter", option.TextContent);
+        Assert.Equal("later", Assert.IsType<DomElement>(result.Document.Body.LastChild).TextContent);
+        Assert.Single(result.Errors, error => error.Code == "unexpected-end-tag");
+        Assert.Single(result.Errors);
+    }
+
+    [Fact]
+    public void SelectInCellPreservesCellEndTagRecovery()
+    {
+        var result = Parse("<!doctype html><table><tr><td><select><option>before</td><td>after</td></tr></table>");
+        var table = Assert.IsType<DomElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        var section = Assert.IsType<DomElement>(table.FirstChild);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        Assert.Equal(2, row.ChildNodes.Count);
+        Assert.Equal("before", Assert.IsType<DomElement>(row.ChildNodes[0]).TextContent);
+        Assert.Equal("after", Assert.IsType<DomElement>(row.ChildNodes[1]).TextContent);
+        Assert.Single(result.Errors, error => error.Code == "cell-closed-with-open-descendants");
+        Assert.Single(result.Errors, error => error.Code == "implicitly-closed-descendants");
     }
 
     [Fact]
