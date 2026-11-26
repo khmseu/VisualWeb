@@ -1147,7 +1147,7 @@ public static class HtmlParser
             {
                 if (open[index].LocalName == name)
                 {
-                    if (name is "select" or "option" or "optgroup") { GenerateImpliedEndTags(except: name); }
+                    GenerateImpliedEndTags(except: name);
                     CloseAt(index);
                     return;
                 }

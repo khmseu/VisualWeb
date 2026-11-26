@@ -521,6 +521,18 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void FragmentOrdinaryEndGeneratesImpliedEnds()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<span><optgroup><option>before</span>after",
+            document.CreateElement("div"), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("before", result.Fragment.FirstChild!.TextContent);
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {
         var document = new DomDocument();

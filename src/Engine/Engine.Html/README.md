@@ -49,9 +49,9 @@ select-context fragment. Table-mode insertion retains foster parenting.
 An in-body `input` start is ignored in a select-context fragment, closes an
 in-scope select before insertion, and leaves an out-of-scope select open.
 In-table hidden inputs retain their separate rule.
-Select, option and optgroup end tags use generic in-body recovery, respecting
-intervening special elements and generating implied ends except the matching
-name before misnesting checks, including in fragments.
+Generic in-body end-tag recovery, including select, option and optgroup ends,
+respects intervening special elements and generates implied ends except the
+matching name before misnesting checks, including in fragments.
 In-body `option` starts use select scope, implied ends excluding `optgroup`,
 remaining-option diagnostics and formatting reconstruction; without a select in
 scope they close only a current option. `optgroup` starts similarly use select

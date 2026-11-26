@@ -19114,3 +19114,27 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-656 - Generische In-Body-Endtags
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `badd9d3a` (`fix(html): recover option and optgroup end tags`) wurde erstellt
+  und nach `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund.
+- Belegt: Die uncommittete Fortsetzung erzeugt bei jeder gefundenen
+  generischen In-Body-Endtag-Zielsuche implizite Endtags ausser dem Zielnamen
+  vor der Fehlverschachtelungspruefung. Special-Elemente stoppen weiterhin die
+  Suche; nicht implizit schliessbare Nachfahren erzeugen weiterhin Diagnosen.
+  Dokument- und Fragmentpfade verwenden denselben Algorithmus.
+- Belegt: Vier fokussierte Faelle zeigten vor der Korrektur unerwuenschte
+  Diagnosen; ein weiterer Test nutzte zunaechst ein rekonstruierbares
+  Formatierungselement und wurde auf ein gewoehnliches Element korrigiert.
+  Danach bestanden sechs fokussierte Faelle, alle 7.881 HTML-Tests, der
+  Solution-Build mit null Warnungen und Fehlern, die Formatpruefung und der
+  serialisierte Solution-Testlauf in allen 14 Projekten. Der Browser-Runner
+  meldete 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+- Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

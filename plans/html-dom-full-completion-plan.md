@@ -66,6 +66,8 @@ record of its completed, bounded scope.
      recovery, including fragment and foster-parented paths.
      Option and optgroup ends use generic in-body recovery, including implied
      ends, special-element barriers and select fragments.
+     The generic end-tag path generates implied ends for other matching
+     ordinary elements before its misnesting check.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

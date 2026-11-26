@@ -145,6 +145,9 @@ after-after-frameset modes. Supported behavior includes:
   while `plaintext` consumes the rest of the input as literal text. Neither
   literal mode interprets apparent links, styles or scripts as elements.
 - Merged text nodes, null removal in body and recovery diagnostics.
+- Generic in-body end-tag recovery generates implied end tags except the
+  matching name before checking misnesting. Special elements stop the search;
+  document and fragment parsing share this bounded path.
 - Raw script/style content without executing it or interpreting its markup.
 - Bounded ruby annotation tree construction for `rb`, `rtc`, `rp` and `rt`,
   including the in-body implied-end-tag rules. Ruby-specific styling and

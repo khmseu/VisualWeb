@@ -1020,6 +1020,41 @@ public sealed class TreeTests
             HtmlParser.Parse(input, cancellationToken: cancellation.Token));
     }
 
+    [Theory]
+    [InlineData("span")]
+    [InlineData("label")]
+    [InlineData("custom-element")]
+    public void OrdinaryEndGeneratesImpliedEndsBeforeCheckingMisnesting(string tag)
+    {
+        var result = Parse($"<!doctype html><{tag} id=target><optgroup><option>before</{tag}>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void OrdinaryEndReportsNonImpliedDescendantAfterImpliedEnds()
+    {
+        var result = Parse("<!doctype html><span id=target><abbr><option>before</span>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void OrdinaryEndDoesNotCrossSpecialElementOrGenerateImpliedEnds()
+    {
+        var result = Parse("<!doctype html><span id=target><div><option>before</span>after</option></div></span>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("beforeafter", target.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
     [Fact]
     public void OptionAndOptgroupStartsOutsideSelectUseBodyInsertionRules()
     {

@@ -176,9 +176,9 @@ For an in-body `input` start, the select fragment context ignores the token;
 otherwise an in-scope select is closed before inserting the input, while an
 out-of-scope select remains open. In-table hidden inputs retain their separate
 insertion rule.
-Select, option and optgroup end tags follow in-body generic end-tag recovery:
-special elements stop the search, and implied end tags except the matching name
-are generated before the misnesting check, including in fragments.
+Generic in-body end-tag recovery (including select, option and optgroup ends)
+stops at special elements and generates implied ends except the matching name
+before the misnesting check, including in fragments.
 In-body `option` starts generate implied end tags except `optgroup` when select
 is in scope, diagnose an option still in scope, and reconstruct formatting.
 Without an in-scope select, only a current option is closed before insertion.

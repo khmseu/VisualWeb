@@ -126,11 +126,19 @@ der Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf
 in allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
 Tests und gab zwei uebersprungene Faelle aus. KP-654 wurde als `76fc81ea`
 committed und nach `origin/main` gepusht; der Hook pruefte zehn Dateien ohne
-Befund. Die uncommittete Fortsetzung KP-655 fuehrt Option- und Optgroup-Endtags
+Befund. Schritt KP-655 fuehrt Option- und Optgroup-Endtags
 in generische In-Body-Recovery: Special-Elemente stoppen die Suche; implizite
 Endtags mit Ausnahme des gesuchten Namens gehen der Fehlverschachtelungspruefung
 voraus. Das gilt auch fuer Select-Fragmente und ausserhalb von Selects. Der
 Solution-Build, alle 7.875 HTML-Tests, die Formatpruefung und der serialisierte
+Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. KP-655 wurde
+als `badd9d3a` committed und nach `origin/main` gepusht; der Hook pruefte zehn
+Dateien ohne Befund. Die uncommittete Fortsetzung KP-656 erzeugt implizite
+Endtags mit Ausnahme des gesuchten Namens nun fuer alle Ziele der generischen
+In-Body-Endtag-Recovery, nicht nur Select, Option und Optgroup. Dabei bleiben
+Special-Grenzen und die Diagnose echter Fehlverschachtelung erhalten. Der
+Solution-Build, alle 7.881 HTML-Tests, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
