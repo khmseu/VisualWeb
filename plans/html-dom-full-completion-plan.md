@@ -68,6 +68,8 @@ record of its completed, bounded scope.
      ends, special-element barriers and select fragments.
      The generic end-tag path generates implied ends for other matching
      ordinary elements before its misnesting check.
+     Non-heading block and button ends also generate implied ends before the
+     misnesting check. Heading end-tag recovery remains incomplete.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

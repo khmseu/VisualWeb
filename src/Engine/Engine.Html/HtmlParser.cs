@@ -1134,6 +1134,7 @@ public static class HtmlParser
             if (BlockTags.Contains(tag.Name) || tag.Name == "button")
             {
                 if (!InScope(tag.Name)) { Error("unexpected-end-tag"); return; }
+                if (!HeadingTags.Contains(tag.Name)) { GenerateImpliedEndTags(); }
                 Close(tag.Name);
                 return;
             }

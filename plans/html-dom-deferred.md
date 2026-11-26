@@ -163,6 +163,9 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   barriers, implied ends, select fragments, error limits and cancellation.
   Generic end-tag regressions additionally cover implied ends for ordinary
   elements, remaining non-implied descendants, special barriers and fragments.
+  Non-heading block and button end regressions cover implied ends, remaining
+  descendants, scope boundaries, fragments and foster parenting. Heading
+  end-tag recovery remains incomplete.
   Option-start regressions cover select scope, implied ends, misnesting,
   formatting reconstruction, fragment and table paths, and parser limits.
   Optgroup-start regressions cover its distinct implied-end and diagnostic

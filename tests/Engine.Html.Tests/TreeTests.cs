@@ -979,6 +979,53 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("div")]
+    [InlineData("section")]
+    [InlineData("button")]
+    [InlineData("ul")]
+    public void BlockEndGeneratesImpliedEndsBeforeCheckingMisnesting(string tag)
+    {
+        var result = Parse($"<!doctype html><{tag} id=target><p><option>before</{tag}>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void BlockEndReportsRemainingNonImpliedDescendant()
+    {
+        var result = Parse("<!doctype html><div id=target><span><option>before</div>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void BlockEndDoesNotCrossScopeBoundary()
+    {
+        var result = Parse("<!doctype html><div id=target><object><option>before</div>after</option></object></div>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("beforeafter", target.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void FosteredBlockEndGeneratesImpliedEnds()
+    {
+        var result = Parse("<!doctype html><table><div id=target><p>before</div></table>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-div-end-in-table");
+        Assert.DoesNotContain(result.Errors, error => error.Code == "implicitly-closed-descendants");
+    }
+
+    [Theory]
     [InlineData("option")]
     [InlineData("optgroup")]
     public void SelectOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)

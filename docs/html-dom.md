@@ -148,6 +148,10 @@ after-after-frameset modes. Supported behavior includes:
 - Generic in-body end-tag recovery generates implied end tags except the
   matching name before checking misnesting. Special elements stop the search;
   document and fragment parsing share this bounded path.
+- In-body non-heading block and `button` end tags require the matching element
+  in scope and generate implied ends before diagnosing remaining descendants.
+  The same applies to fostered and fragment paths. Heading end-tag recovery
+  remains incomplete.
 - Raw script/style content without executing it or interpreting its markup.
 - Bounded ruby annotation tree construction for `rb`, `rtc`, `rp` and `rt`,
   including the in-body implied-end-tag rules. Ruby-specific styling and

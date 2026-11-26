@@ -19165,3 +19165,29 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-658 - Block-Endtags und implizite Endtags
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files (if any) and push, then if uncommitted
+  files remain, stop, otherwise continue“. Commit `b85336dd`
+  (`fix(html): close select end tags by scope`) wurde erstellt und nach
+  `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund; danach
+  war das Arbeitsverzeichnis sauber.
+- Belegt: Die uncommittete Fortsetzung erzeugt fuer in Scope befindliche
+  Non-Heading-Block- und Button-Endtags vor der Fehlverschachtelungspruefung
+  implizite Endtags. Grenzen, verbleibende nicht implizite Nachfahren,
+  Fragment- und Foster-Parenting-Pfade behalten ihre jeweiligen Regeln.
+- Belegt: Fuenf von sieben fokussierten Faellen scheiterten vor der Aenderung;
+  anschliessend bestanden alle sieben und der weitere Foster-Fall. Alle 7.892
+  HTML-Tests, der Solution-Build mit null Warnungen und Fehlern, die
+  Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
+  bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
+  uebersprungene Faelle aus.
+- Offen: Der separate Heading-Endtag-Algorithmus ist derzeit durch die vorherige
+  Block-Pruefung verdeckt und wurde absichtlich nicht in diesen begrenzten
+  Schritt aufgenommen. Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

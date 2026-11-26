@@ -55,6 +55,9 @@ matching name before misnesting checks, including in fragments.
 Select ends instead close an in-scope select after implied ends, diagnosing
 remaining descendants; special elements that are not scope boundaries do not
 prevent closure.
+Non-heading block and button ends also generate implied ends before checking
+remaining descendants when in scope, including fostered and fragment paths.
+Heading end-tag recovery remains incomplete.
 In-body `option` starts use select scope, implied ends excluding `optgroup`,
 remaining-option diagnostics and formatting reconstruction; without a select in
 scope they close only a current option. `optgroup` starts similarly use select

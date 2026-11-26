@@ -143,14 +143,23 @@ Solution-Build, alle 7.881 HTML-Tests, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. KP-656 wurde als
 `7400ad1a` committed und nach `origin/main` gepusht; der Hook pruefte zehn
-Dateien ohne Befund. Die uncommittete Korrektur KP-657 ersetzt die irrtuemliche
+Dateien ohne Befund. Die Korrektur KP-657 ersetzt die irrtuemliche
 generische Behandlung von Select-Endtags aus KP-651: Der HTML-Cache verlangt
 stattdessen einen Select in Scope, implizite Endtags und anschliessendes
 Schliessen mit Diagnose verbleibender Nachfahren. Special-Elemente ohne
 Scope-Grenzfunktion blockieren das nicht. Alle 7.884 HTML-Tests, der
 Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
 allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
-und gab zwei uebersprungene Faelle aus.
+und gab zwei uebersprungene Faelle aus. KP-657 wurde als `b85336dd` committed
+und nach `origin/main` gepusht; der Hook pruefte zehn Dateien ohne Befund.
+Die uncommittete Fortsetzung KP-658 ergaenzt implizite Endtags vor der
+Verschachtelungsdiagnose fuer in Scope befindliche Non-Heading-Block- und
+Button-Endtags, auch in Fragmenten und bei Foster-Parenting. Alle 7.892
+HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
+Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. Heading-Endtags bleiben
+separat offen: Ihr spezieller Algorithmus wird derzeit von der Block-Pruefung
+verdeckt.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
