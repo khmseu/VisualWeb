@@ -169,6 +169,8 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   foster parenting, parser error limits and cancellation.
   `li`, `dd` and `dt` end regressions cover target-excluding implied ends and
   remaining non-implied descendants.
+  `body` and `html` end regressions cover allowed and disallowed open-stack
+  elements, error limits and cancellation.
   Option-start regressions cover select scope, implied ends, misnesting,
   formatting reconstruction, fragment and table paths, and parser limits.
   Optgroup-start regressions cover its distinct implied-end and diagnostic

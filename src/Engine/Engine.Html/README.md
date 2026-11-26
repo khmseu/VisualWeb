@@ -61,6 +61,8 @@ Heading ends require any heading in scope, generate implied ends and close the
 nearest heading, diagnosing a mismatched name or remaining descendant.
 `li`, `dd` and `dt` ends require their respective scope and generate implied
 ends except for the target before checking remaining descendants.
+`body` and `html` ends require body scope and diagnose open-stack elements
+outside the standard's allowed set before changing insertion modes.
 In-body `option` starts use select scope, implied ends excluding `optgroup`,
 remaining-option diagnostics and formatting reconstruction; without a select in
 scope they close only a current option. `optgroup` starts similarly use select

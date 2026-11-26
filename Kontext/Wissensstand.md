@@ -172,8 +172,13 @@ Befund. Die Fortsetzung KP-660 ergaenzt die fehlenden implied-end-Schritte bei
 `li`-, `dd`- und `dt`-Endtags. Alle 7.907 HTML-Tests, der Solution-Build, die
 Formatpruefung und der serielle Solution-Testlauf in allen 14 Projekten
 bestanden; der Browser-Runner meldete 1.449 bestandene Tests und zwei
-uebersprungene CPU-Druckfaelle. Der neue Aenderungssatz ist noch nicht
-committed.
+uebersprungene CPU-Druckfaelle. KP-660 wurde als `e9e9684f` committed und nach
+`origin/main` gepusht; der Hook pruefte neun Dateien ohne Befund. Die aktuelle
+Fortsetzung KP-661 ergaenzt die fehlende Stack-Diagnose bei `body`- und
+`html`-Endtags. Alle 7.911 HTML-Tests, der Solution-Build, die Formatpruefung
+und der serielle Solution-Testlauf in allen 14 Projekten bestanden; der
+Browser-Runner meldete 1.449 bestandene Tests und zwei uebersprungene
+CPU-Druckfaelle. KP-661 bleibt uncommitted.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

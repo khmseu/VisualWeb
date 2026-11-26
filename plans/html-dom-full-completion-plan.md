@@ -73,6 +73,8 @@ record of its completed, bounded scope.
      implied ends, diagnosing name mismatches or remaining descendants.
      `li`, `dd` and `dt` ends generate implied ends except for their target
      before checking remaining descendants.
+     `body` and `html` ends diagnose open-stack elements outside the allowed
+     set before changing insertion modes.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

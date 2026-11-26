@@ -19235,8 +19235,30 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
 - Belegt: Solution-Build mit null Warnungen und null Fehlern, Formatpruefung
   sowie serieller Solution-Testlauf in allen 14 Projekten bestanden. Der
   Browser-Runner meldete 1.449 bestandene Tests und zwei uebersprungene
-  CPU-Druckfaelle. `git diff --check` ist sauber; der Aenderungssatz bleibt
-  uncommitted. Phase 1 und weitere Parser-Luecken bleiben offen.
+  CPU-Druckfaelle. Commit `e9e9684f` (`fix(html): generate implied ends for
+list tags`) wurde erstellt und nach `origin/main` gepusht. Der Hook pruefte
+  neun Dateien ohne Befund; danach war das Arbeitsverzeichnis sauber.
+- Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.
+
+### KP-661 - Body- und HTML-Endtagdiagnostik
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: Nach sauberem Commit-/Push-Stand die Arbeit fortsetzen.
+- Belegt: Der gecachte WHATWG-Algorithmus verlangt bei `body`- und
+  `html`-Endtags eine Diagnose, wenn der offene Elementstack nicht nur aus
+  einer festen erlaubten Menge besteht. Bislang schaltete der Parser die
+  Einfuegemodi ohne diesen Check um.
+- Belegt: Regressionen fuer beide Endtags scheiterten vor der Aenderung; der
+  Parser diagnostiziert nun `misnested-body-end-tag`, ohne den Stack oder
+  bereits konstruierten Baum zu veraendern. Erlaubte Listenelemente, Fehlerlimit
+  und Cancellation werden getestet. Alle 7.911 HTML-Tests bestehen.
+- Belegt: Solution-Build mit null Warnungen und null Fehlern, Formatpruefung
+  sowie serieller Solution-Testlauf in allen 14 Projekten bestanden. Der
+  Browser-Runner meldete 1.449 bestandene Tests und zwei uebersprungene
+  CPU-Druckfaelle. `git diff --check` ist sauber; KP-661 bleibt uncommitted.
+  Phase 1 und weitere Parser-Luecken bleiben offen.
 - Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
   [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.

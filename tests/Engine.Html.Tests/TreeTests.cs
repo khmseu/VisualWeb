@@ -1119,6 +1119,41 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("body")]
+    [InlineData("html")]
+    public void BodyAndHtmlEndTagsDiagnoseOtherOpenElements(string endTag)
+    {
+        var result = Parse($"<!doctype html><div id=target>before</{endTag}>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("misnested-body-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void BodyAndHtmlEndTagsAllowImpliedEndElementsOnStack()
+    {
+        var bodyResult = Parse("<!doctype html><p id=body-target>before</body>");
+        var htmlResult = Parse("<!doctype html><p id=html-target>before</html>");
+
+        Assert.Equal("before", bodyResult.Document.GetElementById("body-target")!.TextContent);
+        Assert.Equal("before", htmlResult.Document.GetElementById("html-target")!.TextContent);
+        Assert.Empty(bodyResult.Errors);
+        Assert.Empty(htmlResult.Errors);
+    }
+
+    [Fact]
+    public void BodyEndTagRecoveryHonorsErrorLimitAndCancellation()
+    {
+        const string input = "<!doctype html><div></body></body>";
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+            HtmlParser.Parse(input, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
     [InlineData("option")]
     [InlineData("optgroup")]
     public void SelectOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)

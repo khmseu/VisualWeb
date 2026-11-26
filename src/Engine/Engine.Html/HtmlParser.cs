@@ -1075,6 +1075,11 @@ public static class HtmlParser
                     return;
                 case "body" or "html":
                     if (!InScope("body")) { Error("unexpected-end-tag"); return; }
+                    if (open.Any(element => !BodyEndAllowedTags.Contains(element.LocalName)))
+                    {
+                        Error("misnested-body-end-tag");
+                    }
+
                     mode = Mode.AfterBody;
                     if (tag.Name == "html") { Process(tag); }
                     return;
@@ -2496,6 +2501,11 @@ public static class HtmlParser
     private static readonly HashSet<string> ImpliedEndTags = new(StringComparer.Ordinal)
     {
         "dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc"
+    };
+    private static readonly HashSet<string> BodyEndAllowedTags = new(StringComparer.Ordinal)
+    {
+        "body", "dd", "dt", "html", "li", "optgroup", "option", "p", "rb", "rp", "rt",
+        "rtc", "tbody", "td", "tfoot", "th", "thead", "tr"
     };
     private static readonly HashSet<string> VoidTags = new(StringComparer.Ordinal)
     {
