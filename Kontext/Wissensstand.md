@@ -166,8 +166,14 @@ falscher Name oder verbleibende Nachfahren diagnostiziert werden. Dies gilt
 auch fuer Fragmente und Foster-Parenting. Alle 7.901 HTML-Tests, der
 Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
 allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
-und listete zwei uebersprungene CPU-Druckfaelle. Der Aenderungssatz bleibt
-uncommitted.
+und listete zwei uebersprungene CPU-Druckfaelle. KP-659 wurde als `a06e2460`
+committed und nach `origin/main` gepusht; der Hook pruefte zehn Dateien ohne
+Befund. Die Fortsetzung KP-660 ergaenzt die fehlenden implied-end-Schritte bei
+`li`-, `dd`- und `dt`-Endtags. Alle 7.907 HTML-Tests, der Solution-Build, die
+Formatpruefung und der serielle Solution-Testlauf in allen 14 Projekten
+bestanden; der Browser-Runner meldete 1.449 bestandene Tests und zwei
+uebersprungene CPU-Druckfaelle. Der neue Aenderungssatz ist noch nicht
+committed.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

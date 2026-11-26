@@ -19196,8 +19196,9 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
 
 - Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
 - Nutzerauftrag: „commit staged files (if any) and push, then if uncommitted
-  files remain, stop, otherwise continue“. Commit `e187ef22`
-  (`fix(html): generate implied ends for block tags`) wurde erstellt und nach
+  files remain, stop, otherwise continue“. Nach dem bereits protokollierten
+  Commit `e187ef22` wurde Heading-Recovery als `a06e2460`
+  (`fix(html): close in-scope headings on end tags`) committed und nach
   `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund; danach
   war das Arbeitsverzeichnis sauber.
 - Belegt und fortgefuehrt aus KP-658: Heading-Endtags werden nun vor der
@@ -19212,11 +19213,30 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
   bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und listete
   zwei uebersprungene CPU-Druckfaelle.
-- Belegt: `git diff --check` ist sauber. Die zehn Dateien dieses Inkrements
-  sind uncommitted; in diesem Schritt wurden keine Dateien gestaged oder
-  committed.
-- Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
+- Vereinbarung: Nach sauberem Commit-/Push-Stand die naechste kleine
+  parserbezogene HDF-011-Luecke umsetzen.
 - Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-660 - Implied-End-Recovery fuer Listen-Endtags
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: Fortfahren, nachdem der Commit-/Push-Schritt keine
+  uncommitteten Aenderungen hinterliess.
+- Belegt: Der gecachte WHATWG-HTML-Algorithmus fuer `li` sowie `dd`/`dt`
+  verlangt vor dem Schliessen implied end tags, ausgenommen jeweils das Ziel.
+  Parserpfade prueften bislang Scope und schlossen direkt; Regressionen fuer
+  `<p>`-Nachfahren scheiterten vor der Korrektur fuer alle drei Tags.
+- Belegt: Die Parserpfade generieren nun implied ends ausser fuer das
+  Endtag-Ziel. Tests decken alle drei Tags und verbleibende nicht-implied
+  Nachfahren ab; alle 7.907 HTML-Tests bestanden.
+- Belegt: Solution-Build mit null Warnungen und null Fehlern, Formatpruefung
+  sowie serieller Solution-Testlauf in allen 14 Projekten bestanden. Der
+  Browser-Runner meldete 1.449 bestandene Tests und zwei uebersprungene
+  CPU-Druckfaelle. `git diff --check` ist sauber; der Aenderungssatz bleibt
+  uncommitted. Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.

@@ -187,6 +187,8 @@ before checking remaining descendants when the target is in scope. Fostered
 and fragment paths share this behavior. Heading ends require any heading in
 scope, generate implied ends and close the nearest heading, with a diagnostic
 for a mismatched name or remaining descendant.
+In-body `li`, `dd` and `dt` ends require their respective scope and generate
+implied ends except for the target before diagnosing remaining descendants.
 In-body `option` starts generate implied end tags except `optgroup` when select
 is in scope, diagnose an option still in scope, and reconstruct formatting.
 Without an in-scope select, only a current option is closed before insertion.

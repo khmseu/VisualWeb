@@ -1084,10 +1084,12 @@ public static class HtmlParser
                     return;
                 case "li":
                     if (!InScope("li", listScope: true)) { Error("unexpected-end-tag"); return; }
+                    GenerateImpliedEndTags(except: "li");
                     Close("li");
                     return;
                 case "dd" or "dt":
                     if (!InScope(tag.Name)) { Error("unexpected-end-tag"); return; }
+                    GenerateImpliedEndTags(except: tag.Name);
                     Close(tag.Name);
                     return;
                 case "form":

@@ -71,6 +71,8 @@ record of its completed, bounded scope.
      Non-heading block and button ends also generate implied ends before the
      misnesting check. Heading ends close the nearest in-scope heading after
      implied ends, diagnosing name mismatches or remaining descendants.
+     `li`, `dd` and `dt` ends generate implied ends except for their target
+     before checking remaining descendants.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

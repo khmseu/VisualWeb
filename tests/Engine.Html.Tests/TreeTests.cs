@@ -1095,6 +1095,30 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("li", "ul")]
+    [InlineData("dd", "dl")]
+    [InlineData("dt", "dl")]
+    public void ListAndDescriptionEndTagsGenerateImpliedEnds(string tagName, string parentTag)
+    {
+        var result = Parse($"<!doctype html><{parentTag}><{tagName} id=target><p>before</{tagName}>after</{parentTag}>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("li", "ul")]
+    [InlineData("dd", "dl")]
+    [InlineData("dt", "dl")]
+    public void ListAndDescriptionEndTagsReportRemainingDescendants(string tagName, string parentTag)
+    {
+        var result = Parse($"<!doctype html><{parentTag}><{tagName}><span>before</{tagName}>after</{parentTag}>");
+
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Theory]
     [InlineData("option")]
     [InlineData("optgroup")]
     public void SelectOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)

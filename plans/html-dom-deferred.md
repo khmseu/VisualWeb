@@ -167,6 +167,8 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   descendants, scope boundaries, fragments and foster parenting. Heading end
   regressions cover mismatched names, implied ends, scope boundaries, fragments,
   foster parenting, parser error limits and cancellation.
+  `li`, `dd` and `dt` end regressions cover target-excluding implied ends and
+  remaining non-implied descendants.
   Option-start regressions cover select scope, implied ends, misnesting,
   formatting reconstruction, fragment and table paths, and parser limits.
   Optgroup-start regressions cover its distinct implied-end and diagnostic

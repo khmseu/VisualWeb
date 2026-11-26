@@ -59,6 +59,8 @@ Non-heading block and button ends also generate implied ends before checking
 remaining descendants when in scope, including fostered and fragment paths.
 Heading ends require any heading in scope, generate implied ends and close the
 nearest heading, diagnosing a mismatched name or remaining descendant.
+`li`, `dd` and `dt` ends require their respective scope and generate implied
+ends except for the target before checking remaining descendants.
 In-body `option` starts use select scope, implied ends excluding `optgroup`,
 remaining-option diagnostics and formatting reconstruction; without a select in
 scope they close only a current option. `optgroup` starts similarly use select

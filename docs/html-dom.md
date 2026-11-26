@@ -153,6 +153,9 @@ after-after-frameset modes. Supported behavior includes:
   The same applies to fostered and fragment paths. Heading ends instead require
   any heading in scope, generate implied ends and close the nearest heading;
   a different heading name or remaining descendant is diagnosed.
+- In-body `li`, `dd` and `dt` ends require their respective scope and generate
+  implied end tags except for the target before diagnosing remaining
+  descendants.
 - Raw script/style content without executing it or interpreting its markup.
 - Bounded ruby annotation tree construction for `rb`, `rtc`, `rp` and `rt`,
   including the in-body implied-end-tag rules. Ruby-specific styling and
