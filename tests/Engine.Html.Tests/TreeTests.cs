@@ -957,6 +957,69 @@ public sealed class TreeTests
         Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
     }
 
+    [Theory]
+    [InlineData("option")]
+    [InlineData("optgroup")]
+    public void SelectOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)
+    {
+        var result = Parse($"<!doctype html><select><{tag} id=target><span>before</{tag}>after</select>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+        var select = Assert.IsType<DomElement>(target.ParentNode);
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", select.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void SelectOptgroupEndGeneratesImpliedEndsBeforeClosing()
+    {
+        var result = Parse("<!doctype html><select><optgroup id=target><option><rb>before</optgroup>after</select>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", target.ParentNode!.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("ruby-base-start-tag-without-current-ruby", error.Code));
+    }
+
+    [Fact]
+    public void OptgroupEndOutsideSelectGeneratesImpliedOptionEnd()
+    {
+        var result = Parse("<!doctype html><datalist><optgroup id=outer><optgroup id=inner>"
+            + "<option>before</optgroup>after</optgroup></datalist>");
+        var outer = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+        var inner = Assert.IsType<DomElement>(result.Document.GetElementById("inner"));
+
+        Assert.Same(outer, inner.ParentNode);
+        Assert.Equal("before", inner.TextContent);
+        Assert.Equal("after", outer.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("option", "div")]
+    [InlineData("optgroup", "div")]
+    [InlineData("optgroup", "p")]
+    public void SelectOptionOrOptgroupEndDoesNotCrossSpecialElement(string tag, string boundary)
+    {
+        var result = Parse($"<!doctype html><select><{tag} id=target><{boundary}></{tag}>inside</{boundary}></{tag}></select>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("inside", target.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void SelectOptionEndRecoveryHonorsErrorLimitAndCancellation()
+    {
+        const string input = "<!doctype html><select><option><span></option><option><span></option></select>";
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+            HtmlParser.Parse(input, cancellationToken: cancellation.Token));
+    }
+
     [Fact]
     public void OptionAndOptgroupStartsOutsideSelectUseBodyInsertionRules()
     {

@@ -64,6 +64,8 @@ record of its completed, bounded scope.
      preserving open groups when no select is in scope.
      In-body `hr` starts close paragraphs before scope-sensitive select
      recovery, including fragment and foster-parented paths.
+     Option and optgroup ends use generic in-body recovery, including implied
+     ends, special-element barriers and select fragments.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

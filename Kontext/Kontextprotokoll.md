@@ -19090,3 +19090,27 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-655 - Option- und Optgroup-Endtags
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files and push, then continue“. Commit
+  `76fc81ea` (`fix(html): respect scope for hr recovery`) wurde erstellt und
+  nach `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund.
+- Belegt: Die uncommittete Fortsetzung verarbeitet Option- und Optgroup-Endtags
+  nach der generischen In-Body-Regel statt der frueheren Select-Sonderregel.
+  Special-Elemente bilden eine Suchgrenze; gefundene Ziele erzeugen zuerst
+  implizite Endtags ausser dem Zielnamen und diagnostizieren verbleibende
+  Fehlverschachtelung. Select-Fragmente und Endtags ausserhalb eines Selects
+  nutzen denselben Pfad.
+- Belegt: Die sieben ersten fokussierten Tests scheiterten vor der Aenderung;
+  ein urspruenglicher Test wurde nach Pruefung der Special-Grenze korrigiert.
+  Der Solution-Build bestand mit null Warnungen und Fehlern; alle 7.875
+  HTML-Tests, die Formatpruefung und der serialisierte Solution-Testlauf in
+  allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
+  Tests und gab zwei uebersprungene Faelle aus.
+- Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).

@@ -505,6 +505,21 @@ public sealed class FragmentTests
         Assert.Empty(result.Errors);
     }
 
+    [Theory]
+    [InlineData("option")]
+    [InlineData("optgroup")]
+    public void SelectFragmentOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment($"<{tag}><span>before</{tag}>after",
+            document.CreateElement("select"), cancellationToken: TestContext.Current.CancellationToken);
+        var target = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
     [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {

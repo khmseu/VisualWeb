@@ -816,7 +816,7 @@ public static class HtmlParser
                 return;
             }
 
-            if (tag is { IsEndTag: true, Name: "select" })
+            if (tag is { IsEndTag: true, Name: "select" or "option" or "optgroup" })
             {
                 AnyOtherEndTag(tag.Name);
                 return;
@@ -1147,7 +1147,7 @@ public static class HtmlParser
             {
                 if (open[index].LocalName == name)
                 {
-                    if (name == "select") { GenerateImpliedEndTags(except: name); }
+                    if (name is "select" or "option" or "optgroup") { GenerateImpliedEndTags(except: name); }
                     CloseAt(index);
                     return;
                 }
@@ -2149,20 +2149,6 @@ public static class HtmlParser
                 return;
             }
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in select."); }
-            if (tag.IsEndTag && tag.Name == "option")
-            {
-                if (open[^1].LocalName == "option") { Close("option"); }
-                else { Error("unexpected-option-end-tag"); }
-                return;
-            }
-            if (tag.IsEndTag && tag.Name == "optgroup")
-            {
-                if (open[^1].LocalName == "option" && open.Count > selectIndex + 1
-                    && open[^2].LocalName == "optgroup") { Close("option"); }
-                if (open[^1].LocalName == "optgroup") { Close("optgroup"); }
-                else { Error("unexpected-optgroup-end-tag"); }
-                return;
-            }
             BodyToken(token, fromSelectContext: true);
         }
 

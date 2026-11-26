@@ -119,12 +119,20 @@ Formatierungsrekonstruktion. Alle 7.857 HTML-Tests, der Solution-Build,
 die Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
 bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und gab zwei
 uebersprungene Faelle aus. KP-653 wurde als `b22fb2cb` committed und gepusht.
-Der uncommittete Schritt KP-654 behandelt In-Body-Hr-Starts: Paragraphen werden
+Schritt KP-654 behandelt In-Body-Hr-Starts: Paragraphen werden
 zuerst mit impliziten Endtags geschlossen; Select-Scope steuert anschliessend
 implizite Option-/Gruppen-Endtags und Diagnosen. Alle 7.865 HTML-Tests,
 der Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf
 in allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
-Tests und gab zwei uebersprungene Faelle aus.
+Tests und gab zwei uebersprungene Faelle aus. KP-654 wurde als `76fc81ea`
+committed und nach `origin/main` gepusht; der Hook pruefte zehn Dateien ohne
+Befund. Die uncommittete Fortsetzung KP-655 fuehrt Option- und Optgroup-Endtags
+in generische In-Body-Recovery: Special-Elemente stoppen die Suche; implizite
+Endtags mit Ausnahme des gesuchten Namens gehen der Fehlverschachtelungspruefung
+voraus. Das gilt auch fuer Select-Fragmente und ausserhalb von Selects. Der
+Solution-Build, alle 7.875 HTML-Tests, die Formatpruefung und der serialisierte
+Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
