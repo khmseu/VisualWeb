@@ -186,8 +186,18 @@ nicht rekonstruieren. Alle 7.916 HTML-Tests und der Solution-Build bestanden;
 zudem bestanden alle 14 Testprojekte im seriellen Solution-Testlauf mit
 17.987 Tests und die Formatpruefung ohne Aenderungen. Der Browser-Runner
 meldete 1.449 bestandene Tests und listete zwei uebersprungene CPU-Druckfaelle,
-obwohl seine Zusammenfassung null uebersprungene Tests zeigte. KP-662 ist
-dokumentiert, aber noch nicht committed oder gepusht.
+obwohl seine Zusammenfassung null uebersprungene Tests zeigte. KP-662 wurde als
+`2e4907fc` committed und nach `origin/main` gepusht; der Hook pruefte neun
+Dateien ohne Befund und das Arbeitsverzeichnis war sauber.
+KP-663 behebt, dass `table`-Start-/Endtags in Select- und Select-Fragment-
+Inhalten ignoriert werden sollen, wurde jedoch verworfen: Ein vollstaendiger
+HTML-Testlauf zeigte fuenf Regressionen in bestehenden Select-/Tabellen-
+Recovery-Pfaden. Der Parser-, Test- und Dokumentationsversuch wurde
+zurueckgenommen; danach bestanden wieder alle 7.916 Engine.Html-Tests.
+Die Formatpruefung bestand nach dem Kontext-Update. Ein Solution-Testlauf nach
+der Ruecknahme wurde nicht erneut ausgefuehrt. KP-663 enthaelt nur die
+dokumentierte Erkenntnis. Ein anderer abgegrenzter HDF-011-Punkt muss erst
+durch Standard und Tests belegt werden.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

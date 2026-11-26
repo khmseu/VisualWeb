@@ -19282,8 +19282,40 @@ tags`) wurde erstellt und nach `origin/main` gepusht. Der Hook formatierte
   seine Zusammenfassung zeigte dennoch null uebersprungene Tests. Die
   Formatpruefung `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
 --exclude third_party` bestand ohne Aenderungen. Der Solution-Build war
-  bereits fuer KP-662 erfolgreich.
+  bereits fuer KP-662 erfolgreich. Commit `2e4907fc` wurde nach `origin/main`
+  gepusht; der Hook pruefte neun geaenderte Dateien ohne Befund und das
+  Arbeitsverzeichnis war anschliessend sauber.
 - Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
 - Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
   [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.
+
+### KP-663 - Select-/Table-Recovery-Kandidat verworfen
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: Nach sauberem Commit-/Push-Stand Phase 1 mit dem naechsten
+  abgegrenzten HTML-Recovery-Punkt fortsetzen.
+- Vorschlag, verworfen: `table`-Start-/Endtags in `SelectToken` immer als
+  ignorierte Select-Tokens behandeln. Zwei eigens hinzugefuegte fokussierte
+  Tests bestanden mit diesem Verhalten, aber der vollstaendige HTML-Testlauf
+  fiel mit fuenf Regressionen durch.
+- Belegt: Die Regressionen betrafen `SelectContextTableModeRetainsHiddenInputRule`,
+  `HrBeyondTableScopeDoesNotCloseFosteredOption`,
+  `SelectEndBehindTableUsesFosteredRecoveryWithoutClosingOuterSelect`,
+  `InputStartBeyondTableScopeBoundaryUsesFosterParenting` und
+  `SelectStartBeyondTableScopeBoundaryUsesFosterParenting`. Das zeigt, dass der
+  gemeinsame Select-Tokenpfad auch Tabellen- und Foster-Recovery fuer
+  verschachtelte Kontexte bedient; der pauschale Ignore-Pfad ist nicht sicher.
+  Der Parser-, Test- und Dokumentationsversuch wurde vollstaendig zurueckgenommen.
+- Belegt: Nach der Ruecknahme bestehen alle 7.916 Engine.Html-Tests. Der
+  zuvor mit dem Versuch ausgefuehrte Solution-Testlauf hatte die fuenf genannten
+  Regressionen; ein Solution-Testlauf nach der Ruecknahme wurde nicht erneut
+  ausgefuehrt. `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` bestand nach dem Kontext-Update.
+- Offen: Einen anderen, durch gepinnte Standardregeln und fokussierte
+  Regressionen belegten HDF-011-Punkt auswaehlen. Es verbleibt keine
+  Implementierung aus diesem verworfenen Kandidaten.
+- Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs),
+  [FragmentTests](../tests/Engine.Html.Tests/FragmentTests.cs),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und Nutzerauftrag.
