@@ -152,14 +152,22 @@ Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
 allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
 und gab zwei uebersprungene Faelle aus. KP-657 wurde als `b85336dd` committed
 und nach `origin/main` gepusht; der Hook pruefte zehn Dateien ohne Befund.
-Die uncommittete Fortsetzung KP-658 ergaenzt implizite Endtags vor der
+Schritt KP-658 ergaenzt implizite Endtags vor der
 Verschachtelungsdiagnose fuer in Scope befindliche Non-Heading-Block- und
 Button-Endtags, auch in Fragmenten und bei Foster-Parenting. Alle 7.892
 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
-1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. Heading-Endtags bleiben
-separat offen: Ihr spezieller Algorithmus wird derzeit von der Block-Pruefung
-verdeckt.
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. KP-658 wurde als
+`e187ef22` committed und nach `origin/main` gepusht; der Hook pruefte zehn
+Dateien ohne Befund. Die uncommittete Fortsetzung KP-659 behandelt Heading-
+Endtags mit dem bislang verdeckten speziellen Scope-Algorithmus: Nach
+impliziten Endtags wird die naechste Heading in Scope geschlossen, wobei
+falscher Name oder verbleibende Nachfahren diagnostiziert werden. Dies gilt
+auch fuer Fragmente und Foster-Parenting. Alle 7.901 HTML-Tests, der
+Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
+allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
+und listete zwei uebersprungene CPU-Druckfaelle. Der Aenderungssatz bleibt
+uncommitted.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

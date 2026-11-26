@@ -557,6 +557,18 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void HeadingEndInFragmentClosesMismatchedHeadingAfterImpliedEnds()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<h1><p>before</h2>after",
+            document.CreateElement("div"), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("before", result.Fragment.FirstChild!.TextContent);
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("misnested-heading-end-tag", error.Code));
+    }
+
+    [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {
         var document = new DomDocument();

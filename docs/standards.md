@@ -184,8 +184,9 @@ it, diagnosing any remaining descendants; non-boundary special elements do not
 block this scope-based rule.
 In-body non-heading block and button ends similarly generate implied ends
 before checking remaining descendants when the target is in scope. Fostered
-and fragment paths share this behavior; heading end-tag recovery remains
-incomplete.
+and fragment paths share this behavior. Heading ends require any heading in
+scope, generate implied ends and close the nearest heading, with a diagnostic
+for a mismatched name or remaining descendant.
 In-body `option` starts generate implied end tags except `optgroup` when select
 is in scope, diagnose an option still in scope, and reconstruct formatting.
 Without an in-scope select, only a current option is closed before insertion.

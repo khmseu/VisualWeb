@@ -150,8 +150,9 @@ after-after-frameset modes. Supported behavior includes:
   document and fragment parsing share this bounded path.
 - In-body non-heading block and `button` end tags require the matching element
   in scope and generate implied ends before diagnosing remaining descendants.
-  The same applies to fostered and fragment paths. Heading end-tag recovery
-  remains incomplete.
+  The same applies to fostered and fragment paths. Heading ends instead require
+  any heading in scope, generate implied ends and close the nearest heading;
+  a different heading name or remaining descendant is diagnosed.
 - Raw script/style content without executing it or interpreting its markup.
 - Bounded ruby annotation tree construction for `rb`, `rtc`, `rp` and `rt`,
   including the in-body implied-end-tag rules. Ruby-specific styling and

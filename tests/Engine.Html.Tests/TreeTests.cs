@@ -1026,6 +1026,75 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("h1", "h2")]
+    [InlineData("h3", "h6")]
+    [InlineData("h6", "h1")]
+    public void HeadingEndClosesDifferentHeadingInScope(string openTag, string endTag)
+    {
+        var result = Parse($"<!doctype html><{openTag} id=target>before</{endTag}>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("misnested-heading-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void HeadingEndGeneratesImpliedEndsBeforeCheckingMisnesting()
+    {
+        var result = Parse("<!doctype html><h1 id=target><p><option>before</h1>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void HeadingEndReportsOnlyOneErrorForMismatchedHeadingAndDescendant()
+    {
+        var result = Parse("<!doctype html><h1 id=target><span><option>before</h2>after");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
+    public void HeadingEndDoesNotCrossScopeBoundary()
+    {
+        var result = Parse("<!doctype html><h1 id=target><object>before</h2>inside</object></h1>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("beforeinside", target.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Fact]
+    public void FosteredHeadingEndClosesMismatchedHeadingAfterImpliedEnds()
+    {
+        var result = Parse("<!doctype html><table><h1 id=target><p>before</h2></table>");
+        var target = Assert.IsType<DomElement>(result.Document.GetElementById("target"));
+
+        Assert.Equal("before", target.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-h2-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "misnested-heading-end-tag");
+        Assert.DoesNotContain(result.Errors, error => error.Code == "implicitly-closed-descendants");
+    }
+
+    [Fact]
+    public void HeadingEndRecoveryHonorsErrorLimitAndCancellation()
+    {
+        const string input = "<!doctype html><h1>one</h2><h3>two</h4>";
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxErrors = 1 }));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+            HtmlParser.Parse(input, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
     [InlineData("option")]
     [InlineData("optgroup")]
     public void SelectOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)

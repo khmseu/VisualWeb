@@ -1131,19 +1131,24 @@ public static class HtmlParser
                 return;
             }
 
-            if (BlockTags.Contains(tag.Name) || tag.Name == "button")
-            {
-                if (!InScope(tag.Name)) { Error("unexpected-end-tag"); return; }
-                if (!HeadingTags.Contains(tag.Name)) { GenerateImpliedEndTags(); }
-                Close(tag.Name);
-                return;
-            }
-
             if (HeadingTags.Contains(tag.Name))
             {
                 var heading = open.FindLastIndex(e => HeadingTags.Contains(e.LocalName));
                 if (heading < 0 || !InScope(open[heading].LocalName)) { Error("unexpected-end-tag"); return; }
-                Close(open[heading].LocalName);
+                GenerateImpliedEndTags();
+                if (heading == open.Count - 1 && open[heading].LocalName != tag.Name)
+                {
+                    Error("misnested-heading-end-tag");
+                }
+                CloseAt(heading);
+                return;
+            }
+
+            if (BlockTags.Contains(tag.Name) || tag.Name == "button")
+            {
+                if (!InScope(tag.Name)) { Error("unexpected-end-tag"); return; }
+                GenerateImpliedEndTags();
+                Close(tag.Name);
                 return;
             }
 

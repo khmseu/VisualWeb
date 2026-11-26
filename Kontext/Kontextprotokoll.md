@@ -19191,3 +19191,32 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-659 - Heading-Endtags in Scope
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files (if any) and push, then if uncommitted
+  files remain, stop, otherwise continue“. Commit `e187ef22`
+  (`fix(html): generate implied ends for block tags`) wurde erstellt und nach
+  `origin/main` gepusht. Der Hook pruefte zehn Dateien ohne Befund; danach
+  war das Arbeitsverzeichnis sauber.
+- Belegt und fortgefuehrt aus KP-658: Heading-Endtags werden nun vor der
+  allgemeinen Block-Endtag-Regel verarbeitet. Die uncommittete Fortsetzung
+  prueft auf eine beliebige Heading in Scope, erzeugt implizite Endtags und
+  schliesst die naechste Heading; ein anderer Name oder verbleibende
+  Nachfahren erzeugen genau eine Diagnose. Fragmente und Foster-Parenting
+  nutzen denselben Pfad.
+- Belegt: Sechs von sieben fokussierten Faellen scheiterten vor der Aenderung;
+  danach bestanden alle sieben und zwei weitere Faelle fuer Foster-Parenting,
+  Fehlerlimit und Cancellation. Alle 7.901 HTML-Tests, der Solution-Build, die
+  Formatpruefung und der serialisierte Solution-Testlauf in allen 14 Projekten
+  bestanden. Der Browser-Runner meldete 1.449 bestandene Tests und listete
+  zwei uebersprungene CPU-Druckfaelle.
+- Belegt: `git diff --check` ist sauber. Die zehn Dateien dieses Inkrements
+  sind uncommitted; in diesem Schritt wurden keine Dateien gestaged oder
+  committed.
+- Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).
