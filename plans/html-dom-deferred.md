@@ -171,6 +171,8 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   remaining non-implied descendants.
   `body` and `html` end regressions cover allowed and disallowed open-stack
   elements, error limits and cancellation.
+  `base`, `basefont`, `bgsound`, `link` and `meta` start regressions cover
+  in-head insertion without active-formatting reconstruction.
   Option-start regressions cover select scope, implied ends, misnesting,
   formatting reconstruction, fragment and table paths, and parser limits.
   Optgroup-start regressions cover its distinct implied-end and diagnostic

@@ -79,6 +79,8 @@ after-after-frameset modes. Supported behavior includes:
   `invalid-doctype` instead of aborting. DTD identifiers never cause fetching.
 - Comments/processing instructions at the appropriate document/tree locations.
 - Head metadata and title/style/script text; misplaced head content restoration.
+  In-body `base`, `basefont`, `bgsound`, `link` and `meta` starts use the in-head
+  insertion rule without reconstructing active formatting.
   Document `noscript` follows the parser scripting state: with scripting
   disabled, head content uses the dedicated in-head-noscript rules and body
   content uses ordinary in-body parsing; with scripting enabled, head and body

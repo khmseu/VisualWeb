@@ -75,6 +75,8 @@ record of its completed, bounded scope.
      before checking remaining descendants.
      `body` and `html` ends diagnose open-stack elements outside the allowed
      set before changing insertion modes.
+     In-body `base`, `basefont`, `bgsound`, `link` and `meta` starts use
+     in-head insertion without active-formatting reconstruction.
      Other unsupported paths remain.
    - **Files:** [Engine.Html](../src/Engine/Engine.Html/),
      [Engine.Dom](../src/Engine/Engine.Dom/),

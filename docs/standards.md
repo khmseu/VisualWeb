@@ -191,6 +191,8 @@ In-body `li`, `dd` and `dt` ends require their respective scope and generate
 implied ends except for the target before diagnosing remaining descendants.
 In-body `body` and `html` ends require body scope and diagnose open-stack
 elements outside the standard's allowed set before switching insertion modes.
+In-body `base`, `basefont`, `bgsound`, `link` and `meta` starts use in-head
+insertion without reconstructing active formatting.
 In-body `option` starts generate implied end tags except `optgroup` when select
 is in scope, diagnose an option still in scope, and reconstruct formatting.
 Without an in-scope select, only a current option is closed before insertion.

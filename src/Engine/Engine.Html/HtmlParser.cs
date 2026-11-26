@@ -902,6 +902,9 @@ public static class HtmlParser
                         Error("body-start-in-body");
                         return;
                     case "head": Error("unexpected-head-start-tag"); return;
+                    case "base" or "basefont" or "bgsound" or "link" or "meta":
+                        Insert(tag, push: false);
+                        return;
                     case "title": StartText(tag, HtmlTextMode.Rcdata); return;
                     case "style" or "noframes": StartText(tag, HtmlTextMode.Rawtext); return;
                     case "script": StartText(tag, HtmlTextMode.ScriptData); return;

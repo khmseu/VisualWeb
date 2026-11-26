@@ -178,7 +178,16 @@ Fortsetzung KP-661 ergaenzt die fehlende Stack-Diagnose bei `body`- und
 `html`-Endtags. Alle 7.911 HTML-Tests, der Solution-Build, die Formatpruefung
 und der serielle Solution-Testlauf in allen 14 Projekten bestanden; der
 Browser-Runner meldete 1.449 bestandene Tests und zwei uebersprungene
-CPU-Druckfaelle. KP-661 bleibt uncommitted.
+CPU-Druckfaelle. KP-661 wurde als `809ec85e` committed und nach `origin/main`
+gepusht; der Hook formatierte das Kontextprotokoll und pruefte neun Dateien
+ohne Befund. KP-662 korrigiert die In-Body-Behandlung der Metadatenstarts
+`base`, `basefont`, `bgsound`, `link` und `meta`, damit sie aktive Formatierung
+nicht rekonstruieren. Alle 7.916 HTML-Tests und der Solution-Build bestanden;
+zudem bestanden alle 14 Testprojekte im seriellen Solution-Testlauf mit
+17.987 Tests und die Formatpruefung ohne Aenderungen. Der Browser-Runner
+meldete 1.449 bestandene Tests und listete zwei uebersprungene CPU-Druckfaelle,
+obwohl seine Zusammenfassung null uebersprungene Tests zeigte. KP-662 ist
+dokumentiert, aber noch nicht committed oder gepusht.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

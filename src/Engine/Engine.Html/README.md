@@ -63,6 +63,8 @@ nearest heading, diagnosing a mismatched name or remaining descendant.
 ends except for the target before checking remaining descendants.
 `body` and `html` ends require body scope and diagnose open-stack elements
 outside the standard's allowed set before changing insertion modes.
+In-body `base`, `basefont`, `bgsound`, `link` and `meta` starts use in-head
+insertion without reconstructing active formatting.
 In-body `option` starts use select scope, implied ends excluding `optgroup`,
 remaining-option diagnostics and formatting reconstruction; without a select in
 scope they close only a current option. `optgroup` starts similarly use select

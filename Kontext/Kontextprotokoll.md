@@ -19257,8 +19257,33 @@ list tags`) wurde erstellt und nach `origin/main` gepusht. Der Hook pruefte
 - Belegt: Solution-Build mit null Warnungen und null Fehlern, Formatpruefung
   sowie serieller Solution-Testlauf in allen 14 Projekten bestanden. Der
   Browser-Runner meldete 1.449 bestandene Tests und zwei uebersprungene
-  CPU-Druckfaelle. `git diff --check` ist sauber; KP-661 bleibt uncommitted.
-  Phase 1 und weitere Parser-Luecken bleiben offen.
+  CPU-Druckfaelle. Commit `809ec85e` (`fix(html): diagnose misnested body end
+tags`) wurde erstellt und nach `origin/main` gepusht. Der Hook formatierte
+  `Kontext/Kontextprotokoll.md` und pruefte neun Dateien ohne Befund; danach
+  war das Arbeitsverzeichnis sauber.
+- Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.
+
+### KP-662 - In-Head-Insertion fuer Metadaten in Body
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: Nach sauberem Commit-/Push-Stand die Arbeit fortsetzen.
+- Belegt: Der gecachte In-Body-Algorithmus verarbeitet `base`, `basefont`,
+  `bgsound`, `link` und `meta` ueber In-Head-Insertion. Der Parser fuehrte sie
+  zuvor durch die allgemeine Starttagbehandlung und rekonstruierte so
+  moeglicherweise aktive Formatierung; ein `meta`-Regressionsfall scheiterte.
+- Belegt: Diese fuenf Starts werden nun ohne Formatierungsrekonstruktion
+  eingesetzt. Tests decken den Fall mit offenem Formatierungseintrag ab; alle
+  7.916 HTML-Tests bestehen.
+- Belegt: `dotnet test VisualWeb.slnx --no-build -m:1` bestand in allen 14
+  Testprojekten mit 17.987 bestandenen Tests und ohne Fehler. Der Browser-Runner
+  meldete 1.449 bestandene Tests und listete zwei uebersprungene CPU-Druckfaelle;
+  seine Zusammenfassung zeigte dennoch null uebersprungene Tests. Die
+  Formatpruefung `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` bestand ohne Aenderungen. Der Solution-Build war
+  bereits fuer KP-662 erfolgreich.
+- Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
 - Quelle: [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
   [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.

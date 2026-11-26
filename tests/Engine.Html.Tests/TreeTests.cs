@@ -1154,6 +1154,21 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("base")]
+    [InlineData("basefont")]
+    [InlineData("bgsound")]
+    [InlineData("link")]
+    [InlineData("meta")]
+    public void HeadMetadataStartsInBodyDoNotReconstructActiveFormatting(string tagName)
+    {
+        var result = Parse($"<!doctype html><p><b>x</p><{tagName} id=metadata>");
+        var metadata = Assert.IsType<DomElement>(result.Document.GetElementById("metadata"));
+
+        Assert.Same(result.Document.Body, metadata.ParentNode);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Theory]
     [InlineData("option")]
     [InlineData("optgroup")]
     public void SelectOptionOrOptgroupEndClosesThroughOrdinaryDescendant(string tag)
