@@ -816,7 +816,15 @@ public static class HtmlParser
                 return;
             }
 
-            if (tag is { IsEndTag: true, Name: "select" or "option" or "optgroup" })
+            if (tag is { IsEndTag: true, Name: "select" })
+            {
+                if (!InScope("select")) { Error("unexpected-end-tag"); return; }
+                GenerateImpliedEndTags();
+                Close("select");
+                return;
+            }
+
+            if (tag is { IsEndTag: true, Name: "option" or "optgroup" })
             {
                 AnyOtherEndTag(tag.Name);
                 return;

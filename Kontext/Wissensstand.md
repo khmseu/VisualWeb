@@ -98,8 +98,9 @@ In-Table-Regel fuer Hidden-Inputs bleibt erhalten. Alle 7.831 HTML-Tests und
 der Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf
 in allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene
 Tests und gab zwei uebersprungene Faelle aus. KP-650 wurde als `cbad4bc4`
-committed und gepusht. Schritt KP-651 behandelt Select-Endtags
-nach der generischen In-Body-Endtag-Regel: Special-Elemente stoppen die Suche,
+committed und gepusht. Der spaeter durch KP-657 korrigierte Schritt KP-651
+behandelte Select-Endtags nach der generischen In-Body-Endtag-Regel:
+Special-Elemente stoppen die Suche,
 implizite Endtags werden vor der Verschachtelungsdiagnose erzeugt. Alle 7.840
 HTML-Tests, der Solution-Build, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
@@ -134,13 +135,22 @@ Solution-Build, alle 7.875 HTML-Tests, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. KP-655 wurde
 als `badd9d3a` committed und nach `origin/main` gepusht; der Hook pruefte zehn
-Dateien ohne Befund. Die uncommittete Fortsetzung KP-656 erzeugt implizite
+Dateien ohne Befund. Schritt KP-656 erzeugt implizite
 Endtags mit Ausnahme des gesuchten Namens nun fuer alle Ziele der generischen
 In-Body-Endtag-Recovery, nicht nur Select, Option und Optgroup. Dabei bleiben
 Special-Grenzen und die Diagnose echter Fehlverschachtelung erhalten. Der
 Solution-Build, alle 7.881 HTML-Tests, die Formatpruefung und der serialisierte
 Solution-Testlauf in allen 14 Projekten bestanden. Der Browser-Runner meldete
-1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+1.449 bestandene Tests und gab zwei uebersprungene Faelle aus. KP-656 wurde als
+`7400ad1a` committed und nach `origin/main` gepusht; der Hook pruefte zehn
+Dateien ohne Befund. Die uncommittete Korrektur KP-657 ersetzt die irrtuemliche
+generische Behandlung von Select-Endtags aus KP-651: Der HTML-Cache verlangt
+stattdessen einen Select in Scope, implizite Endtags und anschliessendes
+Schliessen mit Diagnose verbleibender Nachfahren. Special-Elemente ohne
+Scope-Grenzfunktion blockieren das nicht. Alle 7.884 HTML-Tests, der
+Solution-Build, die Formatpruefung und der serialisierte Solution-Testlauf in
+allen 14 Projekten bestanden. Der Browser-Runner meldete 1.449 bestandene Tests
+und gab zwei uebersprungene Faelle aus.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**

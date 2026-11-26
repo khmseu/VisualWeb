@@ -533,6 +533,18 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void SelectEndInFragmentClosesThroughOrdinaryScopeNonBoundary()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment("<select><div>before</select>after",
+            document.CreateElement("div"), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("before", result.Fragment.FirstChild!.TextContent);
+        Assert.Equal("after", result.Fragment.LastChild!.TextContent);
+        Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+    }
+
+    [Fact]
     public void SelectContextEndTagDoesNotCloseFragmentRoot()
     {
         var document = new DomDocument();

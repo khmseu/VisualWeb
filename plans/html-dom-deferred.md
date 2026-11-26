@@ -156,9 +156,9 @@ and [replace](https://dom.spec.whatwg.org/#concept-node-replace) algorithms.
   recovery; fragment tests cover template input ignoring, the in-table hidden
   input exception and error limits. A separate document test checks node
   limits and cancellation.
-  Select-end regressions cover special-element barriers, implied option/group
-  endings, template and fragment contexts, table foster processing and error
-  limits; other select algorithms remain bounded.
+  Select-end regressions cover scope boundaries, non-boundary special elements,
+  implied endings, template and fragment contexts, table foster processing and
+  error limits; other select algorithms remain bounded.
   Option/optgroup-end regressions cover ordinary descendants, special-element
   barriers, implied ends, select fragments, error limits and cancellation.
   Generic end-tag regressions additionally cover implied ends for ordinary

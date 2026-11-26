@@ -56,8 +56,8 @@ record of its completed, bounded scope.
      ignore `svg`/`math` starts when the current node is not a `colgroup`.
      In-body select and input starts respect scope boundaries and the select
      fragment context, retaining the separate in-table hidden-input rule.
-     Select ends use generic in-body recovery with special-element barriers and
-     implied end tags.
+     Select ends use scope-based in-body recovery with implied end tags;
+     non-boundary special elements do not block closure.
      In-body option starts use scoped implied-end recovery and formatting
      reconstruction, including fragments and fostered selects.
      Optgroup starts use their distinct scoped implied-end and diagnostic rule,

@@ -899,8 +899,7 @@ public sealed class TreeTests
     [InlineData("object")]
     [InlineData("applet")]
     [InlineData("marquee")]
-    [InlineData("div")]
-    public void SelectEndBehindSpecialElementIsIgnored(string boundary)
+    public void SelectEndBehindScopeBoundaryIsIgnored(string boundary)
     {
         var result = Parse($"<!doctype html><select id=outer><{boundary}></select><span id=inside></span>"
             + $"</{boundary}><option id=after></option></select>");
@@ -911,6 +910,28 @@ public sealed class TreeTests
         Assert.Same(container, result.Document.GetElementById("inside")!.ParentNode);
         Assert.Same(outer, result.Document.GetElementById("after")!.ParentNode);
         Assert.Collection(result.Errors, error => Assert.Equal("unexpected-end-tag", error.Code));
+    }
+
+    [Theory]
+    [InlineData("div", true)]
+    [InlineData("p", false)]
+    [InlineData("button", true)]
+    public void SelectEndClosesThroughSpecialElementThatIsNotScopeBoundary(string tag, bool misnested)
+    {
+        var result = Parse($"<!doctype html><select id=outer><{tag}><option>before</select><p>after</p>");
+        var select = Assert.IsType<DomElement>(result.Document.GetElementById("outer"));
+
+        Assert.Equal("before", select.TextContent);
+        Assert.Equal(["select", "p"], result.Document.Body!.ChildNodes.OfType<DomElement>().Select(e => e.LocalName));
+        Assert.Equal("after", result.Document.Body.LastChild!.TextContent);
+        if (misnested)
+        {
+            Assert.Collection(result.Errors, error => Assert.Equal("implicitly-closed-descendants", error.Code));
+        }
+        else
+        {
+            Assert.Empty(result.Errors);
+        }
     }
 
     [Fact]

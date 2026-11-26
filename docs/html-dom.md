@@ -163,11 +163,11 @@ after-after-frameset modes. Supported behavior includes:
   close-and-ignore a `select` start tag when a select is in scope. A scope
   boundary permits a separate inner select or input; a select-context fragment
   ignores in-body `select` and `input` starts regardless of scope. In-table
-  hidden input handling remains separate. `select`, `option` and `optgroup`
-  ends use generic in-body end-tag recovery: intervening special elements
-  block the search, and implied ends are generated except for the matching
-  name before checking misnesting. This also applies to select fragments and
-  options outside selects. An in-body
+  hidden input handling remains separate. A `select` end requires a select in
+  scope, generates implied ends and then closes it, diagnosing remaining
+  descendants. Special elements that are not scope boundaries do not block
+  closure. `option` and `optgroup` ends use generic in-body recovery, including
+  in select fragments and outside selects. An in-body
   `option` start generates implied end tags except `optgroup` when a select is
   in scope, then diagnoses a remaining in-scope option. Otherwise it closes
   only a current option. An `optgroup` start generates implied end tags when

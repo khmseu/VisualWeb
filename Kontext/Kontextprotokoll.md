@@ -19138,3 +19138,30 @@ tags`) committed. Der Pre-Commit-Hook formatierte Roadmap/Deferred-Markdown
   [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
   [HDF-011](../plans/html-dom-deferred.md).
+
+### KP-657 - Korrektur der Select-Endtag-Scope-Regel
+
+- Dokumentiert am: 2026-11-26, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: „commit staged files (if any) and push, then if uncommitted
+  files remain, stop, otherwise continue“. Commit `7400ad1a`
+  (`fix(html): generate implied ends for generic tags`) wurde erstellt und
+  nach `origin/main` gepusht; der Hook pruefte zehn Dateien ohne Befund. Das
+  Arbeitsverzeichnis war anschliessend sauber.
+- Belegt und supersediert KP-651 bezueglich Select-Endtags: Die erneute
+  Pruefung der lokalen In-Body-Regeln zeigt `select` in der Gruppe der
+  scopebasierten Endtags, nicht bei generischen Endtags. Die uncommittete
+  Korrektur verlangt einen Select in Scope, erzeugt implizite Endtags und
+  schliesst ihn mit Diagnose fuer verbleibende Nachfahren. Nur Scope-Grenzen,
+  nicht alle Special-Elemente, verhindern das Schliessen.
+- Belegt: Drei neue Faelle fuer nicht als Scope-Grenze wirkende Elemente und
+  Fragmente zeigten vor der Korrektur falsche Baeume. Ein weiterer Test wurde
+  berichtigt, weil `p` selbst implizit schliesst und keine Diagnose erzeugt.
+  Nach der Korrektur bestanden elf fokussierte Faelle, alle 7.884 HTML-Tests,
+  der Solution-Build mit null Warnungen und Fehlern, die Formatpruefung und der
+  serialisierte Solution-Testlauf in allen 14 Projekten. Der Browser-Runner
+  meldete 1.449 bestandene Tests und gab zwei uebersprungene Faelle aus.
+- Offen: Phase 1 und weitere Parser-Luecken bleiben offen.
+- Quelle: Nutzerauftrag, Commit-/Push- und Testausgaben,
+  [HTML-Cache](../specs/cache/html.html#parsing-main-inbody),
+  [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und
+  [HDF-011](../plans/html-dom-deferred.md).
