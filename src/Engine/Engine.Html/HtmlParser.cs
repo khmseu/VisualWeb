@@ -33,12 +33,11 @@ namespace VisualWeb.Engine.Html;
 /// use bounded foster-parent insertion in table, column-group, table-body, and row modes. <c>plaintext</c>
 /// starts consume the remaining input as text; adoption reparenting that itself requires table foster
 /// parenting remains unsupported;
-/// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
-/// merging for in-table <c>html</c> starts are supported; bounded table insertion modes apply within template
-/// content, including template EOF recovery;
-/// other foster-parenting cases, nested tables in captions, unsupported fragment contexts,
-/// full script preparation,
-/// and adoption-agency reparenting requiring table foster parenting are unsupported. If a parser-script callback
+/// nested table starts, nested tables in cells and captions, the in-table form-pointer exception and
+/// root-attribute merging for in-table <c>html</c> starts are supported; bounded table insertion modes
+/// apply within template content, including template EOF recovery;
+/// remaining unsupported foster-parent insertion locations, unsupported fragment contexts, full script
+/// preparation, and adoption-agency reparenting requiring table foster parenting are unsupported. If a parser-script callback
 /// reparents the current table directly under the destination document, fostered table text is discarded,
 /// as required by <see href="https://html.spec.whatwg.org/multipage/parsing.html#insert-a-character">insert a character</see>.</remarks>
 public static class HtmlParser

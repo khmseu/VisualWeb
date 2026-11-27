@@ -19319,3 +19319,19 @@ tags`) wurde erstellt und nach `origin/main` gepusht. Der Hook formatierte
   [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs),
   [FragmentTests](../tests/Engine.Html.Tests/FragmentTests.cs),
   [Parser](../src/Engine/Engine.Html/HtmlParser.cs) und Nutzerauftrag.
+
+### KP-664 - HTML-Parser-XML-Dokumentation korrigiert
+
+- Dokumentiert am: 2026-11-27, Europe/Berlin (UTC+01:00).
+- Nutzerauftrag: Nach sauberem Commit-/Push-Stand die Arbeit fortsetzen.
+- Belegt: Die XML-Zusammenfassung von `HtmlParser` behauptete, verschachtelte
+  Tabellen in Captions seien nicht unterstuetzt. `NestedTableInsideCaptionReturnsToCaptionMode`
+  und `NestedTableInsideTemplateCaptionStaysInTemplateContent` belegen bereits
+  begrenzte Unterstuetzung samt Rueckkehr in den Caption-Modus.
+- Belegt: Die XML-Dokumentation ist so angepasst, dass diese Unterstuetzung
+  genannt und die tatsaechlich offenen Foster-/Adoption-Faelle enger abgegrenzt
+  werden. Der fokussierte Caption-Test besteht; Parserverhalten blieb unveraendert.
+- Belegt: `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` bestand.
+- Quelle: [Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) und Nutzerauftrag.

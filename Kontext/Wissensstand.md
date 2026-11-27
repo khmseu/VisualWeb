@@ -198,6 +198,9 @@ Die Formatpruefung bestand nach dem Kontext-Update. Ein Solution-Testlauf nach
 der Ruecknahme wurde nicht erneut ausgefuehrt. KP-663 enthaelt nur die
 dokumentierte Erkenntnis. Ein anderer abgegrenzter HDF-011-Punkt muss erst
 durch Standard und Tests belegt werden.
+KP-664 korrigiert eine unzutreffende Parser-XML-Aussage zu verschachtelten
+Tabellen in Captions; die bestehende Unterstuetzung ist durch fokussierte Tests
+belegt und die Formatpruefung besteht.
 Weitere Parser-Luecken und Phase 1 bleiben offen.
 
 **HTML/DOM-Abschlussplanung (2026-11-24; KP-614 bis KP-634; Phases 1-7 complete at bounded practical-support scope):**
